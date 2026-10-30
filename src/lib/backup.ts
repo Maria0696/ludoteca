@@ -23,11 +23,13 @@ import {
  * por defecto se mantiene lo tuyo y tú decides caso por caso.
  */
 
-export const BACKUP_APP = "sala-de-los-menesteres";
+export const BACKUP_APP = "ludoteca";
+/** Nombre anterior de la app: sus copias se siguen pudiendo importar. */
+const LEGACY_APPS = ["sala-de-los-menesteres"] as const;
 export const BACKUP_VERSION = 1;
 
 const backupSchema = z.object({
-  app: z.literal(BACKUP_APP),
+  app: z.enum([BACKUP_APP, ...LEGACY_APPS]),
   version: z.literal(BACKUP_VERSION),
   exportedAt: z.string(),
   data: z.object({
@@ -58,7 +60,7 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
 
 export function backupFileName(date = new Date()): string {
   const stamp = date.toISOString().slice(0, 10);
-  return `sala-de-los-menesteres-${stamp}.json`;
+  return `ludoteca-${stamp}.json`;
 }
 
 export type ParseResult = { ok: true; backup: Backup } | { ok: false; errors: string[] };
@@ -70,7 +72,8 @@ export function parseBackup(text: string): ParseResult {
   } catch {
     return { ok: false, errors: ["El archivo no es un JSON válido."] };
   }
-  if (typeof raw === "object" && raw !== null && (raw as { app?: unknown }).app !== BACKUP_APP) {
+  const app = typeof raw === "object" && raw !== null ? (raw as { app?: unknown }).app : undefined;
+  if (app !== BACKUP_APP && !(LEGACY_APPS as readonly unknown[]).includes(app)) {
     return { ok: false, errors: ["Este archivo no es una copia de seguridad de esta biblioteca."] };
   }
   const parsed = backupSchema.safeParse(raw);

@@ -27,4 +27,4 @@ Signature interaction: el selector de carátulas del cartel, que cambia arte, t�
 Motion grammar: entrada de pantalla con fundido y ascenso (380 ms), pósters escalonados (35 ms), elevación al pasar el ratón (420 ms), fundido de cartel (1,1 s) y deriva lenta (24 s); con movimiento reducido solo opacidad.
 
 ## Unresolved
-- Nombre definitivo del producto (trabajo: «Sala de los Menesteres»).
+- Ninguna: el nombre es «Ludoteca».

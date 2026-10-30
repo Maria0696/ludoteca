@@ -17,7 +17,7 @@ const text = Albert_Sans({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Sala de los Menesteres", template: "%s · Sala de los Menesteres" },
+  title: { default: "Ludoteca", template: "%s · Ludoteca" },
   description: "Tu biblioteca personal de videojuegos.",
   robots: { index: false, follow: false },
 };

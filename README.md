@@ -1,4 +1,4 @@
-# Sala de los Menesteres
+# Ludoteca
 
 Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, listas propias, «¿A qué juego?» y estadísticas. Next.js 16 + TypeScript, pensada para Vercel (plan Hobby) y Supabase (plan gratuito).
 
@@ -42,7 +42,7 @@ Las variables están documentadas en [.env.example](.env.example). Las claves pr
 
 ### 1. Subir el código a GitHub
 
-1. Crea un repositorio **privado** vacío en GitHub, por ejemplo `sala-de-los-menesteres`, sin README.
+1. Crea un repositorio **privado** vacío en GitHub llamado `ludoteca`, sin README.
 2. En la carpeta del proyecto, sustituye `TU-USUARIO` por tu usuario de GitHub:
 
 ```bash
@@ -54,7 +54,7 @@ git commit -m "Primera versión de la biblioteca"
 ```
 
 ```bash
-git remote add origin https://github.com/TU-USUARIO/sala-de-los-menesteres.git
+git remote add origin https://github.com/TU-USUARIO/ludoteca.git
 ```
 
 ```bash
@@ -83,7 +83,7 @@ IGDB es gratuito para uso no comercial según el acuerdo de desarrolladores de T
 
 1. En https://vercel.com, pulsa **Add New → Project** e importa el repositorio de GitHub. El preajuste de Next.js sirve tal cual.
 2. En **Environment Variables** añade `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `OWNER_EMAIL` y, si los tienes, `IGDB_CLIENT_ID` e `IGDB_CLIENT_SECRET`.
-3. Despliega. La URL será del tipo `https://sala-de-los-menesteres-xxxx.vercel.app`.
+3. Despliega. La URL será del tipo `https://ludoteca-xxxx.vercel.app`.
 
 En producción, si falta la configuración de Supabase, la app no se abre en modo local: muestra «Configuración pendiente», para que nadie pueda usarla desde tu URL.
 

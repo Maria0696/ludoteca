@@ -49,9 +49,6 @@
   white-space: nowrap;
   flex: none;
 }
-.brandShort {
-  display: none;
-}
 .nav {
   display: flex;
   gap: 4px;
@@ -259,12 +256,6 @@
 }
 
 @media (max-width: 1280px) {
-  .brandLong {
-    display: none;
-  }
-  .brandShort {
-    display: inline;
-  }
   .qs {
     width: 200px;
   }

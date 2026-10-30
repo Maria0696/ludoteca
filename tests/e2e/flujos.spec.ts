@@ -81,7 +81,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar copia" }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/^sala-de-los-menesteres-\d{4}-\d{2}-\d{2}\.json$/);
+  expect(download.suggestedFilename()).toMatch(/^ludoteca-\d{4}-\d{2}-\d{2}\.json$/);
   const path = test.info().outputPath("copia.json");
   await download.saveAs(path);
   const backup = JSON.parse(await readFile(path, "utf8"));
@@ -134,7 +134,7 @@ test("datos de demostración separados y retirables", async ({ page }) => {
 
 test("estados vacíos y de error", async ({ page }) => {
   await openApp(page, "/");
-  await expect(page.getByRole("heading", { name: "Bienvenida a tu sala" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bienvenida a tu ludoteca" })).toBeVisible();
   await expect(page.getByText(/Modo local: tu biblioteca se guarda solo en este navegador/)).toBeVisible();
 
   await page.goto("/que-juego");
@@ -146,7 +146,7 @@ test("estados vacíos y de error", async ({ page }) => {
   await page.goto("/juego/no-existe");
   await expect(page.getByRole("heading", { name: "Este juego no está en tu biblioteca" })).toBeVisible();
   await page.goto("/una-ruta-que-no-existe");
-  await expect(page.getByRole("heading", { name: "Esta página no está en la sala" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Esta página no está en tu ludoteca" })).toBeVisible();
 
   // Sin claves del catálogo, el alta lo dice y deja seguir a mano.
   await page.goto("/biblioteca");

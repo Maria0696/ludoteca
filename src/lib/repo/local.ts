@@ -7,7 +7,7 @@ import type { Changes, Repository } from "./types";
  * documento y las escrituras se encadenan para no pisarse.
  */
 
-const DB_NAME = "sala-de-los-menesteres";
+const DB_NAME = "ludoteca";
 const STORE = "library";
 const KEY = "data";
 

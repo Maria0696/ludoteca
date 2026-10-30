@@ -1,4 +1,4 @@
--- Sala de los Menesteres: esquema inicial.
+-- Ludoteca: esquema inicial.
 -- Ejecuta este archivo en el editor SQL de Supabase (o con `supabase db push`).
 -- Después, sustituye el correo de la última instrucción por el tuyo.
 

@@ -27,9 +27,8 @@ export function TopBar() {
 
   return (
     <header className={[styles.top, overlay && styles.overlay, overlay && scrolled && styles.scrolled].filter(Boolean).join(" ")}>
-      <Link href="/" className={styles.brand} aria-label="Sala de los Menesteres, inicio">
-        <span className={styles.brandLong}>Sala de los Menesteres</span>
-        <span className={styles.brandShort}>Menesteres</span>
+      <Link href="/" className={styles.brand} aria-label="Ludoteca, inicio">
+        Ludoteca
       </Link>
 
       <nav className={styles.nav} aria-label="Principal">

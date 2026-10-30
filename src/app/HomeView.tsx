@@ -53,7 +53,7 @@ export function HomeView() {
         <h1 className="sr-only">Inicio</h1>
         <div className={styles.welcomeCard}>
           <Sparkles aria-hidden className={styles.welcomeIcon} />
-          <h2>Bienvenida a tu sala</h2>
+          <h2>Bienvenida a tu ludoteca</h2>
           <p>
             Aquí verás lo que estás jugando a pantalla completa, lo último que has añadido y lo que lleva más tiempo esperando. Empieza
             añadiendo un juego: título, plataforma y formato bastan.

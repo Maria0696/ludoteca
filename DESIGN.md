@@ -1,6 +1,6 @@
 # Diseño · Sala de proyección
 
-Sistema visual de la Sala de los Menesteres. Sustituye a la primera dirección («Cubeta de videoclub»), que se descartó por plana y sobria. Las referencias elegidas son Apple TV y Netflix, y Steam y PlayStation. La estructura combina dos bocetos: el cartel cinematográfico de «Sala de proyección» y el selector de carátulas de «Consola». Los tokens viven en `src/app/globals.css`.
+Sistema visual de Ludoteca. Sustituye a la primera dirección («Cubeta de videoclub»), que se descartó por plana y sobria. Las referencias elegidas son Apple TV y Netflix, y Steam y PlayStation. La estructura combina dos bocetos: el cartel cinematográfico de «Sala de proyección» y el selector de carátulas de «Consola». Los tokens viven en `src/app/globals.css`.
 
 ## Idea
 
