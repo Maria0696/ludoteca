@@ -51,3 +51,6 @@ next-env.d.ts
 !.env.example
 /.impeccable/mocks/figma/
 /.claude/
+
+# SQL con datos personales (correo de la propietaria)
+/supabase/*.local.sql

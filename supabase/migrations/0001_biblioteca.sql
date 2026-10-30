@@ -118,6 +118,16 @@ begin
   end loop;
 end $$;
 
+-- Permisos explícitos para la Data API: solo usuarios con sesión iniciada
+-- llegan a las tablas (y la seguridad por filas decide qué filas ven).
+-- Las visitas anónimas no reciben ningún permiso. Así funciona aunque el
+-- proyecto no exponga las tablas nuevas automáticamente.
+revoke all on public.games, public.copies, public.wishlist, public.lists, public.app_owner from anon;
+revoke all on public.app_owner from authenticated;
+grant select, insert, update, delete on public.games, public.copies, public.wishlist, public.lists to authenticated;
+revoke all on function public.is_owner() from public, anon;
+grant execute on function public.is_owner() to authenticated;
+
 -- Cambia este correo por el de tu cuenta antes de ejecutar.
 insert into public.app_owner (email) values ('tu-correo@ejemplo.com')
 on conflict do nothing;
