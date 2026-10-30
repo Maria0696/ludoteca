@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Cubeta de videoclub</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#fafaf8;--card:#ecebe6;--ink:#161616;--muted:#5a5a55;--sticker:#e4e86a}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui;background:var(--ground);color:var(--ink)}
+header{height:64px;display:flex;align-items:center;gap:28px;padding:0 32px;border-bottom:1px solid #e4e3de}
+.wm{font-stretch:80%;font-weight:800;font-size:20px;letter-spacing:-.01em}
+header nav{display:flex;gap:20px;font-size:14px}header nav b{font-weight:600;border-bottom:2px solid var(--ink);padding-bottom:4px}
+.sp{flex:1}
+.search{width:300px;height:36px;border:1px solid #d6d5cf;border-radius:999px;padding:0 16px;display:flex;align-items:center;font-size:14px;color:var(--muted);background:#fff}
+.stk{height:38px;padding:0 18px;border-radius:999px;background:var(--sticker);font-weight:700;font-size:14px;display:flex;align-items:center}
+.title{display:flex;align-items:baseline;gap:16px;padding:24px 32px 8px}
+.title h1{font-size:28px;font-weight:700;letter-spacing:-.01em}.title p{color:var(--muted);font-size:14px}
+.bin{display:grid;grid-template-columns:repeat(7,1fr);gap:20px;padding:20px 32px}
+.div{grid-row:span 1;background:var(--card);position:relative;padding:44px 14px 14px;display:flex;flex-direction:column;justify-content:space-between}
+.div .tab{position:absolute;top:-12px;left:14px;background:var(--card);padding:6px 12px;border-radius:6px 6px 0 0;font-weight:800;font-size:15px;font-stretch:80%}
+.div h2{font-size:30px;font-stretch:70%;font-weight:800;line-height:1}
+.div p{font-size:13px;color:var(--muted)}
+.cover{aspect-ratio:3/4;display:flex;align-items:flex-end;padding:12px;color:#fff;font-stretch:72%;font-weight:800;font-size:21px;line-height:1}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:8px}
+.meta b{background:var(--sticker);border-radius:999px;padding:2px 8px;font-weight:600}
+.meta span{color:var(--muted)}
+</style></head><body>
+<header><div class="wm">Sala de los Menesteres</div><nav><span>Inicio</span><b>Biblioteca</b><span>Deseos</span><span>¿A qué juego?</span><span>Estadísticas</span></nav><div class="sp"></div><div class="search">Buscar en la cubeta</div><div class="stk">Añadir juego</div></header>
+<div class="title"><h1>Biblioteca</h1><p>48 títulos en 4 plataformas · separadores por plataforma</p></div>
+<section class="bin">
+<div class="div"><span class="tab">SWITCH</span><h2>Switch</h2><p>21 juegos · 3 jugando</p></div>
+<div><div class="cover" style="background:#8b1e1e">HADES</div><div class="meta"><b>Jugando</b><span>Digital</span></div></div>
+<div><div class="cover" style="background:#2b5f8a">CELESTE</div><div class="meta"><span>Completado</span><span>Físico</span></div></div>
+<div><div class="cover" style="background:#24303a">HOLLOW KNIGHT</div><div class="meta"><span>Pausado</span><span>Digital · caja</span></div></div>
+<div><div class="cover" style="background:#1f6b5c">TEARS OF THE KINGDOM</div><div class="meta"><span>Completado</span><span>Físico</span></div></div>
+<div><div class="cover" style="background:#b8765a">UNPACKING</div><div class="meta"><span>Completado</span><span>Digital</span></div></div>
+<div><div class="cover" style="background:#7a5a2c">KIRBY</div><div class="meta"><span>Pendiente</span><span>Físico</span></div></div>
+<div class="div"><span class="tab">PS5</span><h2>PlayStation 5</h2><p>14 juegos · 1 jugando</p></div>
+<div><div class="cover" style="background:#c1532b">IT TAKES TWO</div><div class="meta"><span>Pendiente</span><span>Físico</span></div></div>
+<div><div class="cover" style="background:#d08a1c">OUTER WILDS</div><div class="meta"><span>Pendiente</span><span>Digital</span></div></div>
+<div><div class="cover" style="background:#3a3f47">FINAL FANTASY VII REMAKE</div><div class="meta"><span>Pendiente</span><span>Físico</span></div></div>
+<div><div class="cover" style="background:#5f2a3c">ASTRO BOT</div><div class="meta"><b>Jugando</b><span>Físico</span></div></div>
+<div><div class="cover" style="background:#2e4a3a">GHOST OF TSUSHIMA</div><div class="meta"><span>Completado</span><span>Físico</span></div></div>
+<div><div class="cover" style="background:#4a4a4a">RETURNAL</div><div class="meta"><span>Abandonado</span><span>Digital</span></div></div>
+</section>
+</body></html>

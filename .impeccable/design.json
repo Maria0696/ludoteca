@@ -1,0 +1,38 @@
+{
+  "name": "Sala de proyección",
+  "source": "DESIGN.md",
+  "references": ["Apple TV", "Netflix", "Steam", "PlayStation 5"],
+  "color": {
+    "bg": "#0b0b0d",
+    "surface": "#141417",
+    "raised": "#1c1c21",
+    "line": "#26262c",
+    "control": "#34343c",
+    "text": "#f4f4f5",
+    "muted": "#a1a1aa",
+    "primary": "#ffffff",
+    "status": {
+      "pendiente": "#a1a1aa",
+      "jugando": "#4ade80",
+      "pausado": "#fbbf24",
+      "completado": "#60a5fa",
+      "abandonado": "#71717a"
+    }
+  },
+  "type": {
+    "display": { "family": "Bricolage Grotesque", "weight": 800, "tracking": "-0.03em to -0.045em" },
+    "text": { "family": "Albert Sans", "weights": [400, 500, 600, 700] },
+    "scale": { "hero": "44-92px", "pageTitle": 56, "section": "22-28px", "ui": "14-15px", "meta": "12-13px" }
+  },
+  "radius": { "cover": 12, "field": 10, "panel": 16, "dialog": 20, "control": 999 },
+  "motion": {
+    "pageEnter": "380ms",
+    "stagger": "35ms",
+    "heroCrossfade": "1100ms",
+    "heroDrift": "24s",
+    "heroAdvance": "8s",
+    "press": "scale(0.96) 140ms",
+    "easeOut": "cubic-bezier(0.23, 1, 0.32, 1)",
+    "drawer": "cubic-bezier(0.32, 0.72, 0, 1)"
+  }
+}

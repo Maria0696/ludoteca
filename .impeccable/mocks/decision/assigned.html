@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Ficha técnica</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{--g0:#f1f0ec;--g1:#e7e5df;--g2:#d9d6ce;--paper:#fbfaf7;--ink:#141414;--muted:#5d5a54;--red:#d7261e;--teal:#0a6e75;--ochre:#e9b100}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui;background:var(--g0);color:var(--ink);display:grid;grid-template-columns:232px 1fr}
+aside{padding:24px 16px;display:flex;flex-direction:column;gap:4px}
+.mark{display:flex;gap:10px;align-items:center;padding:0 8px 28px}
+.mark i{display:flex;gap:2px;align-items:flex-end}.mark i b{display:block;width:5px;background:var(--red)}.mark i b:nth-child(2){background:var(--teal);height:22px}.mark i b:nth-child(1){height:16px}.mark i b:nth-child(3){background:var(--ochre);height:19px}
+.mark span{font-stretch:75%;font-weight:800;font-size:17px;line-height:1.05;letter-spacing:-.01em}
+nav a{display:block;padding:8px 12px;border-radius:6px;font-size:14px;color:var(--ink);text-decoration:none}
+nav a.on{background:var(--g2);font-weight:600}
+nav small{display:block;color:var(--muted);font-size:12px;padding:20px 12px 6px}
+.foot{margin-top:auto;font-size:12px;color:var(--muted);padding:0 12px}
+main{background:var(--paper);display:flex;flex-direction:column;min-width:0}
+.band{background:var(--red);color:#fff;padding:18px 32px 16px;display:flex;align-items:baseline;gap:20px}
+.band h1{font-stretch:68%;font-weight:800;font-size:40px;letter-spacing:-.01em;line-height:1}
+.band p{font-size:14px;opacity:.92}
+.tools{display:flex;gap:8px;align-items:center;padding:16px 32px;border-bottom:1px solid var(--g1)}
+.search{flex:0 0 320px;height:36px;border:1px solid var(--g2);border-radius:6px;background:#fff;padding:0 12px;font-size:14px;display:flex;align-items:center;color:var(--muted)}
+.chip{height:32px;padding:0 12px;border:1px solid var(--g2);border-radius:6px;font-size:13px;display:flex;align-items:center;background:#fff}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sp{flex:1}
+.btn{height:36px;padding:0 16px;border-radius:6px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:28px 24px;padding:24px 32px}
+.cover{aspect-ratio:3/4;display:flex;align-items:flex-end;padding:14px;color:#fff;font-stretch:70%;font-weight:800;font-size:24px;line-height:1;letter-spacing:-.01em}
+.ficha{display:grid;grid-template-columns:auto auto 1fr;margin-top:8px;font-size:12px;border-top:2px solid var(--ink)}
+.ficha span{padding:5px 8px 0 0;text-transform:uppercase;font-weight:700;letter-spacing:.02em}
+.ficha span+span{font-weight:400}
+.ficha .st{text-transform:none;font-weight:600;letter-spacing:0;text-align:right;display:flex;justify-content:flex-end;gap:5px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;border:2px solid currentColor}.dot.full{background:currentColor}
+.t{font-size:14px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style></head><body>
+<aside>
+<div class="mark"><i><b></b><b></b><b></b></i><span>Sala de los<br>Menesteres</span></div>
+<nav>
+<a href="#">Inicio</a><a class="on" href="#">Biblioteca</a><a href="#">Lista de deseos</a><a href="#">¿A qué juego?</a><a href="#">Estadísticas</a>
+<small>Mis listas</small>
+<a href="#">Para jugar con mi pareja</a><a href="#">Partidas rápidas</a><a href="#">Mis favoritos</a>
+</nav>
+<div class="foot">Datos de demostración</div>
+</aside>
+<main>
+<div class="band"><h1>Biblioteca</h1><p>48 títulos · 53 copias · 6 jugando</p></div>
+<div class="tools"><div class="search">Buscar por título</div><div class="chip on">Switch</div><div class="chip">Formato</div><div class="chip">Género</div><div class="chip">Estado</div><div class="chip">Favoritos</div><div class="sp"></div><div class="chip">Orden: añadido recientemente</div><div class="btn">Añadir juego</div></div>
+<section class="grid">
+<div><div class="cover" style="background:#8b1e1e">HADES</div><div class="ficha"><span>Switch</span><span>Digital</span><span class="st"><i class="dot full"></i>Jugando</span></div><div class="t">Hades</div></div>
+<div><div class="cover" style="background:#2b5f8a">CELESTE</div><div class="ficha"><span>Switch</span><span>Físico</span><span class="st">✓ Completado</span></div><div class="t">Celeste</div></div>
+<div><div class="cover" style="background:#c1532b">IT TAKES TWO</div><div class="ficha"><span>PS5</span><span>Físico</span><span class="st"><i class="dot"></i>Pendiente</span></div><div class="t">It Takes Two</div></div>
+<div><div class="cover" style="background:#24303a">HOLLOW KNIGHT</div><div class="ficha"><span>Switch</span><span>Digital · caja</span><span class="st">‖ Pausado</span></div><div class="t">Hollow Knight</div></div>
+<div><div class="cover" style="background:#d08a1c">OUTER WILDS</div><div class="ficha"><span>PS5</span><span>Digital</span><span class="st"><i class="dot"></i>Pendiente</span></div><div class="t">Outer Wilds</div></div>
+<div><div class="cover" style="background:#4d7a3a">STARDEW VALLEY</div><div class="ficha"><span>PC</span><span>Digital</span><span class="st"><i class="dot full"></i>Jugando</span></div><div class="t">Stardew Valley</div></div>
+<div><div class="cover" style="background:#1f6b5c">TEARS OF THE KINGDOM</div><div class="ficha"><span>Switch</span><span>Físico</span><span class="st">✓ Completado</span></div><div class="t">The Legend of Zelda: Tears of the Kingdom</div></div>
+<div><div class="cover" style="background:#5c4a3d">DISCO ELYSIUM</div><div class="ficha"><span>PC</span><span>Digital</span><span class="st">— Abandonado</span></div><div class="t">Disco Elysium</div></div>
+<div><div class="cover" style="background:#3a3f47">FINAL FANTASY VII REMAKE</div><div class="ficha"><span>PS5</span><span>Físico</span><span class="st"><i class="dot"></i>Pendiente</span></div><div class="t">Final Fantasy VII Remake</div></div>
+<div><div class="cover" style="background:#9b2f24">RED DEAD REDEMPTION 2</div><div class="ficha"><span>PS4</span><span>Físico</span><span class="st">‖ Pausado</span></div><div class="t">Red Dead Redemption 2</div></div>
+<div><div class="cover" style="background:#b8765a">UNPACKING</div><div class="ficha"><span>Switch</span><span>Digital</span><span class="st">✓ Completado</span></div><div class="t">Unpacking</div></div>
+<div><div class="cover" style="background:#2c2c2c">INSIDE</div><div class="ficha"><span>PS4</span><span>Digital</span><span class="st">✓ Completado</span></div><div class="t">Inside</div></div>
+</section>
+</main>
+</body></html>

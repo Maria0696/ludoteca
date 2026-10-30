@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Biblioteca estándar</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121212;--panel:#1a1a1a;--line:#262626;--text:#f2f2f2;--muted:#a3a3a3;--accent:#3b82f6}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui;background:var(--bg);color:var(--text);display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr}
+header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--line)}
+.wm{font-weight:700;font-size:16px;width:200px}
+.search{width:420px;height:34px;border-radius:6px;background:var(--panel);border:1px solid var(--line);padding:0 12px;display:flex;align-items:center;color:var(--muted);font-size:14px}
+.sp{flex:1}.btn{height:34px;padding:0 14px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;display:flex;align-items:center}
+aside{padding:20px 16px;border-right:1px solid var(--line);font-size:14px}
+aside h3{font-size:12px;color:var(--muted);font-weight:600;margin:18px 0 8px}
+aside label{display:flex;justify-content:space-between;padding:5px 0;color:#ddd}aside label span{color:var(--muted)}
+main{padding:20px 24px}
+.top{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}.top h1{font-size:22px}.top p{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:18px}
+.cover{aspect-ratio:3/4;border-radius:6px;display:flex;align-items:flex-end;padding:10px;color:#fff;font-weight:700;font-size:16px}
+.t{font-size:13px;margin-top:6px}.s{font-size:12px;color:var(--muted)}
+</style></head><body>
+<header><div class="wm">Sala de los Menesteres</div><div class="search">Buscar en tu biblioteca</div><div class="sp"></div><div class="btn">Añadir juego</div></header>
+<aside><h3>Estado</h3><label>Jugando<span>6</span></label><label>Pendiente<span>19</span></label><label>Completado<span>17</span></label><label>Pausado<span>4</span></label><label>Abandonado<span>2</span></label>
+<h3>Plataforma</h3><label>Switch<span>21</span></label><label>PS5<span>14</span></label><label>PS4<span>8</span></label><label>PC<span>5</span></label>
+<h3>Formato</h3><label>Físico<span>27</span></label><label>Digital<span>26</span></label></aside>
+<main><div class="top"><h1>Biblioteca</h1><p>48 títulos</p></div>
+<div class="grid">
+<div><div class="cover" style="background:#8b1e1e">Hades</div><div class="t">Hades</div><div class="s">Switch · Jugando</div></div>
+<div><div class="cover" style="background:#2b5f8a">Celeste</div><div class="t">Celeste</div><div class="s">Switch · Completado</div></div>
+<div><div class="cover" style="background:#c1532b">It Takes Two</div><div class="t">It Takes Two</div><div class="s">PS5 · Pendiente</div></div>
+<div><div class="cover" style="background:#24303a">Hollow Knight</div><div class="t">Hollow Knight</div><div class="s">Switch · Pausado</div></div>
+<div><div class="cover" style="background:#d08a1c">Outer Wilds</div><div class="t">Outer Wilds</div><div class="s">PS5 · Pendiente</div></div>
+<div><div class="cover" style="background:#4d7a3a">Stardew Valley</div><div class="t">Stardew Valley</div><div class="s">PC · Jugando</div></div>
+<div><div class="cover" style="background:#1f6b5c">Tears of the Kingdom</div><div class="t">Tears of the Kingdom</div><div class="s">Switch · Completado</div></div>
+<div><div class="cover" style="background:#5c4a3d">Disco Elysium</div><div class="t">Disco Elysium</div><div class="s">PC · Abandonado</div></div>
+<div><div class="cover" style="background:#3a3f47">FF VII Remake</div><div class="t">Final Fantasy VII Remake</div><div class="s">PS5 · Pendiente</div></div>
+<div><div class="cover" style="background:#9b2f24">Red Dead Redemption 2</div><div class="t">Red Dead Redemption 2</div><div class="s">PS4 · Pausado</div></div>
+<div><div class="cover" style="background:#b8765a">Unpacking</div><div class="t">Unpacking</div><div class="s">Switch · Completado</div></div>
+<div><div class="cover" style="background:#2c2c2c">Inside</div><div class="t">Inside</div><div class="s">PS4 · Completado</div></div>
+<div><div class="cover" style="background:#5f2a3c">Astro Bot</div><div class="t">Astro Bot</div><div class="s">PS5 · Jugando</div></div>
+<div><div class="cover" style="background:#2e4a3a">Ghost of Tsushima</div><div class="t">Ghost of Tsushima</div><div class="s">PS5 · Completado</div></div>
+</div></main>
+</body></html>

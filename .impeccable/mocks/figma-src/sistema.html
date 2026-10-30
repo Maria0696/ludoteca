@@ -1,0 +1,73 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Sistema · Cubeta de videoclub</title><style>__CSS__
+body{width:1440px;padding:56px 64px 72px}
+h1{font-stretch:70%;font-weight:800;font-size:56px;letter-spacing:-.02em;line-height:1}
+.lead{font-size:16px;margin-top:12px;max-width:640px;line-height:1.5}
+h2{font-size:16px;font-weight:700;margin:56px 0 16px}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.sw{width:180px}.sw div{height:96px;border-radius:2px}.sw p{font-size:13px;margin-top:8px;font-weight:600}.sw small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.type p{margin-bottom:14px}
+.col{display:flex;flex-direction:column;gap:12px}
+.field{width:320px}.field label{display:block;font-size:14px;font-weight:600;margin-bottom:8px}
+.input{height:40px;border:1px solid var(--control);border-radius:8px;background:#fff;padding:0 12px;display:flex;align-items:center;font-size:14px}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.err .input{border-color:var(--danger)}.err .hint{color:var(--danger)}
+.toast{background:var(--ink);color:#fff;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:16px;font-size:14px;width:360px}
+.toast b{margin-left:auto;color:var(--sticker);font-weight:700}
+.card{width:180px}
+</style></head><body>
+<h1>Cubeta de videoclub</h1>
+<p class="lead muted">Dirección visual de la Sala de los Menesteres. Portadas de frente y separadores de cartón con pestaña que ordenan y filtran. El color va en las portadas; la pegatina lima solo marca la acción principal y lo que estás jugando.</p>
+
+<h2>Color</h2>
+<div class="row">
+ <div class="sw"><div style="background:var(--ground);border:1px solid var(--line)"></div><p>Fondo</p><small>#FAFAF8 · suelo de la tienda</small></div>
+ <div class="sw"><div style="background:var(--card)"></div><p>Cartón</p><small>#ECEBE6 · separadores, pestaña activa</small></div>
+ <div class="sw"><div style="background:var(--card-2)"></div><p>Cartón 2</p><small>#E2E1DB · pestañas en reposo</small></div>
+ <div class="sw"><div style="background:var(--ink)"></div><p>Tinta</p><small>#161616 · texto y botón secundario lleno</small></div>
+ <div class="sw"><div style="background:var(--muted)"></div><p>Gris</p><small>#5A5A55 · texto secundario, 6,6:1</small></div>
+ <div class="sw"><div style="background:var(--sticker)"></div><p>Pegatina</p><small>#E4E86A · acción principal y «Jugando»</small></div>
+</div>
+
+<h2>Tipografía · Archivo, un solo tipo con eje de anchura</h2>
+<div class="type">
+ <p class="cond" style="font-size:34px;line-height:.95">PlayStation 5 · separador 34/800 condensada</p>
+ <p style="font-size:28px;font-weight:700;letter-spacing:-.01em">Biblioteca · título de pantalla 28/700</p>
+ <p class="cond" style="font-size:15px;font-weight:700">Pestaña 15/700 al 78 % de anchura</p>
+ <p style="font-size:14px;font-weight:600">Título bajo la carátula 14/600</p>
+ <p style="font-size:14px">Texto de interfaz 14/400 · Buscar, filtrar y ordenar</p>
+ <p class="muted num" style="font-size:12px">Metadatos 12/400 con cifras tabulares · 48 títulos · 53 copias</p>
+</div>
+
+<h2>Vocabulario de estado</h2>
+<div class="row" style="gap:20px;align-items:center">
+ <span class="meta"><span class="state"><i class="mark"></i>Pendiente</span></span>
+ <span class="meta"><span class="state playing"><i class="mark full"></i>Jugando</span></span>
+ <span class="meta"><span class="state">‖ Pausado</span></span>
+ <span class="meta"><span class="state">✓ Completado</span></span>
+ <span class="meta"><span class="state" style="color:var(--muted);font-weight:500">— Abandonado</span></span>
+ <span class="meta"><span class="state">★ 100 %</span></span>
+</div>
+
+<h2>Controles</h2>
+<div class="row" style="align-items:center">
+ <span class="btn-sticker"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Añadir juego</span>
+ <span class="btn btn-ink">Guardar</span><span class="btn">Cancelar</span><span class="btn-text">Restablecer filtros</span>
+ <span class="chip">Formato</span><span class="chip on">Switch</span>
+</div>
+<div class="tabs" style="padding:0;margin-top:28px;width:560px"><span class="tab on">Todas <small>48</small></span><span class="tab">Switch <small>21</small></span><span class="tab">PS5 <small>14</small></span><span class="tab">PC <small>5</small></span></div>
+
+<h2>Carátulas</h2>
+<div class="row" style="gap:24px;margin-top:28px">
+ <div class="card"><div class="divider"><span class="dtab">Switch</span><h3>Switch</h3><p>13 juegos aquí<br>3 jugando</p></div><p class="title">Separador de grupo</p></div>
+ <div class="card"><div class="cover" style="background:#8b1e1e">HADES</div><p class="title">Hades</p><p class="meta"><span class="state playing"><i class="mark full"></i>Jugando</span>Switch · Digital</p></div>
+ <div class="card"><div class="cover none"><span class="cond" style="font-size:22px;line-height:1">Kirby y la tierra olvidada</span><small>Sin carátula · Switch</small></div><p class="title">Sin carátula</p><p class="meta">El título ocupa su lugar</p></div>
+ <div class="card"><div class="cover" style="background:#24303a">HOLLOW KNIGHT</div><p class="title">Hollow Knight</p><p class="meta"><span class="state">‖ Pausado</span>Digital · caja</p></div>
+</div>
+
+<h2>Formularios y avisos</h2>
+<div class="row">
+ <div class="field"><label>Título</label><div class="input">Hollow Knight</div><p class="hint">Busca en el catálogo o escríbelo tal cual.</p></div>
+ <div class="field err"><label>Plataforma</label><div class="input muted">Elige una</div><p class="hint">Elige una plataforma para guardar la copia.</p></div>
+ <div class="toast">«Hades» pasa a Completado <b>Deshacer</b></div>
+</div>
+</body></html>

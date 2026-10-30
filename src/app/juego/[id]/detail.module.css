@@ -1,0 +1,287 @@
+.page {
+  position: relative;
+  padding: 28px var(--gutter) 0;
+  isolation: isolate;
+}
+/* El arte del juego llena la parte alta y se funde con el fondo. */
+.backdrop {
+  position: absolute;
+  inset: calc(var(--topbar) * -1) 0 auto;
+  height: 620px;
+  z-index: -1;
+  overflow: hidden;
+}
+.backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+  animation: settle 1400ms var(--ease-out) backwards;
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+.backdropFromCover img {
+  filter: blur(48px) saturate(1.4);
+  transform: scale(1.3);
+}
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, var(--bg) 0%, var(--bg) 4%, #0b0b0d99 50%, #0b0b0d66 100%),
+    linear-gradient(90deg, #0b0b0dcc, #0b0b0d00 70%);
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4d4d8;
+  text-decoration: none;
+  margin-bottom: 28px;
+  min-height: 36px;
+  transition: color 160ms ease, gap 200ms var(--ease-out);
+}
+.back:hover {
+  color: #fff;
+  gap: 10px;
+}
+.back svg {
+  width: 17px;
+  height: 17px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+  max-width: 1280px;
+}
+.aside {
+  position: sticky;
+  top: calc(var(--topbar) + 24px);
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.aside > :first-child {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 40px 80px -30px #000, 0 0 0 1px #ffffff14;
+  animation: cover-in 700ms var(--ease-out) backwards;
+}
+@keyframes cover-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+}
+.demoNote {
+  font-size: 12px;
+  color: var(--muted);
+}
+.main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.header {
+  display: grid;
+  gap: 14px;
+  padding: 40px 0 20px;
+}
+.header h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(40px, 5.4vw, 84px);
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  text-shadow: 0 4px 40px #0008;
+}
+.header p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 14px;
+  color: #d4d4d8;
+}
+.trophy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+.trophy svg {
+  width: 15px;
+  height: 15px;
+}
+.section {
+  display: grid;
+  gap: 18px;
+  padding: 26px;
+  border-radius: var(--radius-panel);
+  background: #141417e6;
+  border: 1px solid var(--line);
+}
+.section h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.quick :global(.btn)[aria-pressed="true"] {
+  background: #ffffff2e;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.copies {
+  display: grid;
+  gap: 12px;
+}
+.copy {
+  background: var(--raised);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 14px;
+}
+.copyHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.copyHead strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.copyHead > span:nth-child(2) {
+  color: var(--muted);
+  font-size: 14px;
+}
+.copyActions {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 20px;
+}
+.facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.facts dd {
+  font-size: 14px;
+}
+
+.copyForm {
+  display: grid;
+  gap: 22px;
+}
+.copyForm fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.copyForm legend {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  padding: 0;
+  margin-bottom: 6px;
+}
+.checks {
+  display: grid;
+  gap: 2px;
+}
+
+.coverEdit {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.coverFields {
+  display: grid;
+  gap: 16px;
+}
+.coverPreview {
+  width: 170px;
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding-top: 18px;
+  }
+  .backdrop {
+    height: 460px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .aside {
+    position: static;
+    grid-template-columns: 132px 1fr;
+    align-items: end;
+  }
+  .aside > :first-child {
+    width: 132px;
+    grid-row: span 2;
+  }
+  .header {
+    padding-top: 18px;
+  }
+  .section {
+    padding: 18px;
+  }
+  .grid3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coverEdit {
+    grid-template-columns: 1fr;
+  }
+  .coverPreview {
+    width: 150px;
+  }
+}
+@media (max-width: 560px) {
+  .grid2,
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+}

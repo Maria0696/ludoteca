@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Compilación de las pruebas de acceso y carpetas de trabajo de las herramientas.
+    ".next-acceso/**",
+    "test-results/**",
+    ".playwright-mcp/**",
+    ".taste-skill/**",
+    ".impeccable/**",
   ]),
 ]);
 

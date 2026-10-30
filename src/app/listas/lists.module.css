@@ -1,0 +1,148 @@
+.page {
+  padding: 24px var(--gutter) 0;
+}
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 36px;
+  margin-bottom: 12px;
+}
+.back svg {
+  width: 16px;
+  height: 16px;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  margin-bottom: 24px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.aside {
+  display: grid;
+  gap: 20px;
+}
+.newList {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.lists {
+  display: grid;
+  gap: 4px;
+}
+.lists button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #ffffff0a;
+  color: #d4d4d8;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 180ms ease;
+  text-align: left;
+  cursor: pointer;
+}
+.lists button[aria-current="true"] {
+  background: #fff;
+  color: #0b0b0d;
+}
+.lists small {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--muted);
+}
+.main {
+  display: grid;
+  gap: 32px;
+  min-width: 0;
+}
+.listHead {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.listHead > :first-child {
+  flex: 1;
+  min-width: 240px;
+  max-width: 480px;
+}
+.listActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pickerSearch {
+  position: relative;
+}
+.pickerSearch svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.pickerSearch input {
+  width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  border: 0;
+  background: #ffffff14;
+  color: var(--text);
+  padding: 0 14px 0 34px;
+}
+.pickerList {
+  display: grid;
+  max-height: 50dvh;
+  overflow: auto;
+}
+.pickerList li {
+  border-bottom: 1px solid var(--line);
+}
+.pickerList :global(.check) {
+  min-height: 52px;
+}
+.pickerCover {
+  width: 30px;
+  flex: none;
+}
+.pickerCover :global(.cover-fallback strong) {
+  font-size: 6px;
+}
+
+@media (max-width: 899px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .title {
+    font-size: 40px;
+  }
+  .lists {
+    display: flex;
+    overflow-x: auto;
+  }
+  .lists button {
+    white-space: nowrap;
+  }
+}

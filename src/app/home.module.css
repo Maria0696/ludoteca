@@ -1,0 +1,251 @@
+.rows {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin-top: -8px;
+}
+.localNotice {
+  margin: 0 var(--gutter) 8px;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 var(--gutter);
+}
+.sectionHead h2 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.sectionHead h2 small {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4d4d8;
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 36px;
+  transition: color 160ms ease, gap 200ms var(--ease-out);
+}
+.more svg {
+  width: 15px;
+  height: 15px;
+}
+.more:hover {
+  color: #fff;
+  gap: 8px;
+}
+.shelfSection {
+  display: grid;
+  gap: 4px;
+  padding-top: 20px;
+}
+.section {
+  display: grid;
+  gap: 16px;
+  padding-top: 36px;
+}
+
+.band {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 40px;
+  margin: 36px var(--gutter) 8px;
+  padding: 44px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  isolation: isolate;
+}
+.bandArt {
+  position: relative;
+  height: 260px;
+}
+.bandArt img {
+  position: absolute;
+  width: min(62%, 380px);
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 30px 60px -20px #000, 0 0 0 1px #ffffff14;
+  transition: transform 600ms var(--ease-out);
+}
+.bandArt img:nth-child(1) {
+  left: 0;
+  top: 22%;
+  transform: rotate(-6deg);
+}
+.bandArt img:nth-child(2) {
+  left: 20%;
+  top: 0;
+  transform: rotate(3deg);
+  z-index: 1;
+}
+.bandArt img:nth-child(3) {
+  left: 38%;
+  top: 34%;
+  transform: rotate(-2deg);
+  z-index: 2;
+}
+@media (hover: hover) and (pointer: fine) {
+  .band:hover .bandArt img:nth-child(1) {
+    transform: rotate(-9deg) translate(-10px, 6px);
+  }
+  .band:hover .bandArt img:nth-child(2) {
+    transform: rotate(4deg) translateY(-10px);
+  }
+  .band:hover .bandArt img:nth-child(3) {
+    transform: rotate(1deg) translate(12px, 6px);
+  }
+}
+.bandCopy {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+.bandCopy h2 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+.bandCopy p {
+  color: var(--muted);
+  font-size: 16px;
+  max-width: 44ch;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 0 var(--gutter);
+}
+.summary div {
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.summary dt {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.summary dd {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.welcome {
+  min-height: calc(100dvh - var(--topbar) - 120px);
+  display: grid;
+  place-items: center;
+  padding: 40px var(--gutter);
+  background: radial-gradient(60% 50% at 50% 20%, #1d1d26, transparent 70%);
+}
+.welcomeCard {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  max-width: 640px;
+  padding: 40px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: rise 600ms var(--ease-out) backwards;
+}
+.welcomeIcon {
+  width: 28px;
+  height: 28px;
+  color: #fbbf24;
+}
+.welcomeCard h2 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+.welcomeCard > p {
+  color: var(--muted);
+  font-size: 16px;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .band {
+    grid-template-columns: 1fr;
+    padding: 28px;
+  }
+  .bandArt {
+    height: 210px;
+  }
+  .bandArt img {
+    width: min(46%, 300px);
+  }
+}
+@media (max-width: 899px) {
+  .sectionHead h2 {
+    font-size: 22px;
+  }
+  .band {
+    margin-top: 24px;
+    padding: 22px;
+    gap: 20px;
+  }
+  .bandArt {
+    height: 150px;
+  }
+  .bandCopy h2 {
+    font-size: 36px;
+  }
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .summary div:last-child {
+    grid-column: 1 / -1;
+  }
+  .summary dd {
+    font-size: 36px;
+  }
+  .welcomeCard {
+    padding: 26px;
+  }
+  .welcomeCard h2 {
+    font-size: 36px;
+  }
+}

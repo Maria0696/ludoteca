@@ -1,0 +1,58 @@
+@font-face{font-family:"Archivo";src:url(data:font/woff2;base64,__ARCHIVO__) format("woff2");font-weight:100 900;font-stretch:62% 125%}
+:root{
+  --ground:#fafaf8;--card:#ecebe6;--card-2:#e2e1db;--line:#e4e3dd;--control:#cfcec7;
+  --ink:#161616;--muted:#5a5a55;--sticker:#e4e86a;--sticker-ink:#161616;
+  --danger:#b3261e;--focus:#161616;
+  --font:"Archivo",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--ground);color:var(--ink);-webkit-font-smoothing:antialiased}
+.cond{font-stretch:72%;font-weight:800;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* Barra superior */
+.top{height:64px;display:flex;align-items:center;gap:32px;padding:0 32px;border-bottom:1px solid var(--line);background:var(--ground)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:22px;height:24px;position:relative}
+.brand-mark i{position:absolute;bottom:0;width:22px;height:18px;background:var(--ink);border-radius:2px}
+.brand-mark b{position:absolute;top:0;left:3px;width:10px;height:8px;background:var(--ink);border-radius:3px 3px 0 0}
+.brand-mark s{position:absolute;bottom:4px;left:4px;width:14px;height:3px;background:var(--sticker)}
+.brand-name{font-stretch:75%;font-weight:800;font-size:19px;letter-spacing:-.01em;white-space:nowrap}
+.nav{display:flex;gap:4px}
+.nav a{font-size:14px;color:var(--ink);text-decoration:none;padding:8px 12px;border-radius:999px}
+.nav a.on{background:var(--card);font-weight:600}
+.spacer{flex:1}
+.search{width:280px;height:38px;border-radius:999px;border:1px solid var(--control);background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;color:var(--muted)}
+.icon{width:16px;height:16px;flex:none}
+
+/* Botones */
+.btn-sticker{height:38px;padding:0 18px 0 14px;border-radius:999px;background:var(--sticker);color:var(--sticker-ink);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px;border:0;white-space:nowrap}
+.btn{height:36px;padding:0 14px;border-radius:999px;background:#fff;border:1px solid var(--control);font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px;color:var(--ink);white-space:nowrap}
+.btn-ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-text{background:none;border:0;font-weight:600;font-size:14px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+/* Pestañas de separador: la firma */
+.tabs{display:flex;align-items:flex-end;gap:4px;padding:0 32px;border-bottom:8px solid var(--card)}
+.tab{height:40px;padding:0 16px;background:var(--card-2);border-radius:6px 6px 0 0;display:flex;align-items:center;gap:8px;font-stretch:78%;font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap}
+.tab small{font-stretch:100%;font-weight:500;font-size:12px;color:var(--muted)}
+.tab.on{background:var(--card);height:46px}
+
+/* Chips de filtro */
+.chip{height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--control);background:#fff;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* Carátula y separador */
+.cover{aspect-ratio:3/4;border-radius:2px;display:flex;align-items:flex-end;padding:12px;color:#fff;font-stretch:70%;font-weight:800;font-size:22px;line-height:.98;letter-spacing:-.01em;overflow:hidden}
+.cover.none{background:var(--card);color:var(--ink);flex-direction:column;align-items:flex-start;justify-content:space-between}
+.cover.none small{font-stretch:100%;font-weight:500;font-size:12px;color:var(--muted)}
+.title{font-size:14px;font-weight:600;margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--muted);white-space:nowrap}
+.state{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:600}
+.state.playing{background:var(--sticker);padding:2px 8px 2px 6px;border-radius:999px}
+.mark{width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;flex:none}
+.mark.full{background:currentColor}
+.divider{background:var(--card);border-radius:2px;position:relative;padding:18px 14px 14px;display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:3/4}
+.divider .dtab{position:absolute;top:-22px;left:0;height:22px;padding:0 12px;background:var(--card);border-radius:6px 6px 0 0;font-stretch:78%;font-weight:800;font-size:13px;display:flex;align-items:center}
+.divider h3{font-stretch:68%;font-weight:800;font-size:34px;line-height:.95;letter-spacing:-.015em}
+.divider p{font-size:13px;color:var(--muted);line-height:1.45}

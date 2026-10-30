@@ -1,0 +1,341 @@
+/* Rejilla de pósters --------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 36px 22px;
+  align-items: start;
+}
+@media (min-width: 1500px) {
+  .grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+@media (max-width: 899px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 28px 14px;
+  }
+}
+
+.card {
+  min-width: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+.cardLink {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--radius-card);
+}
+.cardArt {
+  display: block;
+  border-radius: var(--radius-card);
+  transition: transform 420ms var(--ease-out), box-shadow 420ms var(--ease-out);
+}
+.cardArt :global(.cover img) {
+  transition: transform 900ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cardLink:hover .cardArt {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 30px 50px -18px #000, 0 0 0 1px #ffffff1f;
+  }
+  .cardLink:hover .cardArt :global(.cover img) {
+    transform: scale(1.06);
+  }
+}
+.cardLink:active .cardArt {
+  transform: scale(0.97);
+}
+.cardLink:focus-visible {
+  outline-offset: 6px;
+}
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fav {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: #fbbf24;
+  color: #fbbf24;
+}
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 5px;
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 0;
+}
+.cardCopies {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Encabezado de grupo dentro de la rejilla ---------------------------- */
+
+.groupHeading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-top: 12px;
+}
+.groupHeading:first-child {
+  padding-top: 0;
+}
+.groupHeading strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+.groupHeading span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Filas horizontales -------------------------------------------------- */
+
+.shelf {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 184px;
+  gap: 18px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  padding: 10px var(--gutter) 22px;
+  scrollbar-width: none;
+}
+.shelf::-webkit-scrollbar {
+  display: none;
+}
+.shelf > * {
+  scroll-snap-align: start;
+}
+@media (max-width: 899px) {
+  .shelf {
+    grid-auto-columns: 140px;
+    gap: 14px;
+  }
+}
+
+/* Lista compacta ------------------------------------------------------- */
+
+.list {
+  display: grid;
+}
+.row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 2.2fr) minmax(0, 1.4fr) 160px 110px 120px;
+  align-items: center;
+  gap: 16px;
+  min-height: 76px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 76px;
+  transition: background-color 160ms ease;
+}
+.row:not(.rowHead):hover {
+  background: #ffffff0a;
+}
+.rowHead {
+  composes: row;
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.rowTitle {
+  min-width: 0;
+  display: grid;
+}
+.rowTitle a {
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowTitle a:hover {
+  text-decoration: underline;
+}
+.rowTitle small,
+.rowCell {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.statusSelect {
+  height: 36px;
+  font-size: 13px;
+  padding-left: 12px;
+  border-radius: 999px;
+}
+@media (max-width: 899px) {
+  .row {
+    grid-template-columns: 48px minmax(0, 1fr) 140px;
+    gap: 12px;
+    padding: 10px 0;
+  }
+  .rowHead {
+    display: none;
+  }
+  .hideNarrow {
+    display: none;
+  }
+  .statusSelect {
+    height: 42px;
+  }
+}
+
+/* Alta y catálogo ------------------------------------------------------ */
+
+.addForm {
+  display: grid;
+  gap: 20px;
+}
+.twoCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 560px) {
+  .twoCols {
+    grid-template-columns: 1fr;
+  }
+}
+.titleRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.titleRow > :last-child {
+  flex: 1;
+}
+.pickedCover {
+  width: 48px;
+  flex: none;
+  border-radius: 8px !important;
+}
+.catalog {
+  position: relative;
+}
+.catalogStatus {
+  position: absolute;
+  right: 14px;
+  top: 13px;
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.catalogNote {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.catalogNote svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 1px;
+}
+.catalogPanel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 30px 60px -12px #000;
+  padding: 6px;
+  max-height: 360px;
+  overflow: auto;
+  transform-origin: top center;
+  animation: pop 180ms var(--ease-out);
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+}
+.catalogList li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.catalogList li[aria-selected="true"] {
+  background: #ffffff14;
+}
+.catalogList span {
+  display: grid;
+  min-width: 0;
+}
+.catalogList strong {
+  font-weight: 600;
+}
+.catalogList small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.catalogCover {
+  width: 36px;
+  flex: none;
+  border-radius: 6px !important;
+}
+.catalogCover :global(.cover-fallback strong) {
+  font-size: 7px;
+}
+.catalogCredit {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 6px 8px 2px;
+}
+.duplicate {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--raised);
+}
+.duplicate > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 2px;
+}
+.duplicate p {
+  margin-bottom: 12px;
+}

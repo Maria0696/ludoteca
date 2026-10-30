@@ -1,0 +1,44 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Biblioteca · Móvil 390</title><style>__CSS__
+body{width:390px;height:844px;overflow:hidden;position:relative}
+.mtop{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line)}
+.mtop .brand-name{font-size:17px}
+.ibtn{width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.sq{width:44px;height:44px;border-radius:999px;background:var(--sticker);display:flex;align-items:center;justify-content:center}
+.mhead{display:flex;align-items:baseline;gap:10px;padding:18px 16px 14px}
+.mhead h1{font-size:24px;font-weight:700;letter-spacing:-.01em}.mhead p{font-size:13px}
+.tabs{padding:0 16px;overflow:hidden}
+.tab{height:36px;font-size:14px;padding:0 12px}.tab.on{height:42px}
+.mfil{display:flex;gap:8px;padding:12px 16px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px 16px;padding:34px 16px 120px}
+.hdiv{grid-column:1/-1;background:var(--card);position:relative;border-radius:2px;padding:12px 14px;display:flex;align-items:baseline;justify-content:space-between}
+.hdiv .dtab{position:absolute;top:-20px;left:0;height:20px;padding:0 10px;background:var(--card);border-radius:6px 6px 0 0;font-stretch:78%;font-weight:800;font-size:12px;display:flex;align-items:center}
+.hdiv h3{font-stretch:68%;font-weight:800;font-size:26px;line-height:1}
+.hdiv p{font-size:12px;color:var(--muted)}
+.cover{font-size:20px}
+.bar{position:absolute;left:0;right:0;bottom:0;height:72px;background:var(--ground);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px 14px}
+.bar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:var(--muted);text-decoration:none;border-radius:12px}
+.bar a.on{color:var(--ink);font-weight:600}
+.bar a.on .pill{background:var(--card)}
+.pill{width:48px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+</style></head><body>
+<header class="mtop"><span class="brand"><span class="brand-mark"><b></b><i></i><s></s></span><span class="brand-name">Menesteres</span></span><div class="spacer"></div>
+ <span class="ibtn"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+ <span class="sq"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></header>
+<div class="mhead"><h1>Biblioteca</h1><p class="muted num">48 títulos · 53 copias</p></div>
+<div class="tabs"><span class="tab on">Todas <small class="num">48</small></span><span class="tab">Switch <small class="num">21</small></span><span class="tab">PS5 <small class="num">14</small></span><span class="tab">PS4 <small class="num">8</small></span></div>
+<div class="mfil"><span class="chip on">Filtros · 1</span><span class="chip">Orden: añadidos</span><span class="chip">Lista</span></div>
+<section class="grid">
+ <div class="hdiv"><span class="dtab">Switch</span><h3>Switch</h3><p class="num">13 juegos · 3 jugando</p></div>
+ <div><div class="cover" style="background:#8b1e1e">HADES</div><p class="title">Hades</p><p class="meta"><span class="state playing"><i class="mark full"></i>Jugando</span>Digital</p></div>
+ <div><div class="cover" style="background:#24303a">HOLLOW KNIGHT</div><p class="title">Hollow Knight</p><p class="meta"><span class="state"><i class="mark"></i>Pausado</span>Caja</p></div>
+ <div><div class="cover" style="background:#6b3a2a">SPIRITFARER</div><p class="title">Spiritfarer</p><p class="meta"><span class="state playing"><i class="mark full"></i>Jugando</span>Digital</p></div>
+ <div><div class="cover" style="background:#355c7d">METROID DREAD</div><p class="title">Metroid Dread</p><p class="meta"><span class="state"><i class="mark"></i>Pendiente</span>Físico</p></div>
+</section>
+<nav class="bar">
+ <a href="#"><span class="pill"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="1.75"><path d="M4 11 12 4l8 7v9H4z"/></svg></span>Inicio</a>
+ <a class="on" href="#"><span class="pill"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.75"><rect x="4" y="4" width="6" height="16"/><rect x="14" y="4" width="6" height="16"/></svg></span>Biblioteca</a>
+ <a href="#"><span class="pill"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="1.75"><circle cx="12" cy="12" r="8"/><path d="m10 9 5 3-5 3z"/></svg></span>Jugar</a>
+ <a href="#"><span class="pill"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="1.75"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/></svg></span>Deseos</a>
+ <a href="#"><span class="pill"><svg class="icon" style="width:20px;height:20px" viewBox="0 0 24 24" fill="none" stroke="#5a5a55" stroke-width="1.75"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>Resumen</a>
+</nav>
+</body></html>

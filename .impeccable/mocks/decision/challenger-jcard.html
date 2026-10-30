@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Carátula de cinta</title>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Archivo:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--stock:#fff;--pen:#2340a0;--pencil:#8a8a8a;--stripe:#c8211c;--line:#dfe4f2;--ground:#eef0f4}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;font-family:Archivo,system-ui;background:var(--ground);color:#1a1a1a;display:grid;grid-template-columns:220px 1fr 520px;gap:24px;padding:24px}
+aside{font-size:14px}aside h2{font-family:Kalam;color:var(--pen);font-size:26px;margin-bottom:20px}
+aside a{display:block;padding:8px 10px;border-radius:6px;color:#1a1a1a;text-decoration:none}aside a.on{background:#dde1ea;font-weight:600}
+.rack{background:var(--stock);padding:20px 24px;overflow:hidden}
+.rack h1{font-family:Kalam;color:var(--pen);font-size:30px;font-weight:700;border-bottom:2px solid var(--stripe);padding-bottom:6px;margin-bottom:6px}
+.spine{display:grid;grid-template-columns:1fr 80px 90px 110px;align-items:center;height:46px;border-bottom:1px solid var(--line);font-size:13px}
+.spine b{font-family:Kalam;font-size:21px;color:var(--pen);font-weight:700;letter-spacing:.02em}
+.spine.p b{color:var(--pencil)}
+.spine.sel{background:#f3f5fb}
+.spine span{color:#555}.spine em{font-style:normal;text-align:right;color:var(--pen);font-family:Kalam;font-size:17px}
+.fold{background:var(--stock);display:grid;grid-template-rows:auto 1fr;}
+.front{height:420px;background:#c1532b;display:flex;align-items:flex-end;padding:20px;color:#fff;font-size:44px;font-weight:600;line-height:1;position:relative}
+.front:before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--stripe)}
+.side{padding:18px 22px}
+.side h3{font-family:Kalam;color:var(--pen);font-size:24px;display:flex;justify-content:space-between;border-bottom:2px solid var(--pen);padding-bottom:4px}
+.tr{display:flex;justify-content:space-between;font-family:Kalam;color:var(--pen);font-size:19px;border-bottom:1px solid var(--line);padding:6px 0}
+.tr.p{color:var(--pencil)}
+.btn{margin-top:14px;display:inline-flex;height:36px;align-items:center;padding:0 16px;border-radius:6px;background:var(--pen);color:#fff;font-weight:600;font-size:14px}
+</style></head><body>
+<aside><h2>Sala de los Menesteres</h2><a href="#">Inicio</a><a class="on" href="#">Biblioteca</a><a href="#">Lista de deseos</a><a href="#">¿A qué juego?</a><a href="#">Estadísticas</a></aside>
+<section class="rack"><h1>Biblioteca · 48 lomos</h1>
+<div class="spine"><b>HADES</b><span>Switch</span><span>Digital</span><em>jugando</em></div>
+<div class="spine"><b>CELESTE</b><span>Switch</span><span>Físico</span><em>completado</em></div>
+<div class="spine sel"><b>IT TAKES TWO</b><span>PS5</span><span>Físico</span><em>pendiente</em></div>
+<div class="spine"><b>HOLLOW KNIGHT</b><span>Switch</span><span>Digital · caja</span><em>pausado</em></div>
+<div class="spine p"><b>OUTER WILDS</b><span>PS5</span><span>Digital</span><em>pendiente</em></div>
+<div class="spine"><b>STARDEW VALLEY</b><span>PC</span><span>Digital</span><em>jugando</em></div>
+<div class="spine"><b>TEARS OF THE KINGDOM</b><span>Switch</span><span>Físico</span><em>completado</em></div>
+<div class="spine p"><b>DISCO ELYSIUM</b><span>PC</span><span>Digital</span><em>abandonado</em></div>
+<div class="spine"><b>FINAL FANTASY VII REMAKE</b><span>PS5</span><span>Físico</span><em>pendiente</em></div>
+<div class="spine"><b>RED DEAD REDEMPTION 2</b><span>PS4</span><span>Físico</span><em>pausado</em></div>
+<div class="spine"><b>UNPACKING</b><span>Switch</span><span>Digital</span><em>completado</em></div>
+<div class="spine"><b>INSIDE</b><span>PS4</span><span>Digital</span><em>completado</em></div>
+<div class="spine"><b>ASTRO BOT</b><span>PS5</span><span>Físico</span><em>jugando</em></div>
+<div class="spine"><b>GHOST OF TSUSHIMA</b><span>PS5</span><span>Físico</span><em>completado</em></div>
+<div class="spine"><b>RETURNAL</b><span>PS5</span><span>Digital</span><em>abandonado</em></div>
+</section>
+<section class="fold"><div class="front">It Takes Two</div>
+<div class="side"><h3><span>Cara A · esta noche</span><span>45 min</span></h3>
+<div class="tr"><span>It Takes Two — capítulo 3</span><span>40 min</span></div>
+<div class="tr p"><span>Unpacking — un nivel</span><span>20 min</span></div>
+<div class="tr p"><span>Celeste — cara B</span><span>30 min</span></div>
+<span class="btn">Elegir para jugar</span></div></section>
+</body></html>

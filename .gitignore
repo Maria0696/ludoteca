@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-acceso/
 /out/
 
 # production
@@ -39,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pruebas y herramientas de diseño
+/test-results/
+/playwright-report/
+/.playwright-mcp/
+/.taste-skill/
+/.impeccable/questions/
+/.impeccable/mocks/archivo.*
+!.env.example
+/.impeccable/mocks/figma/
+/.claude/
