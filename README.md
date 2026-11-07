@@ -98,7 +98,7 @@ Hay tres capas, de fuera hacia dentro:
 
 ## Usarla
 
-- **Añadir juego** (botón lima) desde cualquier pantalla. Si el título ya existe, propone añadir otra copia.
+- **Añadir juego** (el botón blanco con «+» de la barra superior) desde cualquier pantalla. Si el título ya existe, propone añadir otra copia.
 - Toca una carátula para abrir la ficha. Todo se guarda solo al salir de cada campo.
 - En **Ajustes**: exporta una copia de seguridad, impórtala, carga o retira los datos de demostración y comprueba si el catálogo está conectado.
 
@@ -114,7 +114,7 @@ Ejecuta los tipos, el lint y la compilación de producción.
 npx playwright test
 ```
 
-Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Necesita haber compilado antes (`npm run check` o `npx next build`). Cada prueba usa un navegador limpio en modo local, así que no toca tus datos. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
+Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Antes compila su propia copia de la app en `.next-pruebas`, sin las claves de `.env.local`, así que siempre funciona en modo local aunque tengas Supabase configurado (tarda un par de minutos más). Cada prueba usa un navegador limpio, así que no toca tus datos. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
 
 ## Estructura
 
