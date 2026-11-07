@@ -1,20 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Albert_Sans, Bricolage_Grotesque } from "next/font/google";
 import { AppShell } from "@/components/shell/AppShell";
+import { display, text } from "./fonts";
 import "./globals.css";
-
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  axes: ["opsz"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const text = Albert_Sans({
-  subsets: ["latin"],
-  variable: "--font-text",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: { default: "Ludoteca", template: "%s · Ludoteca" },
