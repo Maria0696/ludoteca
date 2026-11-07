@@ -65,7 +65,7 @@ git push -u origin main
 
 1. Crea un proyecto en https://supabase.com, en la región de la UE más cercana.
 2. En **SQL Editor**, pega el contenido de [supabase/migrations/0001_biblioteca.sql](supabase/migrations/0001_biblioteca.sql). **Cambia en la última línea `tu-correo@ejemplo.com` por tu correo** y ejecútalo. Crea las tablas y la seguridad por filas: solo la cuenta de ese correo puede leer o escribir.
-3. Ejecuta también [supabase/migrations/0002_mantener_activo.sql](supabase/migrations/0002_mantener_activo.sql): crea la función `ping`, que solo devuelve 1 y no lee ningún dato.
+3. Ejecuta también, en orden, los demás archivos de [supabase/migrations](supabase/migrations): `0002` crea la función `ping`, que solo devuelve 1 y no lee ningún dato, y `0003` aplica los ajustes de seguridad y rendimiento que recomienda Supabase.
 4. En **Authentication → Users → Add user**, crea tu usuario con ese correo y una contraseña (marca «Auto confirm user»).
 5. En **Authentication → Sign In / Providers**, desactiva **Allow new users to sign up**, para que nadie más pueda registrarse.
 6. En **Project Settings → API** copia la URL del proyecto y la clave *publishable* (o *anon*).
@@ -114,7 +114,9 @@ Ejecuta los tipos, el lint y la compilación de producción.
 npx playwright test
 ```
 
-Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Antes compila su propia copia de la app en `.next-pruebas`, sin las claves de `.env.local`, así que siempre funciona en modo local aunque tengas Supabase configurado (tarda un par de minutos más). Cada prueba usa un navegador limpio, así que no toca tus datos. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
+Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Antes compila su propia copia de la app en `.next-pruebas`, sin las claves de `.env.local`, así que siempre funciona en modo local aunque tengas Supabase configurado (tarda un par de minutos más). Cada prueba usa un navegador limpio, así que no toca tus datos.
+
+En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) pasa los tipos, el lint y estas pruebas en cada petición de fusión y en cada cambio de `main`. No necesita ninguna clave. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
 
 ## Estructura
 
