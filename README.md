@@ -118,6 +118,10 @@ Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Antes compila 
 
 En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) pasa los tipos, el lint y estas pruebas en cada petición de fusión y en cada cambio de `main`. No necesita ninguna clave. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
 
+### Actualizaciones
+
+[Dependabot](.github/dependabot.yml) abre cada lunes una petición de fusión con las librerías que tengan versión nueva (menores y parches juntos en una sola) y una al mes con las acciones de GitHub. «Comprobaciones» las prueba solas: si salen en verde, se pueden fusionar. Los saltos de versión principal de TypeScript, ESLint y `@types/node` no se proponen porque piden cambios a mano.
+
 ## Estructura
 
 - `src/lib`: modelo, recomendaciones, estadísticas, filtros, copia de seguridad y almacenamiento (local en IndexedDB o Supabase).

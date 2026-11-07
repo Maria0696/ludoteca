@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { BrandMark } from "@/components/shell/BrandMark";
 import { isSupabaseConfigured } from "@/lib/config";
+import { safeNextPath } from "@/lib/redirect";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import styles from "./entrar.module.css";
 
@@ -33,8 +34,7 @@ export function LoginForm() {
       );
       return;
     }
-    const next = params.get("next");
-    router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+    router.replace(safeNextPath(params.get("next"), window.location.origin));
     router.refresh();
   }
 

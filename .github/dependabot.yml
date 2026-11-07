@@ -1,0 +1,40 @@
+# Dependabot: cada lunes abre una petición de fusión con las librerías que
+# tengan versión nueva, y «Comprobaciones» la prueba sola. Si sale en verde,
+# se puede fusionar.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Europe/Madrid
+    commit-message:
+      prefix: "Dependencias:"
+    open-pull-requests-limit: 5
+    groups:
+      # Las versiones menores y los parches llegan juntos en una sola petición.
+      librerias:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # Estos saltos de versión principal piden cambios a mano; se hacen aparte.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Europe/Madrid
+    commit-message:
+      prefix: "Acciones de GitHub:"
+    groups:
+      acciones:
+        patterns: ["*"]
