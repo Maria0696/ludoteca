@@ -25,6 +25,11 @@ test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   expect(estado.status()).toBe(401);
 });
 
+test("sin sesión, nadie puede mandar avisos de errores", async ({ request }) => {
+  const res = await request.post("/api/errores", { data: { kind: "navegador", name: "Error", message: "Intruso", path: "/" } });
+  expect(res.status()).toBe(401);
+});
+
 test("tras entrar solo se vuelve a páginas de la propia app", () => {
   const origin = "https://ludoteca.example";
   // Rutas internas: se conservan tal cual.

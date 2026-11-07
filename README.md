@@ -125,6 +125,14 @@ En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) p
 
 En `package.json`, `overrides` obliga a `typescript-eslint` a usar `minimatch` 11, que corrige un fallo de seguridad de la 10. Cuando `typescript-eslint` pida ya la 11 por su cuenta, se puede quitar.
 
+### Errores
+
+Si una pantalla falla, la app muestra un aviso en español con «Volver a intentarlo» e «Ir al inicio» ([error.tsx](src/app/error.tsx)); si falla el armazón entero, una pantalla propia ([global-error.tsx](src/app/global-error.tsx)). Esos fallos, y los de botones o tareas en segundo plano ([instrumentation-client.ts](src/instrumentation-client.ts)), se mandan a `/api/errores`, que los escribe en el registro del servidor con el prefijo `ErrorDelNavegador`. En Vercel aparecen en la lista de errores de producción.
+
+- Solo se envía el tipo de error, el mensaje, la pila de llamadas y la ruta de la pantalla; nunca datos de la biblioteca.
+- Solo se aceptan avisos con la sesión de la propietaria. Los fallos de «Entrar», antes de iniciar sesión, no se registran.
+- Cada fallo se envía una vez, y como mucho cinco distintos cada vez que se abre la app. Se descartan los de extensiones del navegador.
+
 ## Estructura
 
 - `src/lib`: modelo, recomendaciones, estadísticas, filtros, copia de seguridad y almacenamiento (local en IndexedDB o Supabase).
