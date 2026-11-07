@@ -1,0 +1,18 @@
+.reminder {
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0 var(--gutter) 8px;
+}
+.text {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.text strong {
+  color: #fff;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -17,7 +17,7 @@ Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, list
 
 ## Ejecutarla en tu ordenador
 
-Requisitos: Node.js 20.9 o superior (probado con Node 24).
+Requisitos: Node.js 24. Es la versión fijada en `engines` de `package.json`, la misma que usan Vercel y las comprobaciones de GitHub.
 
 ```bash
 npm install
@@ -101,6 +101,7 @@ Hay tres capas, de fuera hacia dentro:
 - **Añadir juego** (el botón blanco con «+» de la barra superior) desde cualquier pantalla. Si el título ya existe, propone añadir otra copia.
 - Toca una carátula para abrir la ficha. Todo se guarda solo al salir de cada campo.
 - En **Ajustes**: exporta una copia de seguridad, impórtala, carga o retira los datos de demostración y comprueba si el catálogo está conectado.
+- **Copias de seguridad**: el plan gratuito de Supabase no guarda copias por ti, así que exporta una de vez en cuando. Ajustes muestra cuándo hiciste la última desde ese navegador. Si pasa más de un mes (o no has hecho ninguna) y tienes juegos o deseos propios, el inicio te lo recuerda; «Ahora no» lo esconde una semana.
 
 ## Comprobaciones
 

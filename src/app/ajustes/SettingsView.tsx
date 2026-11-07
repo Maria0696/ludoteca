@@ -5,15 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Dialog } from "@/components/ui/Dialog";
-import {
-  type ImportPlan,
-  type Resolution,
-  backupFileName,
-  createBackup,
-  parseBackup,
-  planImport,
-  resolveImport,
-} from "@/lib/backup";
+import { type ImportPlan, type Resolution, parseBackup, planImport, resolveImport } from "@/lib/backup";
+import { backupSummary as summary, downloadBackup } from "@/lib/backup-download";
+import { describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
 import { DEMO_ART } from "@/lib/demo-art";
 import { useLibrary } from "@/lib/store";
 import styles from "./settings.module.css";
@@ -28,6 +22,7 @@ export function SettingsView() {
   const [busy, setBusy] = useState(false);
   const [catalog, setCatalog] = useState<"comprobando" | "si" | "no">("comprobando");
   const fileRef = useRef<HTMLInputElement>(null);
+  const backup = useBackupStatus();
 
   const demoCount = library.games.filter((g) => g.demo).length + library.wishlist.filter((w) => w.demo).length;
   const realCount = library.games.filter((g) => !g.demo).length;
@@ -40,16 +35,7 @@ export function SettingsView() {
   }, []);
 
   function exportBackup() {
-    const backup = createBackup(library, { includeDemo });
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = backupFileName();
-    a.click();
-    URL.revokeObjectURL(url);
-    const d = backup.data;
-    toast(`Copia exportada: ${summary({ games: d.games.length, copies: d.copies.length, wishlist: d.wishlist.length, lists: d.lists.length })}`);
+    toast(`Copia exportada: ${downloadBackup(library, { includeDemo })}`);
   }
 
   async function readFile(file: File) {
@@ -112,9 +98,13 @@ export function SettingsView() {
       <section className={styles.row} aria-labelledby="h-copia">
         <div className={styles.label}>
           <h2 id="h-copia">Copia de seguridad</h2>
-          <p>Un archivo JSON con juegos, copias, deseos y listas. Al importar, nada se sobrescribe sin que lo decidas.</p>
+          <p>
+            Un archivo JSON con juegos, copias, deseos y listas. Guarda uno de vez en cuando: si algo se borrara por error, es la forma de
+            recuperarlo. Al importar, nada se sobrescribe sin que lo decidas.
+          </p>
         </div>
         <div className={styles.panel}>
+          {backup && <p className={styles.lastBackup}>{describeLastBackup(backup.daysSinceBackup)}</p>}
           <div className={styles.actions}>
             <button type="button" className="btn btn-ink" onClick={exportBackup}>
               <Download aria-hidden />
@@ -267,10 +257,6 @@ export function SettingsView() {
     </div>
   );
 }
-
-const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const summary = (c: { games: number; copies: number; wishlist: number; lists: number }) =>
-  `${count(c.games, "juego", "juegos")}, ${count(c.copies, "copia", "copias")}, ${count(c.wishlist, "deseo", "deseos")} y ${count(c.lists, "lista", "listas")}`;
 
 const RESOLUTION_LABEL: Record<Resolution, string> = {
   mantener: "Mantener el mío",

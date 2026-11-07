@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
 import { GameCard } from "@/components/game/GameCard";
 import gameStyles from "@/components/game/game.module.css";
+import { BackupReminder } from "@/components/home/BackupReminder";
 import { Hero } from "@/components/home/Hero";
 import { buildEntries } from "@/lib/filters";
 import { computeStats } from "@/lib/stats";
@@ -92,6 +93,7 @@ export function HomeView() {
       <Hero entries={featured} />
 
       <div className={styles.rows}>
+        <BackupReminder library={library} />
         {mode === "local" && (
           <p className={`notice ${styles.localNotice}`}>
             <HardDrive aria-hidden />
