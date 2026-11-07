@@ -25,6 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
+          # La misma versión que «engines» en package.json, la que usa Vercel.
           node-version: 24
           cache: npm
 
