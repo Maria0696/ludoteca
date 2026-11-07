@@ -122,6 +122,8 @@ En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) p
 
 [Dependabot](.github/dependabot.yml) abre cada lunes una petición de fusión con las librerías que tengan versión nueva (menores y parches juntos en una sola) y una al mes con las acciones de GitHub. «Comprobaciones» las prueba solas: si salen en verde, se pueden fusionar. Los saltos de versión principal de TypeScript, ESLint y `@types/node` no se proponen porque piden cambios a mano.
 
+En `package.json`, `overrides` obliga a `typescript-eslint` a usar `minimatch` 11, que corrige un fallo de seguridad de la 10. Cuando `typescript-eslint` pida ya la 11 por su cuenta, se puede quitar.
+
 ## Estructura
 
 - `src/lib`: modelo, recomendaciones, estadísticas, filtros, copia de seguridad y almacenamiento (local en IndexedDB o Supabase).
