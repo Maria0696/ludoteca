@@ -65,11 +65,12 @@ git push -u origin main
 
 1. Crea un proyecto en https://supabase.com, en la región de la UE más cercana.
 2. En **SQL Editor**, pega el contenido de [supabase/migrations/0001_biblioteca.sql](supabase/migrations/0001_biblioteca.sql). **Cambia en la última línea `tu-correo@ejemplo.com` por tu correo** y ejecútalo. Crea las tablas y la seguridad por filas: solo la cuenta de ese correo puede leer o escribir.
-3. En **Authentication → Users → Add user**, crea tu usuario con ese correo y una contraseña (marca «Auto confirm user»).
-4. En **Authentication → Sign In / Providers**, desactiva **Allow new users to sign up**, para que nadie más pueda registrarse.
-5. En **Project Settings → API** copia la URL del proyecto y la clave *publishable* (o *anon*).
+3. Ejecuta también [supabase/migrations/0002_mantener_activo.sql](supabase/migrations/0002_mantener_activo.sql): crea la función `ping`, que solo devuelve 1 y no lee ningún dato.
+4. En **Authentication → Users → Add user**, crea tu usuario con ese correo y una contraseña (marca «Auto confirm user»).
+5. En **Authentication → Sign In / Providers**, desactiva **Allow new users to sign up**, para que nadie más pueda registrarse.
+6. En **Project Settings → API** copia la URL del proyecto y la clave *publishable* (o *anon*).
 
-En el plan gratuito, Supabase pausa los proyectos que pasan una semana sin actividad. Se reactivan desde su panel y no se pierde nada.
+En el plan gratuito, Supabase pausa los proyectos con poca actividad durante una semana. Se reactivan desde su panel con **Resume project** y no se pierde nada. Para que no llegue a pasar, la tarea de GitHub [mantener-supabase.yml](.github/workflows/mantener-supabase.yml) llama a `ping` tres veces al día. Necesita dos secretos en el repositorio (**Settings → Secrets and variables → Actions**): `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`, con los mismos valores que en Vercel. Si algún día falla, GitHub te avisa por correo.
 
 ### 3. Claves de IGDB (opcional)
 
@@ -91,7 +92,7 @@ En producción, si falta la configuración de Supabase, la app no se abre en mod
 
 Hay tres capas, de fuera hacia dentro:
 
-1. **Vercel Authentication** (recomendado, gratis en Hobby): en **Settings → Deployment Protection**, activa Vercel Authentication. Según la documentación actual de Vercel, la protección *Standard* restringe las URL generadas `*.vercel.app` (también la de producción) y deja fuera solo los dominios propios; la opción *All Deployments* lo protege todo. Después, abre la URL en una ventana privada para comprobar que pide iniciar sesión en Vercel.
+1. **Vercel Authentication** (recomendado, gratis en Hobby): en **Settings → Deployment Protection**, activa Vercel Authentication. Con la protección *Standard*, en este proyecto la dirección de producción (`ludoteca-xxxx.vercel.app`) quedaba abierta; la opción *All Deployments* lo protege todo y es la que está activada. Después, abre la URL en una ventana privada para comprobar que pide iniciar sesión en Vercel.
 2. **Inicio de sesión de la app**: `proxy.ts` envía a «Entrar» a quien no tenga sesión o no sea `OWNER_EMAIL`, y las rutas de API lo vuelven a comprobar.
 3. **Base de datos**: la seguridad por filas de Supabase solo deja leer y escribir a la cuenta registrada en `app_owner`, aunque alguien consiguiera otra sesión.
 
