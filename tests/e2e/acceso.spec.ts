@@ -128,8 +128,19 @@ test("al entrar bien, la puerta se abre", async ({ page }) => {
   await page.getByLabel("Correo").fill("propietaria@example.com");
   await page.keyboard.press("Enter");
   await page.getByLabel("Contraseña").fill("la-buena");
+  // Anota qué se lee en el cuadro justo cuando empieza a abrirse la puerta.
+  const shownAtDoor = page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        const main = document.querySelector("main")!;
+        new MutationObserver(() => {
+          if (main.dataset.fase === "entrando") resolve(main.querySelector("p span[aria-hidden]")!.textContent!);
+        }).observe(main, { attributes: true });
+      }),
+  );
   await page.keyboard.press("Enter");
   await expect(guardianSays(page, "status", "Todo en orden")).toBeAttached();
+  expect(await shownAtDoor).toBe("Todo en orden. Pasa, tu colección te espera.");
   await expect(page.locator("main")).toHaveAttribute("data-fase", "entrando");
 });
 

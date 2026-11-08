@@ -31,12 +31,17 @@ type Line = { id: number; text: string; alert: boolean };
 const prefersCalm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const LETTER_MS = 24;
+
+/** Lo que tarda la guardiana en decir una frase, más una pausa para leerla. */
+const timeToRead = (text: string, pause: number) => (prefersCalm() ? 0 : text.length * LETTER_MS) + pause;
+
 /** El texto de la guardiana aparece letra a letra, sin bloquear el campo. */
 function TypedLine({ text }: { text: string }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     if (shown >= text.length) return;
-    const timer = setTimeout(() => setShown(prefersCalm() ? text.length : shown + 1), 24);
+    const timer = setTimeout(() => setShown(prefersCalm() ? text.length : shown + 1), LETTER_MS);
     return () => clearTimeout(timer);
   }, [shown, text.length]);
   return <span aria-hidden>{text.slice(0, shown)}</span>;
@@ -152,7 +157,10 @@ export function LoginForm() {
 
     setPending(true);
     say(LINES.checking);
-    const { error } = await getBrowserSupabase().auth.signInWithPassword({ email, password });
+    const [{ error }] = await Promise.all([
+      getBrowserSupabase().auth.signInWithPassword({ email, password }),
+      wait(timeToRead(LINES.checking, 300)),
+    ]);
     if (error) {
       setPending(false);
       setStep("password");
@@ -165,6 +173,8 @@ export function LoginForm() {
     const target = safeNextPath(params.get("next"), window.location.origin);
     router.prefetch(target);
     say(LINES.welcome);
+    // La puerta no se abre hasta que la guardiana ha terminado de hablar.
+    await wait(timeToRead(LINES.welcome, 900));
     await playEntrance();
     router.replace(target);
     router.refresh();
