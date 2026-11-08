@@ -119,6 +119,60 @@ test("la nota de Metacritic se apunta a mano, junto a la tuya, y se conserva", a
   await expect(records.getByRole("button", { name: "Nota de Metacritic: añadir" })).toBeVisible();
 });
 
+test("la nota de la crítica llega con las sugerencias y se puede traer después", async ({ page }) => {
+  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null };
+  const catalog = (results: object[]) => ({ json: { ok: true, results } });
+  let byId: object = catalog([]);
+  await page.route("**/api/catalogo?*", (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has("id")) return route.fulfill(byId);
+    return route.fulfill(
+      catalog([
+        { ...game, igdbId: 1, title: "Con crítica", criticRating: 91 },
+        { ...game, igdbId: 2, title: "Sin crítica", criticRating: null },
+      ]),
+    );
+  });
+
+  async function addFromCatalog(title: string) {
+    await page.getByRole("button", { name: "Añadir juego" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+    await dialog.getByLabel("Título").fill("cr");
+    await dialog.getByRole("option", { name: new RegExp(title) }).click();
+    await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+    await dialog.getByRole("button", { name: "Ver ficha" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    return page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "Crítica IGDB" });
+  }
+
+  await openApp(page, "/biblioteca");
+  await expect(await addFromCatalog("Con crítica")).toContainText("91 / 100");
+
+  await page.goto("/biblioteca");
+  const record = await addFromCatalog("Sin crítica");
+  const search = record.getByRole("button", { name: "Buscar la nota de la crítica en IGDB" });
+
+  // Si el catálogo falla se puede reintentar; si no la tiene, lo dice.
+  byId = { json: { ok: false, reason: "error", message: "Sin conexión" } };
+  await search.click();
+  await expect(search).toHaveText("Reintentar");
+  byId = catalog([{ ...game, igdbId: 2, title: "Sin crítica", criticRating: 84 }]);
+  await search.click();
+  await expect(record).toContainText("84 / 100");
+
+  await page.reload();
+  await expect(record).toContainText("84 / 100");
+});
+
+test("un juego escrito a mano no tiene nota de la crítica que buscar", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Celeste", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Celeste/ }).click();
+  const record = page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "Crítica IGDB" });
+  await expect(record).toContainText("---");
+  await expect(record.getByRole("button")).toHaveCount(0);
+});
+
 test("un dato mal escrito avisa y no se guarda", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });

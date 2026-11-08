@@ -14,6 +14,8 @@ export interface CatalogGame {
   moods: Mood[];
   /** Horas para terminar la historia principal, si IGDB las tiene. */
   lengthHours: number | null;
+  /** Media de la crítica en IGDB, de 0 a 100, si la tiene. */
+  criticRating: number | null;
 }
 
 export type CatalogResponse =

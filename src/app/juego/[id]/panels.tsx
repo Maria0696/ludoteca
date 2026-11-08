@@ -1,7 +1,9 @@
 "use client";
 
-import { ImageUp, Plus, Trash2, Trophy } from "lucide-react";
+import { ImageUp, Plus, Search, Trash2, Trophy } from "lucide-react";
+import { useState } from "react";
 import { TROPHY_URL } from "@/components/pixel/sprites";
+import type { CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatMoney, formatNumber, relativeDay } from "@/lib/format";
 import {
   type Copy,
@@ -184,6 +186,36 @@ export function Quests({
   );
 }
 
+/** La nota llega sola con las sugerencias; a los juegos anteriores se les puede traer. */
+function CriticRating({ game, update }: { game: Game; update: Update }) {
+  const [lookup, setLookup] = useState<"idle" | "loading" | "none" | "error">("idle");
+
+  if (game.criticRating != null) return <>{game.criticRating} / 100</>;
+  if (!game.igdbId) return <>---</>;
+  if (lookup === "none") return <>Sin nota</>;
+
+  async function fetchRating() {
+    setLookup("loading");
+    try {
+      const res = await fetch(`/api/catalogo?id=${game.igdbId}`);
+      const data = (await res.json()) as CatalogResponse;
+      if (!data.ok) return setLookup("error");
+      const criticRating = data.results[0]?.criticRating ?? null;
+      if (criticRating == null) return setLookup("none");
+      update({ criticRating });
+    } catch {
+      setLookup("error");
+    }
+  }
+
+  return (
+    <button type="button" className={styles.add} disabled={lookup === "loading"} onClick={fetchRating} aria-label="Buscar la nota de la crítica en IGDB">
+      <Search aria-hidden />
+      {lookup === "loading" ? "Buscando…" : lookup === "error" ? "Reintentar" : "Buscar"}
+    </button>
+  );
+}
+
 export function Records({ game, copies, update }: { game: Game; copies: Copy[]; update: Update }) {
   const percent = progressPercent(game);
   // El día que lo conseguiste, según lo que has apuntado; no cuándo lo metiste en la app.
@@ -221,6 +253,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
         />
       ),
     },
+    { name: "Crítica IGDB", value: <CriticRating game={game} update={update} /> },
     ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
     { name: "En tu ludoteca", value: firstOwned ? formatDate(firstOwned) : "---", stage: 0 },
   ];

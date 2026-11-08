@@ -16,7 +16,7 @@ import { TitleWithCatalog } from "./CatalogSearch";
 import { PlatformTiles } from "./PlatformTiles";
 import styles from "./loot.module.css";
 
-type Picked = Pick<CatalogGame, "igdbId" | "coverUrl" | "backdropUrl" | "genres" | "modes" | "moods" | "lengthHours">;
+type Picked = Pick<CatalogGame, "igdbId" | "coverUrl" | "backdropUrl" | "genres" | "modes" | "moods" | "lengthHours" | "criticRating">;
 type Phase = "form" | "shake" | "open";
 type Won = { id: string; copyId: string | null; title: string; coverUrl?: string | null; line: string; copy: boolean };
 
@@ -108,6 +108,7 @@ export function AddGameDialog({
           modes: picked?.modes ?? [],
           moods: picked?.moods ?? [],
           lengthHours: picked?.lengthHours ?? null,
+          criticRating: picked?.criticRating ?? null,
         },
         copy,
       );
