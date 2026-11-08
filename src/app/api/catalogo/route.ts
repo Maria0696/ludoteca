@@ -51,6 +51,7 @@ interface IgdbGame {
   themes?: { name: string }[];
   platforms?: { abbreviation?: string; name: string }[];
   game_modes?: { name: string }[];
+  aggregated_rating?: number;
 }
 
 const GENRES_ES: Record<string, string> = {
@@ -172,14 +173,19 @@ export async function GET(request: Request) {
       message: "La búsqueda de carátulas aún no está configurada. Puedes escribir los datos a mano.",
     });
   }
-  const q = new URL(request.url).searchParams.get("q")?.trim() ?? "";
-  if (q.length < 2) return NextResponse.json<CatalogResponse>({ ok: true, results: [] });
+  const params = new URL(request.url).searchParams;
+  const q = params.get("q")?.trim() ?? "";
+  // Con `id` se pide un juego concreto, para completar uno que ya está en la biblioteca.
+  const id = /^\d{1,9}$/.test(params.get("id") ?? "") ? params.get("id") : null;
+  if (!id && q.length < 2) return NextResponse.json<CatalogResponse>({ ok: true, results: [] });
 
   try {
+    const fields =
+      "fields name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating;";
     const safe = q.replace(/["\\]/g, " ").slice(0, 80);
     const games = await igdb<IgdbGame[]>(
       "games",
-      `search "${safe}"; fields name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name; where version_parent = null; limit 8;`,
+      id ? `${fields} where id = ${id}; limit 1;` : `search "${safe}"; ${fields} where version_parent = null; limit 8;`,
     );
     const ids = games.map((g) => g.id);
     const times = ids.length
@@ -193,6 +199,7 @@ export async function GET(request: Request) {
     const results: CatalogGame[] = games.map((g) => {
       const seconds = timeById.get(g.id);
       const art = g.artworks?.[0]?.image_id ?? g.screenshots?.[0]?.image_id;
+      const critics = g.aggregated_rating;
       return {
         igdbId: g.id,
         title: g.name,
@@ -204,6 +211,8 @@ export async function GET(request: Request) {
         modes: mapModes(g.game_modes),
         moods: guessMoods(g),
         lengthHours: seconds ? Math.round((seconds / 3600) * 2) / 2 : null,
+        // Un valor fuera de escala impediría guardar el juego: mejor sin nota.
+        criticRating: critics != null && critics >= 0 && critics <= 100 ? Math.round(critics) : null,
       };
     });
     return NextResponse.json<CatalogResponse>({ ok: true, results });

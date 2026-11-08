@@ -85,6 +85,8 @@ export const gameSchema = z.object({
   rating: z.number().min(0).max(10).nullish(),
   /** Nota de Metacritic, apuntada a mano. */
   metacritic: z.number().int().min(0).max(100).nullish(),
+  /** Media de la crítica según IGDB; la trae el catálogo. */
+  criticRating: z.number().int().min(0).max(100).nullish(),
   hoursPlayed: z.number().min(0).max(100000).nullish(),
   notes: optionalText,
   startedAt: isoDate.nullish(),
