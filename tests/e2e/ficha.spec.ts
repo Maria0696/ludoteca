@@ -90,6 +90,35 @@ test("el nombre y los estados van en una sola línea, y los recuadros igualados"
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
+test("la nota de Metacritic se apunta a mano, junto a la tuya, y se conserva", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Hades", platform: "Switch" });
+  await cards(page).getByRole("link", { name: /Hades/ }).click();
+  const records = page.getByRole("region", { name: "Tus récords" });
+  await expect(records.getByRole("listitem").nth(3)).toContainText("Tu nota");
+  await expect(records.getByRole("listitem").nth(4)).toContainText("Metacritic");
+
+  await records.getByRole("button", { name: "Nota de Metacritic: añadir" }).click();
+  await records.getByLabel("Nota de Metacritic").fill("120");
+  await records.getByLabel("Nota de Metacritic").press("Enter");
+  await expect(records.getByText("Tiene que estar entre 0 y 100.")).toBeVisible();
+  await records.getByLabel("Nota de Metacritic").fill("92,5");
+  await records.getByLabel("Nota de Metacritic").press("Enter");
+  await expect(records.getByText("Escribe un número entero.")).toBeVisible();
+  await records.getByLabel("Nota de Metacritic").fill("93");
+  await records.getByLabel("Nota de Metacritic").press("Enter");
+  await expect(records.getByRole("button", { name: /^Nota de Metacritic: 93 \/ 100/ })).toBeVisible();
+
+  await page.reload();
+  await expect(records.getByRole("button", { name: /^Nota de Metacritic: 93 \/ 100/ })).toBeVisible();
+
+  // Se puede borrar dejándola en blanco.
+  await records.getByRole("button", { name: /^Nota de Metacritic: 93/ }).click();
+  await records.getByLabel("Nota de Metacritic").fill("");
+  await records.getByLabel("Nota de Metacritic").press("Enter");
+  await expect(records.getByRole("button", { name: "Nota de Metacritic: añadir" })).toBeVisible();
+});
+
 test("un dato mal escrito avisa y no se guarda", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });

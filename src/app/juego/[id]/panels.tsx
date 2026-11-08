@@ -206,6 +206,21 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
         ),
     },
     { name: "Tu nota", value: game.rating != null ? `${formatNumber(game.rating)} / 10` : "---" },
+    {
+      name: "Metacritic",
+      value: (
+        <Editable
+          kind="number"
+          label="Nota de Metacritic"
+          value={game.metacritic}
+          display={game.metacritic != null ? `${game.metacritic} / 100` : null}
+          empty="Añadir"
+          max={100}
+          integer
+          onSave={(v) => update({ metacritic: v })}
+        />
+      ),
+    },
     ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
     { name: "En tu ludoteca", value: firstOwned ? formatDate(firstOwned) : "---", stage: 0 },
   ];
