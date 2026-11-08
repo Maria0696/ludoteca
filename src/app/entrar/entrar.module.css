@@ -1,30 +1,211 @@
-.page {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
-  background: radial-gradient(80% 60% at 50% 0%, #1c1c24, var(--bg) 70%);
+/* Ante la puerta de la Ludoteca: escena de píxeles y cuadro de diálogo. */
+.room {
+  --ink: #12101f;
+  --paper: #f3ead2;
+  --gold: #ffd76a;
+  position: relative;
+  isolation: isolate;
+  height: 100dvh;
+  min-height: 420px;
+  overflow: hidden;
+  background: #1a1526;
+  font-family: var(--font-terminal), "Courier New", monospace;
 }
-.card {
-  width: min(420px, 100%);
-  display: grid;
-  gap: 22px;
-  padding: 32px;
-  border-radius: var(--radius-dialog);
-  background: var(--surface);
-  border: 1px solid var(--line);
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.brand {
-  font-size: 20px;
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  animation: scene-in 600ms ease backwards;
 }
-.card h1 {
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1;
+@keyframes scene-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Cuadro de diálogo. Los bordes en escalón son los de una ventana de píxeles. */
+.box {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 20px;
+  translate: -50% 0;
+  width: min(760px, calc(100% - 40px));
+  padding: 20px 22px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 30px;
+  line-height: 1.1;
+  box-shadow: 0 -4px 0 var(--paper), 0 4px 0 var(--paper), -4px 0 0 var(--paper), 4px 0 0 var(--paper);
+  animation: box-in 500ms 200ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes box-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+.name {
+  position: absolute;
+  left: 18px;
+  top: -18px;
+  padding: 7px 12px 6px;
+  background: #2f8a99;
+  color: #fff;
+  font-family: var(--font-arcade), "Courier New", monospace;
+  font-size: 12px;
+  box-shadow: 0 -3px 0 var(--paper), 0 3px 0 var(--paper), -3px 0 0 var(--paper), 3px 0 0 var(--paper);
+}
+.text {
+  min-height: 66px;
 }
 .form {
-  display: grid;
-  gap: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.caret {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-left: 10px solid var(--gold);
+  border-block: 7px solid transparent;
+}
+.slot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.field label,
+.parked label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* El campo que no toca sigue en la página, invisible. */
+.parked {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.field input,
+.parked input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 3px solid #6e6680;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 28px;
+  outline: 0;
+}
+.field input:focus {
+  border-color: var(--gold);
+}
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus,
+.parked input:-webkit-autofill {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  box-shadow: inset 0 0 0 100px var(--ink);
+  transition: background-color 9999s;
+}
+.say {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  background: var(--gold);
+  color: #1b1400;
+  font-family: var(--font-arcade), "Courier New", monospace;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #a9862c;
+  transition: transform 80ms ease, box-shadow 80ms ease, filter 120ms ease;
+}
+.say:hover {
+  filter: brightness(1.08);
+}
+.say:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #a9862c;
+}
+.say:disabled {
+  filter: saturate(0.4);
+  cursor: progress;
+}
+.say:focus-visible,
+.back:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+.back {
+  flex: none;
+  height: 40px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  font-family: inherit;
+  font-size: 26px;
+  cursor: pointer;
+  text-underline-offset: 4px;
+}
+.back:hover {
+  text-decoration: underline;
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+}
+.room[data-fase="entrando"] .box {
+  opacity: 0;
+  transition: opacity 300ms 500ms ease;
+}
+
+@media (max-width: 600px) {
+  .box {
+    bottom: 14px;
+    width: calc(100% - 32px);
+    padding: 20px 16px 14px;
+    font-size: 26px;
+  }
+  .text {
+    min-height: 86px;
+  }
+  .say {
+    height: 44px;
+  }
+  .field input,
+  .parked input {
+    height: 44px;
+  }
 }
