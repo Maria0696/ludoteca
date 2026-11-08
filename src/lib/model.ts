@@ -87,6 +87,12 @@ export const gameSchema = z.object({
   metacritic: z.number().int().min(0).max(100).nullish(),
   /** Media de la crítica según IGDB; la trae el catálogo. */
   criticRating: z.number().int().min(0).max(100).nullish(),
+  // Ficha técnica: la trae el catálogo y se puede corregir a mano.
+  summary: optionalText,
+  developer: optionalText,
+  saga: optionalText,
+  releaseDate: isoDate.nullish(),
+  ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
   notes: optionalText,
   startedAt: isoDate.nullish(),

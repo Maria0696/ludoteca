@@ -16,6 +16,14 @@ export interface CatalogGame {
   lengthHours: number | null;
   /** Media de la crítica en IGDB, de 0 a 100, si la tiene. */
   criticRating: number | null;
+  /** Sinopsis tal como la da IGDB, normalmente en inglés. */
+  summary: string | null;
+  developer: string | null;
+  saga: string | null;
+  /** Primer lanzamiento, en formato AAAA-MM-DD. */
+  releaseDate: string | null;
+  /** Por ejemplo, «PEGI 16». */
+  ageRating: string | null;
 }
 
 export type CatalogResponse =

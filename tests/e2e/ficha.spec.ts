@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import { STAGES, currentStage, keeperLine, progressPercent, reachedStages } from "../../src/app/juego/[id]/progress";
 import type { Copy, Game } from "../../src/lib/model";
 import { addGame, cards, openApp } from "./helpers";
@@ -6,6 +6,17 @@ import { addGame, cards, openApp } from "./helpers";
 const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, lastPlayedAt: null } as unknown as Game;
 const withData = (patch: Partial<Game>) => ({ ...base, ...patch }) as Game;
 const copy = {} as Copy;
+
+/** Da de alta, desde las sugerencias, un juego que el catálogo simulado devuelva. */
+async function addFromCatalog(page: Page, title: string) {
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  await dialog.getByLabel("Título").fill("cr");
+  await dialog.getByRole("option", { name: new RegExp(title) }).click();
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  await dialog.getByRole("button", { name: "Ver ficha" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+}
 
 test("los niveles salen de los datos de la ficha", () => {
   expect(reachedStages(base, [])).toEqual([true, false, false, false, false, false, false]);
@@ -78,13 +89,18 @@ test("el nombre y los estados van en una sola línea, y los recuadros igualados"
   const right = await page.getByRole("region", { name: "Tus récords" }).locator("xpath=..").boundingBox();
   expect(Math.round(left!.height)).toBe(Math.round(right!.height));
 
-  // El inventario va entre la carátula y las misiones, y los recuadros anchos se alinean.
+  // El inventario va entre la carátula y las misiones.
   const inventoryBox = await page.getByRole("region", { name: "Inventario" }).boundingBox();
-  const moreBox = await page.getByRole("region", { name: "Más datos" }).boundingBox();
   expect(inventoryBox!.y).toBeLessThan(left!.y);
   expect(Math.round(inventoryBox!.x)).toBe(Math.round(left!.x));
-  expect(Math.round(moreBox!.x)).toBe(Math.round(left!.x));
-  expect(Math.round(moreBox!.width)).toBe(Math.round(inventoryBox!.width));
+
+  // Los recuadros de abajo se alinean con los de arriba.
+  const techBox = await page.getByRole("region", { name: "Ficha técnica" }).boundingBox();
+  const moreBox = await page.getByRole("region", { name: "Más datos" }).boundingBox();
+  expect(Math.round(techBox!.x)).toBe(Math.round(left!.x));
+  expect(Math.round(techBox!.width)).toBe(Math.round(left!.width));
+  expect(Math.round(moreBox!.x)).toBe(Math.round(right!.x));
+  expect(Math.round(moreBox!.width)).toBe(Math.round(right!.width));
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
@@ -134,22 +150,14 @@ test("la nota de la crítica llega con las sugerencias y se puede traer después
     );
   });
 
-  async function addFromCatalog(title: string) {
-    await page.getByRole("button", { name: "Añadir juego" }).first().click();
-    const dialog = page.getByRole("dialog", { name: "Añadir juego" });
-    await dialog.getByLabel("Título").fill("cr");
-    await dialog.getByRole("option", { name: new RegExp(title) }).click();
-    await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
-    await dialog.getByRole("button", { name: "Ver ficha" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-    return page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "Crítica IGDB" });
-  }
+  const record = page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "Crítica IGDB" });
 
   await openApp(page, "/biblioteca");
-  await expect(await addFromCatalog("Con crítica")).toContainText("91 / 100");
+  await addFromCatalog(page, "Con crítica");
+  await expect(record).toContainText("91 / 100");
 
   await page.goto("/biblioteca");
-  const record = await addFromCatalog("Sin crítica");
+  await addFromCatalog(page, "Sin crítica");
   const search = record.getByRole("button", { name: "Buscar la nota de la crítica en IGDB" });
 
   // Si el catálogo falla se puede reintentar; si no la tiene, lo dice.
@@ -162,6 +170,57 @@ test("la nota de la crítica llega con las sugerencias y se puede traer después
 
   await page.reload();
   await expect(record).toContainText("84 / 100");
+});
+
+test("la ficha técnica llega con las sugerencias y solo rellena huecos", async ({ page }) => {
+  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null, criticRating: null };
+  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", saga: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
+  const empty = { summary: null, developer: null, saga: null, releaseDate: null, ageRating: null };
+  const catalog = (results: object[]) => ({ json: { ok: true, results } });
+  let byId: object = catalog([{ ...game, ...empty, igdbId: 2, title: "Cr sin ficha" }]);
+  await page.route("**/api/catalogo?*", (route) => {
+    if (new URL(route.request().url()).searchParams.has("id")) return route.fulfill(byId);
+    return route.fulfill(
+      catalog([
+        { ...game, ...details, igdbId: 1, title: "Cr con ficha" },
+        { ...game, ...empty, igdbId: 2, title: "Cr sin ficha" },
+      ]),
+    );
+  });
+  const sheet = page.getByRole("region", { name: "Ficha técnica" });
+  const bring = sheet.getByRole("button", { name: "Traer los datos de IGDB" });
+
+  await openApp(page, "/biblioteca");
+  await addFromCatalog(page, "Cr con ficha");
+  await expect(sheet.getByRole("button", { name: /^Sinopsis: Una historia de ejemplo/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Desarrolladora: Estudio Ola/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Saga: Saga del mar/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Lanzamiento: .*2020/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();
+  await expect(bring).toHaveCount(0);
+
+  await page.goto("/biblioteca");
+  await addFromCatalog(page, "Cr sin ficha");
+
+  // Si IGDB no tiene nada, lo dice.
+  await bring.click();
+  await expect(sheet.getByRole("status")).toHaveText("IGDB no tiene más datos");
+  await expect(bring).toHaveCount(0);
+  await page.reload();
+
+  // Lo escrito a mano no se pisa.
+  await sheet.getByRole("button", { name: "Desarrolladora: añadir" }).click();
+  await sheet.getByLabel("Desarrolladora").fill("La mía");
+  await sheet.getByLabel("Desarrolladora").press("Enter");
+  byId = catalog([{ ...game, ...details, igdbId: 2, title: "Cr sin ficha" }]);
+  await bring.click();
+  await expect(sheet.getByRole("button", { name: /^Saga: Saga del mar/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Desarrolladora: La mía/ })).toBeVisible();
+  await expect(bring).toHaveCount(0);
+
+  await page.reload();
+  await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Desarrolladora: La mía/ })).toBeVisible();
 });
 
 test("un juego escrito a mano no tiene nota de la crítica que buscar", async ({ page }) => {

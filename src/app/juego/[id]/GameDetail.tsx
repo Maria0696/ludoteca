@@ -17,7 +17,7 @@ import { AdventureMap } from "./AdventureMap";
 import { Celebration } from "./Celebration";
 import { CoverDialog } from "./CoverDialog";
 import { Inventory } from "./Inventory";
-import { MorePanel, PlayOptions, Quests, Records, STATUS_COLOR } from "./panels";
+import { MorePanel, PlayOptions, Quests, Records, STATUS_COLOR, TechSheet } from "./panels";
 import { STAGES, TROPHY_STAGE, keeperLine, reachedStages } from "./progress";
 
 /** El nombre va en una sola línea: si no cabe, la letra se reduce hasta que quepa. */
@@ -181,16 +181,21 @@ export function GameDetail({ id }: { id: string }) {
           </div>
         </div>
 
-        <section className={`${styles.window} ${styles.panel}`} aria-labelledby="mas-datos">
-          <MorePanel
-            game={game}
-            lists={library.lists}
-            update={update}
-            onToggleList={(listId) => actions.toggleInList(listId, game.id)}
-            onChangeCover={() => setCoverDialog(true)}
-            onDelete={() => setConfirmDelete(true)}
-          />
-        </section>
+        <div className={styles.lower}>
+          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="ficha-tecnica">
+            <TechSheet game={game} update={update} />
+          </section>
+          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="mas-datos">
+            <MorePanel
+              game={game}
+              lists={library.lists}
+              update={update}
+              onToggleList={(listId) => actions.toggleInList(listId, game.id)}
+              onChangeCover={() => setCoverDialog(true)}
+              onDelete={() => setConfirmDelete(true)}
+            />
+          </section>
+        </div>
       </div>
 
       {celebrating && <Celebration title={game.title} onClose={() => setCelebrating(false)} />}

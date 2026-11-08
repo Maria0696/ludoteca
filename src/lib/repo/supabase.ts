@@ -12,7 +12,8 @@ type Row = Record<string, unknown>;
 const gameCols: [keyof Game, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["backdropUrl", "backdrop_url"], ["igdbId", "igdb_id"], ["genres", "genres"],
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["favorite", "favorite"],
-  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
+  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["saga", "saga"],
+  ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
   ["finishedAt", "finished_at"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
   ["createdAt", "created_at"], ["updatedAt", "updated_at"],
