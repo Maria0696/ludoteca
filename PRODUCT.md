@@ -44,7 +44,7 @@ No es un catálogo público ni una red social: es su estantería. Distingue el j
 
 ## Brand Commitments
 
-Nombre: «Ludoteca», elegido por la propietaria por ser descriptivo (confirmado; sustituye al nombre de trabajo «Sala de los Menesteres»). Las carátulas y el arte de cada juego son los protagonistas. Tras ver la primera versión, la propietaria pidió más dinamismo y estética, y eligió como referencias Apple TV o Netflix y Steam o PlayStation: oscura, cinematográfica y con movimiento (confirmado). Sin recursos «gamer» gratuitos.
+Nombre: «Ludoteca», elegido por la propietaria por ser descriptivo (confirmado; sustituye al nombre de trabajo «Sala de los Menesteres»). Las carátulas y el arte de cada juego son los protagonistas. Tras ver la primera versión, la propietaria pidió más dinamismo y estética, y eligió como referencias Apple TV o Netflix y Steam o PlayStation: oscura, cinematográfica y con movimiento (confirmado). Sin recursos «gamer» gratuitos en la app; la excepción, elegida por la propietaria tras ver demos, es la pantalla de «Entrar»: una escena de píxeles con una guardiana propia (confirmado).
 
 ## Evidence on Hand
 

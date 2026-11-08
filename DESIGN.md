@@ -36,6 +36,7 @@ Los botones secundarios, chips y pestañas son píldoras translúcidas (`#ffffff
 - **Ficha**: el arte del juego de fondo se funde con la página; carátula fija con sombra; secciones en paneles.
 - **Propuesta de «¿A qué juego?»**: panel con el arte del juego difuminado hacia la derecha.
 - **Diálogo**: `<dialog>` nativo con fondo desenfocado; en móvil, hoja inferior.
+- **Puerta de «Entrar»**: la única pantalla en píxeles de la app. Lienzo de baja resolución con estanterías de cajas de juegos, una puerta con el rótulo «Ludoteca» y la guardiana, un personaje propio. El acceso es una conversación en un cuadro de diálogo con letra de terminal (VT323) y de arcade (Press Start 2P). El campo se puede usar desde el primer momento, sin esperar al texto.
 
 ## Movimiento
 
@@ -44,6 +45,7 @@ Los botones secundarios, chips y pestañas son píldoras translúcidas (`#ffffff
 - Cartel: fundido entre juegos de 1,1 s, movimiento de cámara de 24 s y entrada del texto con desenfoque.
 - Pulsación: `scale(0.96)` en 140 ms. Elevación de pósters: 420 ms con curva de salida fuerte.
 - Barras de estadísticas que crecen al entrar.
+- «Entrar»: el texto aparece letra a letra (24 ms por letra), la guardiana respira y niega si te equivocas, las antorchas parpadean y, al entrar, la puerta se abre (0,9 s) y la cámara entra en la luz hasta fundir a negro (0,85 s).
 - Con movimiento reducido: sin desplazamientos ni avance automático; solo opacidad.
 
 ## Imágenes de demostración

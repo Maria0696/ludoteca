@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import { safeNextPath } from "../../src/lib/redirect";
 
 /*
@@ -56,4 +56,88 @@ test("ninguna otra web puede mostrar la app dentro de un marco", async ({ reques
   const res = await request.get("/entrar");
   expect(res.headers()["x-frame-options"]).toBe("DENY");
   expect(res.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+});
+
+/** Simula las respuestas de Supabase Auth, que en estas pruebas no existe. */
+async function mockSignIn(page: Page, status: number, body: object) {
+  await page.route("**/auth/v1/token**", (route) =>
+    route.fulfill({
+      status: route.request().method() === "OPTIONS" ? 200 : status,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+const session = {
+  access_token: "a.b.c",
+  token_type: "bearer",
+  expires_in: 3600,
+  expires_at: 4_000_000_000,
+  refresh_token: "r",
+  user: { id: "1", aud: "authenticated", email: "propietaria@example.com", app_metadata: {}, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" },
+};
+
+const guardianSays = (page: Page, role: "alert" | "status", text: string) => page.getByRole(role).filter({ hasText: text });
+
+test("la guardiana pide el correo y la contraseña, y avisa de lo que falla", async ({ page }) => {
+  await mockSignIn(page, 400, { code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" });
+  await page.goto("/entrar");
+  await expect(guardianSays(page, "status", "Dime tu correo")).toBeAttached();
+  const decir = page.getByRole("button", { name: "Decir" });
+
+  await decir.click();
+  await expect(guardianSays(page, "alert", "No te he oído")).toBeAttached();
+  await expect(page.getByLabel("Correo")).toBeFocused();
+
+  await page.getByLabel("Correo").fill("no-es-un-correo");
+  await decir.click();
+  await expect(guardianSays(page, "alert", "Eso no parece un correo")).toBeAttached();
+
+  await page.getByLabel("Correo").fill("propietaria@example.com");
+  await page.keyboard.press("Enter");
+  await expect(guardianSays(page, "status", "contraseña secreta")).toBeAttached();
+  await expect(page.getByLabel("Contraseña")).toBeFocused();
+
+  await page.getByLabel("Contraseña").fill("no-es-esta");
+  await page.keyboard.press("Enter");
+  await expect(guardianSays(page, "alert", "El correo o la contraseña no coinciden")).toBeAttached();
+  await expect(page.locator("main")).toHaveAttribute("data-fase", "sala");
+  await expect(page.getByLabel("Contraseña")).toHaveValue("");
+  await expect(decir).toBeEnabled();
+
+  await page.getByRole("button", { name: "Volver" }).click();
+  await expect(page.getByLabel("Correo")).toBeFocused();
+});
+
+test("si Supabase no responde, lo dice en español y deja reintentar", async ({ page }) => {
+  await mockSignIn(page, 500, { code: 500, msg: "Internal server error" });
+  await page.goto("/entrar");
+  await page.getByLabel("Correo").fill("propietaria@example.com");
+  await page.keyboard.press("Enter");
+  await page.getByLabel("Contraseña").fill("x");
+  await page.keyboard.press("Enter");
+  await expect(guardianSays(page, "alert", "La puerta no responde")).toBeAttached();
+  await expect(page.getByRole("button", { name: "Decir" })).toBeEnabled();
+});
+
+test("al entrar bien, la puerta se abre", async ({ page }) => {
+  await mockSignIn(page, 200, session);
+  await page.goto("/entrar");
+  await page.getByLabel("Correo").fill("propietaria@example.com");
+  await page.keyboard.press("Enter");
+  await page.getByLabel("Contraseña").fill("la-buena");
+  await page.keyboard.press("Enter");
+  await expect(guardianSays(page, "status", "Todo en orden")).toBeAttached();
+  await expect(page.locator("main")).toHaveAttribute("data-fase", "entrando");
+});
+
+test("con los dos campos rellenos por un gestor de contraseñas no pregunta dos veces", async ({ page }) => {
+  await mockSignIn(page, 200, session);
+  await page.goto("/entrar");
+  await page.getByLabel("Correo").fill("propietaria@example.com");
+  await page.getByLabel("Contraseña").fill("la-buena", { force: true });
+  await page.getByRole("button", { name: "Decir" }).click();
+  await expect(page.locator("main")).toHaveAttribute("data-fase", "entrando");
 });
