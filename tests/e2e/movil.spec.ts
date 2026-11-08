@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cards, loadDemo } from "./helpers";
+import { cards, choosePlatform, loadDemo } from "./helpers";
 
 test("en el móvil se navega con la barra inferior y se añade desde la hoja", async ({ page }) => {
   await loadDemo(page);
@@ -24,9 +24,10 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   await page.getByRole("button", { name: "Añadir juego" }).click();
   const dialog = page.getByRole("dialog", { name: "Añadir juego" });
   await dialog.getByLabel("Título").fill("Tetris Effect");
-  await dialog.getByLabel("Plataforma").selectOption("PS5");
+  await choosePlatform(dialog, "PS5");
   await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
-  await expect(page.getByText("«Tetris Effect» añadido a tu biblioteca")).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "¡Has conseguido Tetris Effect!" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
 
   // Objetivos táctiles de al menos 44 px en la barra inferior.
   const heights = await nav.getByRole("link").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));

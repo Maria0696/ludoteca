@@ -1,9 +1,10 @@
 "use client";
 
-import { Copy as CopyIcon } from "lucide-react";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { heavy, hud } from "@/components/home/fonts";
+import { CHEST_CLOSED_URL, CHEST_OPEN_URL } from "@/components/pixel/sprites";
 import type { CatalogGame } from "@/lib/catalog";
 import { findSameTitle } from "@/lib/filters";
 import { copiesSummary } from "@/lib/format";
@@ -11,12 +12,26 @@ import { type Format, type Game, type GameStatus, GAME_STATUSES, STATUS_LABEL } 
 import { useLibrary } from "@/lib/store";
 import { Cover } from "../ui/Cover";
 import { Dialog } from "../ui/Dialog";
-import { StatusIcon } from "../ui/StatusMark";
 import { TitleWithCatalog } from "./CatalogSearch";
-import { PlatformField } from "./PlatformField";
-import styles from "./game.module.css";
+import { PlatformTiles } from "./PlatformTiles";
+import styles from "./loot.module.css";
 
 type Picked = Pick<CatalogGame, "igdbId" | "coverUrl" | "backdropUrl" | "genres" | "modes" | "moods" | "lengthHours">;
+type Phase = "form" | "shake" | "open";
+type Won = { id: string; title: string; coverUrl?: string | null; line: string; copy: boolean };
+
+const SHAKE_MS = 680;
+const LONG_TITLE = 28;
+
+const STATUS_COLOR: Record<GameStatus, string> = {
+  pendiente: "#a1a1aa",
+  jugando: "#4ade80",
+  pausado: "#fbbf24",
+  completado: "#60a5fa",
+  abandonado: "#71717a",
+};
+
+const formatName = (format: Format) => (format === "fisico" ? "Físico" : "Digital");
 
 export function AddGameDialog({
   open,
@@ -40,36 +55,47 @@ export function AddGameDialog({
   const [status, setStatus] = useState<GameStatus>("pendiente");
   const [asCopy, setAsCopy] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [phase, setPhase] = useState<Phase>("form");
+  const [won, setWon] = useState<Won | null>(null);
+  const [round, setRound] = useState(0);
+  const roomRef = useRef<HTMLDivElement>(null);
+  const againRef = useRef<HTMLButtonElement>(null);
+  const timer = useRef(0);
 
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    if (phase === "open") againRef.current?.focus({ preventScroll: true });
+  }, [phase]);
+
+  // Una vez guardado el juego, ya no cuenta como repetido del propio formulario.
   const duplicate: Game | undefined = useMemo(() => {
-    if (fixedGame) return undefined;
+    if (fixedGame || won) return undefined;
     if (picked?.igdbId) {
       const byId = library.games.find((g) => g.igdbId === picked.igdbId);
       if (byId) return byId;
     }
     return findSameTitle(library, title);
-  }, [fixedGame, library, picked, title]);
+  }, [fixedGame, library, picked, title, won]);
 
   const target = fixedGame ?? (duplicate && asCopy ? duplicate : undefined);
   const titleError = !target && !title.trim() ? "Escribe el título del juego." : null;
   const platformError = !platform.trim() ? "Elige una plataforma para guardar la copia." : null;
   const sameCopy =
-    target && library.copies.find((c) => c.gameId === target.id && c.platform === platform && c.format === format);
+    !won && target && library.copies.find((c) => c.gameId === target.id && c.platform === platform && c.format === format);
+  const previewCover = picked?.coverUrl ?? fixedGame?.coverUrl ?? duplicate?.coverUrl ?? null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitted(true);
     if (titleError || platformError) return;
     const copy = { platform: platform.trim(), format };
-    let game: Game;
+    const place = `${copy.platform} · ${formatName(format)}`;
     if (target) {
       actions.addCopy(target.id, copy);
-      game = target;
-      toast(`Nueva copia de «${game.title}» en ${copy.platform}`, {
-        action: { label: "Ver ficha", onClick: () => router.push(`/juego/${game.id}`) },
-      });
+      setWon({ id: target.id, title: target.title, coverUrl: target.coverUrl, line: `${place} · Otra copia`, copy: true });
     } else {
-      game = actions.addGame(
+      const game = actions.addGame(
         {
           title,
           status,
@@ -83,136 +109,197 @@ export function AddGameDialog({
         },
         copy,
       );
-      toast(`«${game.title}» añadido a tu biblioteca`, {
-        description: "Completa el resto de datos cuando quieras.",
-        action: { label: "Ver ficha", onClick: () => router.push(`/juego/${game.id}`) },
-      });
+      setWon({ id: game.id, title: game.title, coverUrl: game.coverUrl, line: `${place} · ${STATUS_LABEL[status]}`, copy: false });
     }
-    onClose();
+    roomRef.current?.closest("dialog")?.scrollTo({ top: 0 });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPhase("open");
+    } else {
+      setPhase("shake");
+      timer.current = window.setTimeout(() => setPhase("open"), SHAKE_MS);
+    }
   }
+
+  function addAnother() {
+    window.clearTimeout(timer.current);
+    setTitle("");
+    setPicked(null);
+    setPlatform("");
+    setFormat("fisico");
+    setStatus("pendiente");
+    setAsCopy(true);
+    setSubmitted(false);
+    setWon(null);
+    setPhase("form");
+    setRound((r) => r + 1);
+    requestAnimationFrame(() => roomRef.current?.querySelector<HTMLElement>(fixedGame ? "#add-platform" : "#add-title")?.focus());
+  }
+
+  const heading = fixedGame ? `Otra copia de «${fixedGame.title}»` : "¿Qué has encontrado?";
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title={fixedGame ? `Otra copia de «${fixedGame.title}»` : "Añadir juego"}
+      title={fixedGame ? heading : "Añadir juego"}
       initialFocus={fixedGame ? "#add-platform" : "#add-title"}
-      footer={
-        <>
-          <button type="button" className="btn" onClick={onClose}>
-            Cancelar
-          </button>
-          <button type="submit" form="add-game" className="btn btn-ink">
-            {target ? "Añadir copia" : "Añadir a la biblioteca"}
-          </button>
-        </>
-      }
+      bareClassName={`${styles.dialog} ${heavy.variable} ${hud.variable}`}
     >
-      <form id="add-game" onSubmit={submit} noValidate className={styles.addForm}>
-        {!fixedGame && (
-          <div className="field">
-            <label htmlFor="add-title">Título</label>
-            <div className={styles.titleRow}>
-              {picked?.coverUrl && <Cover src={picked.coverUrl} title={title} className={styles.pickedCover} />}
-              <TitleWithCatalog
-                id="add-title"
-                value={title}
-                onChange={(v) => {
-                  setTitle(v);
-                  setPicked(null);
-                }}
-                onPick={(g) => {
-                  setTitle(g.title);
-                  setPicked(g);
-                  if (!platform && g.platforms.length === 1) setPlatform(g.platforms[0]);
-                }}
-                invalid={submitted && !!titleError}
-                describedBy={submitted && titleError ? "add-title-error" : undefined}
-              />
-            </div>
-            {submitted && titleError && (
-              <p className="error" id="add-title-error">
-                {titleError}
-              </p>
-            )}
-          </div>
-        )}
+      <div ref={roomRef} className={styles.room} data-fase={phase}>
+        <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar">
+          <X aria-hidden />
+        </button>
+        <div className={styles.scene}>
+          <div className={styles.rays} />
+          {phase === "form" && previewCover && (
+            // eslint-disable-next-line @next/next/no-img-element -- carátula externa
+            <img key={previewCover} src={previewCover} alt="" className={styles.peek} />
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element -- dibujo propio en SVG */}
+          <img src={phase === "open" ? CHEST_OPEN_URL : CHEST_CLOSED_URL} alt="" className={styles.chest} />
+          {phase === "open" && won && (
+            <>
+              <Cover src={won.coverUrl} title={won.title} caption="" priority className={styles.prize} />
+              <div className={styles.win} role="status">
+                <h2 className={won.title.length > LONG_TITLE ? styles.winLong : undefined}>
+                  {won.copy ? `¡Otra copia de ${won.title}!` : `¡Has conseguido ${won.title}!`}
+                </h2>
+                <p>{won.line}</p>
+                <div className={styles.winActions}>
+                  <button ref={againRef} type="button" className={styles.go} onClick={addAnother}>
+                    Añadir otro
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.go} ${styles.goAlt}`}
+                    onClick={() => {
+                      router.push(`/juego/${won.id}`);
+                      onClose();
+                    }}
+                  >
+                    Ver ficha
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
-        {duplicate && (
-          <div className={styles.duplicate} role="status">
-            <CopyIcon aria-hidden />
-            <div>
+        <form id="add-game" onSubmit={submit} noValidate className={styles.form} inert={Boolean(won)}>
+          <div className={styles.head}>
+            <h2>{heading}</h2>
+          </div>
+
+          {!fixedGame && (
+            <div className={styles.field}>
+              <label htmlFor="add-title" className={styles.label}>
+                Título
+              </label>
+              <div className={styles.titleField}>
+                <TitleWithCatalog
+                  key={round}
+                  id="add-title"
+                  value={title}
+                  onChange={(v) => {
+                    setTitle(v);
+                    setPicked(null);
+                  }}
+                  onPick={(g) => {
+                    setTitle(g.title);
+                    setPicked(g);
+                    if (!platform && g.platforms.length === 1) setPlatform(g.platforms[0]);
+                  }}
+                  invalid={submitted && !!titleError}
+                  describedBy={submitted && titleError ? "add-title-error" : undefined}
+                />
+              </div>
+              {submitted && titleError && (
+                <p className={styles.error} id="add-title-error">
+                  {titleError}
+                </p>
+              )}
+            </div>
+          )}
+
+          {duplicate && (
+            <div className={styles.duplicate} role="status">
               <p>
                 Ya tienes <strong>«{duplicate.title}»</strong> ({copiesSummary(library.copies.filter((c) => c.gameId === duplicate.id))}).
               </p>
-              <div className="segmented" role="radiogroup" aria-label="¿Qué quieres hacer?">
-                <button type="button" role="radio" aria-checked={asCopy} onClick={() => setAsCopy(true)}>
+              <div className={styles.tiles} role="radiogroup" aria-label="¿Qué quieres hacer?">
+                <button type="button" className={styles.tile} role="radio" aria-checked={asCopy} onClick={() => setAsCopy(true)}>
                   Añadir otra copia
                 </button>
-                <button type="button" role="radio" aria-checked={!asCopy} onClick={() => setAsCopy(false)}>
+                <button type="button" className={styles.tile} role="radio" aria-checked={!asCopy} onClick={() => setAsCopy(false)}>
                   Es un juego distinto
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className={styles.twoCols}>
-          <div className="field">
-            <label htmlFor="add-platform">Plataforma</label>
-            <PlatformField
+          <div className={styles.field}>
+            <span className={styles.label} id="add-platform-label">
+              Plataforma
+            </span>
+            <PlatformTiles
+              key={round}
               id="add-platform"
               value={platform}
               onChange={setPlatform}
-              invalid={submitted && !!platformError}
+              labelledBy="add-platform-label"
               describedBy={submitted && platformError ? "add-platform-error" : undefined}
             />
             {submitted && platformError && (
-              <p className="error" id="add-platform-error">
+              <p className={styles.error} id="add-platform-error">
                 {platformError}
               </p>
             )}
           </div>
-          <div className="field">
-            <span className="label" id="add-format-label">
+
+          <div className={styles.field}>
+            <span className={styles.label} id="add-format-label">
               Formato
             </span>
-            <div className="segmented" role="radiogroup" aria-labelledby="add-format-label">
+            <div className={styles.tiles} role="radiogroup" aria-labelledby="add-format-label">
               {(["fisico", "digital"] as const).map((f) => (
-                <button key={f} type="button" role="radio" aria-checked={format === f} onClick={() => setFormat(f)}>
-                  {f === "fisico" ? "Físico" : "Digital"}
+                <button key={f} type="button" className={styles.tile} role="radio" aria-checked={format === f} onClick={() => setFormat(f)}>
+                  {formatName(f)}
                 </button>
               ))}
             </div>
           </div>
-        </div>
 
-        {sameCopy && (
-          <p className="notice" role="status">
-            Ya hay una copia {format === "fisico" ? "física" : "digital"} de este juego en {platform}. Si es otra (por ejemplo, otra edición),
-            añádela igualmente y diferencia la edición en la ficha.
-          </p>
-        )}
+          {sameCopy && (
+            <p className={styles.hint} role="status">
+              Ya hay una copia {format === "fisico" ? "física" : "digital"} de este juego en {platform}. Si es otra (por ejemplo, otra edición),
+              añádela igualmente y diferencia la edición en la ficha.
+            </p>
+          )}
 
-        {!target && (
-          <div className="field">
-            <span className="label" id="add-status-label">
-              Estado
-            </span>
-            <div className="segmented" role="radiogroup" aria-labelledby="add-status-label">
-              {GAME_STATUSES.map((s) => (
-                <button key={s} type="button" role="radio" aria-checked={status === s} onClick={() => setStatus(s)}>
-                  <StatusIcon status={s} />
-                  {STATUS_LABEL[s]}
-                </button>
-              ))}
+          {!target && (
+            <div className={styles.field}>
+              <span className={styles.label} id="add-status-label">
+                Estado
+              </span>
+              <div className={styles.tiles} role="radiogroup" aria-labelledby="add-status-label">
+                {GAME_STATUSES.map((s) => (
+                  <button key={s} type="button" className={styles.tile} role="radio" aria-checked={status === s} onClick={() => setStatus(s)}>
+                    <i className={styles.dot} style={{ background: STATUS_COLOR[s] }} />
+                    {STATUS_LABEL[s]}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div>
+            <button type="submit" className={styles.go}>
+              {target ? "Añadir copia" : "Añadir a la biblioteca"}
+            </button>
           </div>
-        )}
-        <p className="hint muted" style={{ fontSize: 12 }}>
-          Precio, edición, horas, notas y estantería se completan después en la ficha.
-        </p>
-      </form>
+          <p className={styles.hint}>Precio, edición, horas, notas y estantería se completan después en la ficha.</p>
+        </form>
+      </div>
     </Dialog>
   );
 }

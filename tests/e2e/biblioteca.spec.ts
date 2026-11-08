@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { addGame, cards, loadDemo, openApp } from "./helpers";
+import { addGame, cards, choosePlatform, loadDemo, openApp } from "./helpers";
 
 test("añadir un juego, editarlo y conservar los cambios tras recargar", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await expect(page.getByRole("heading", { name: "Tu biblioteca está vacía" })).toBeVisible();
 
   await addGame(page, { title: "Hollow Knight", platform: "Switch", format: "Digital" });
-  await expect(page.getByText("«Hollow Knight» añadido a tu biblioteca")).toBeVisible();
   await expect(page.getByText("1 título · 1 copia")).toBeVisible();
 
   await cards(page).getByRole("link", { name: /Hollow Knight/ }).click();
@@ -54,7 +53,7 @@ test("validación del alta: sin título ni plataforma no se guarda", async ({ pa
   await expect(dialog.getByText("Escribe el título del juego.")).toBeVisible();
   await expect(dialog.getByText("Elige una plataforma para guardar la copia.")).toBeVisible();
   await expect(dialog.getByLabel("Título")).toHaveAttribute("aria-invalid", "true");
-  await dialog.getByRole("button", { name: "Cancelar" }).click();
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
   await expect(page.getByRole("heading", { name: "Tu biblioteca está vacía" })).toBeVisible();
 });
 
@@ -67,9 +66,11 @@ test("registrar dos copias del mismo título sin duplicar el juego", async ({ pa
   await dialog.getByLabel("Título").fill("celeste");
   await expect(dialog.getByText(/Ya tienes «Celeste»/)).toBeVisible();
   await expect(dialog.getByRole("radio", { name: "Añadir otra copia" })).toHaveAttribute("aria-checked", "true");
-  await dialog.getByLabel("Plataforma").selectOption("PC");
+  await choosePlatform(dialog, "PC");
   await dialog.getByRole("radio", { name: "Digital", exact: true }).click();
   await dialog.getByRole("button", { name: "Añadir copia" }).click();
+  await expect(dialog.getByRole("button", { name: "Añadir otro" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
 
   await expect(page.getByText("1 título · 2 copias")).toBeVisible();
   await expect(cards(page)).toHaveCount(2); // aparece en el separador de cada plataforma

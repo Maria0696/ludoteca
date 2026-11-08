@@ -14,6 +14,7 @@ export function Dialog({
   children,
   footer,
   initialFocus,
+  bareClassName,
 }: {
   open: boolean;
   onClose: () => void;
@@ -22,6 +23,8 @@ export function Dialog({
   footer?: React.ReactNode;
   /** Selector del elemento que recibe el foco al abrir. */
   initialFocus?: string;
+  /** Sin cabecera ni pie: el contenido dibuja la ventana entera con esta clase. */
+  bareClassName?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -36,6 +39,22 @@ export function Dialog({
       dialog.close();
     }
   }, [open, initialFocus]);
+
+  if (bareClassName) {
+    return (
+      <dialog
+        ref={ref}
+        className={bareClassName}
+        aria-label={title}
+        onCancel={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      >
+        {children}
+      </dialog>
+    );
+  }
 
   return (
     <dialog
