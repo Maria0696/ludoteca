@@ -36,6 +36,7 @@ Los botones secundarios, chips y pestañas son píldoras translúcidas (`#ffffff
 - **Ficha**: el arte del juego de fondo se funde con la página; carátula fija con sombra; secciones en paneles.
 - **Propuesta de «¿A qué juego?»**: panel con el arte del juego difuminado hacia la derecha.
 - **Diálogo**: `<dialog>` nativo con fondo desenfocado; en móvil, hoja inferior.
+- **Sala de «Entrar»**: pantalla de cine 16:9 (4:3 en móvil) con el rótulo «Ludoteca» y obras de dominio público que se suceden cada 7 s, con crédito y pausa. La luz de la obra, difuminada, tiñe la sala; correo, contraseña y Entrar forman una sola fila del ancho de la pantalla, y al fondo hay dos filas de butacas en silueta.
 
 ## Movimiento
 
@@ -44,6 +45,7 @@ Los botones secundarios, chips y pestañas son píldoras translúcidas (`#ffffff
 - Cartel: fundido entre juegos de 1,1 s, movimiento de cámara de 24 s y entrada del texto con desenfoque.
 - Pulsación: `scale(0.96)` en 140 ms. Elevación de pósters: 420 ms con curva de salida fuerte.
 - Barras de estadísticas que crecen al entrar.
+- «Entrar»: el proyector se enciende como una línea de luz que se abre en imagen (1,25 s); la pantalla y las butacas siguen levemente al puntero; cada pulsación da un golpe de luz; al entrar, la pantalla crece hasta cubrirlo todo y funde a negro (1 s).
 - Con movimiento reducido: sin desplazamientos ni avance automático; solo opacidad.
 
 ## Imágenes de demostración

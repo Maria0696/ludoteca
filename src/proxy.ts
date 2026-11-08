@@ -43,5 +43,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|icon.svg|robots.txt).*)"],
+  // demo-art: obras de dominio público que también se ven en «Entrar», sin sesión.
+  matcher: ["/((?!_next/static|_next/image|icon.svg|robots.txt|demo-art/).*)"],
 };

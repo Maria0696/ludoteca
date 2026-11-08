@@ -1,30 +1,337 @@
-.page {
+/* La sala: una pantalla encendida en la oscuridad y su luz sobre el cuarto. */
+.room {
+  --top: clamp(20px, 5dvh, 56px);
+  --screen-h: clamp(190px, 47dvh, 620px);
+  --screen-w: min(calc(var(--screen-h) * 16 / 9), calc(100vw - 32px));
+  --mx: 0;
+  --my: 0;
+  position: relative;
+  isolation: isolate;
   min-height: 100dvh;
+  overflow: clip;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: clamp(14px, 3dvh, 30px);
+  padding: var(--top) 16px clamp(84px, 15dvh, 160px);
+  background: var(--bg);
+}
+
+/* Luz de la obra --------------------------------------------------------- */
+.glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 66% 78% at 50% 34%, #000 28%, #0006 64%, #0000 100%);
+  mask-image: radial-gradient(ellipse 66% 78% at 50% 34%, #000 28%, #0006 64%, #0000 100%);
+  transform: translate(calc(var(--mx) * -22px), calc(var(--my) * -12px));
+  transition: transform 1200ms var(--ease-out);
+  animation: lights-up 1500ms 280ms var(--ease-out) backwards;
+}
+@keyframes lights-up {
+  from {
+    opacity: 0;
+  }
+}
+/* Imagen pequeña y escalada: el desenfoque cuesta mucho menos que a tamaño completo. */
+.glowImage {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--top) + var(--screen-h) / 2);
+  width: 36%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  translate: -50% -50%;
+  scale: 3.3;
+  filter: blur(26px) saturate(1.8) brightness(0.74);
+  opacity: 0;
+  transition: opacity 1500ms ease;
+}
+.glowImage.on {
+  opacity: 0.66;
+}
+
+/* Pantalla --------------------------------------------------------------- */
+.stage {
+  width: var(--screen-w);
+}
+.screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  container-type: inline-size;
+  box-shadow: 0 46px 110px -44px #000;
+  transform: perspective(1600px) rotateX(calc(var(--my) * -2.2deg)) rotateY(calc(var(--mx) * 3deg));
+  transition: transform 900ms var(--ease-out);
+  animation: projector-on 1250ms var(--ease-out) backwards;
+}
+/* El proyector se enciende: una línea de luz que se abre en imagen. */
+@keyframes projector-on {
+  from {
+    clip-path: inset(49.6% 0 49.6% 0);
+    filter: brightness(3);
+  }
+  45% {
+    filter: brightness(1.5);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    filter: brightness(1);
+  }
+}
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.03);
+  transition: opacity 1100ms ease;
+}
+.frame.on {
+  opacity: 1;
+  animation: drift 22s linear infinite alternate;
+}
+@keyframes drift {
+  to {
+    transform: scale(1.13) translate(-1.5%, -1%);
+  }
+}
+.room[data-pausa] .frame {
+  animation-play-state: paused;
+}
+.titleCard {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  padding: 24px 16px;
-  background: radial-gradient(80% 60% at 50% 0%, #1c1c24, var(--bg) 70%);
+  color: #fff;
+  font-size: clamp(38px, 12cqw, 104px);
+  line-height: 1;
+  background: radial-gradient(ellipse 62% 58% at 50% 50%, #0b0b0d8c 0%, #0b0b0d00 100%);
+  text-shadow: 0 2px 8px #0006, 0 8px 56px #000b;
+  animation: title-in 1000ms 520ms var(--ease-out) backwards;
 }
-.card {
-  width: min(420px, 100%);
+@keyframes title-in {
+  from {
+    opacity: 0;
+    transform: scale(1.05);
+    filter: blur(10px);
+  }
+}
+/* Reflejo que acompaña al puntero. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    55% 75% at calc(50% + var(--mx) * 42%) calc(50% + var(--my) * 42%),
+    #ffffff1c,
+    #ffffff00 72%
+  );
+}
+
+/* Crédito de la obra y pausa --------------------------------------------- */
+.credits {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  margin-top: 8px;
+}
+.credit {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e4e4e7;
+  animation: credit-in 900ms var(--ease-out) backwards;
+}
+.credit span {
+  font-weight: 400;
+  color: #c4c4cc;
+}
+@keyframes credit-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.pause {
+  flex: none;
   display: grid;
-  gap: 22px;
-  padding: 32px;
-  border-radius: var(--radius-dialog);
-  background: var(--surface);
-  border: 1px solid var(--line);
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #e4e4e7;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 140ms ease;
 }
-.brand {
-  font-size: 20px;
+.pause svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
-.card h1 {
+.pause:hover {
+  background: #ffffff1f;
+}
+.pause:active {
+  transform: scale(0.92);
+}
+@media (pointer: coarse) {
+  .pause {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pause {
+    display: none;
+  }
+}
+
+/* Acceso ----------------------------------------------------------------- */
+.entry {
+  width: var(--screen-w);
+  max-width: 860px;
+  display: grid;
+  gap: clamp(12px, 2.2dvh, 20px);
+  animation: entry-in 900ms 620ms var(--ease-out) backwards;
+}
+@keyframes entry-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.entry h1 {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: clamp(26px, 2.9vw, 38px);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: 1.05;
+  text-align: center;
+  text-wrap: balance;
 }
 .form {
   display: grid;
-  gap: 16px;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+.form label {
+  color: #e4e4e7;
+}
+.input {
+  height: 48px;
+  background: #0b0b0dcc;
+  border-color: #ffffff2e;
+}
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: inset 0 0 0 100px #17171b;
+  transition: background-color 9999s;
+}
+.submit {
+  height: 48px;
+  padding-inline: 36px;
+}
+.error {
+  grid-column: 1 / -1;
+}
+
+/* Butacas ---------------------------------------------------------------- */
+.seats {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: -1;
+  height: clamp(62px, 12dvh, 118px);
+  pointer-events: none;
+  animation: seats-in 1100ms 200ms var(--ease-out) backwards;
+}
+@keyframes seats-in {
+  from {
+    opacity: 0;
+    translate: 0 26px;
+  }
+}
+.seats::before,
+.seats::after {
+  content: "";
+  position: absolute;
+  inset: auto -48px 0;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  transition: transform 1000ms var(--ease-out);
+}
+.seats::before {
+  height: 82%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop stop-color='%2324242a'/%3E%3Cstop offset='.5' stop-color='%230f0f12'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M7 100V38C7 15 22 2 44 2h32c22 0 37 13 37 36v62z' fill='url(%23a)'/%3E%3C/svg%3E");
+  background-size: 116px 100%;
+  transform: translateX(calc(var(--mx) * -8px));
+}
+.seats::after {
+  height: 58%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop stop-color='%231a1a1f'/%3E%3Cstop offset='.42' stop-color='%23060607'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 100V34C6 13 21 2 42 2h36c21 0 36 11 36 32v66z' fill='url(%23a)'/%3E%3C/svg%3E");
+  background-size: 164px 100%;
+  background-position: calc(50% + 80px) bottom;
+  transform: translateX(calc(var(--mx) * -18px));
+}
+
+/* Al entrar: lo demás se apaga y la pantalla pasa por delante ------------- */
+.room[data-fase="entrando"] .entry,
+.room[data-fase="entrando"] .credits,
+.room[data-fase="entrando"] .seats {
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+.room[data-fase="entrando"] .screen {
+  z-index: 5;
+}
+
+/* Pantallas estrechas y bajas -------------------------------------------- */
+@media (max-width: 720px) {
+  .room {
+    --screen-h: calc((100vw - 32px) * 3 / 4);
+    --screen-w: calc(100vw - 32px);
+    align-content: center;
+    gap: 18px;
+  }
+  .screen {
+    aspect-ratio: 4 / 3;
+  }
+  .glow {
+    -webkit-mask-image: radial-gradient(ellipse 120% 72% at 50% 34%, #000 30%, #0006 66%, #0000 100%);
+    mask-image: radial-gradient(ellipse 120% 72% at 50% 34%, #000 30%, #0006 66%, #0000 100%);
+  }
+  .glowImage {
+    top: 38%;
+    width: 64%;
+    aspect-ratio: 1;
+  }
+  .form {
+    grid-template-columns: 1fr;
+  }
+  .submit {
+    width: 100%;
+  }
+}
+@media (max-height: 640px) {
+  .seats {
+    display: none;
+  }
+  .room {
+    padding-bottom: 24px;
+  }
 }
