@@ -9,10 +9,10 @@ Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, list
 - **Modelo**: un juego (la obra) tiene varias copias (los ejemplares). Las estadísticas cuentan títulos y copias por separado. Una copia digital con caja decorativa sigue siendo digital.
 - **Lista de deseos**: plataforma, prioridad, precio objetivo, notas, historial de precios a mano y «Ya lo tengo», que pasa el deseo a la biblioteca conservando sus datos.
 - **¿A qué juego?**: reglas explicables, sin IA. Respeta la plataforma, la disponibilidad (las copias prestadas no cuentan), la partida (nueva o continuar), la compañía y el tipo de experiencia. Compara tu tiempo con lo que dura una sesión, no con el juego entero. Explica cada propuesta y los datos que faltan. Puedes descartar y pedir otras.
-- **Inicio**: continuar lo que juegas, acceso rápido a «¿A qué juego?», añadidos recientemente, los pendientes que más esperan y un resumen.
+- **Inicio**: el menú principal de un juego, con «Pulsa Start» una vez al día: partidas guardadas con lo que juegas, pendientes, modos para «¿A qué juego?», novedades y récords.
 - **Estadísticas**: títulos, copias, estados, plataformas, formatos, terminados este año, horas y gasto, indicando cuándo faltan datos.
 - **Listas propias**, **copia de seguridad JSON** (importar valida el archivo y te deja decidir cada coincidencia) y **datos de demostración** marcados y retirables de una vez. Los juegos de demostración se ilustran con obras de dominio público; sus créditos están en Ajustes.
-- **Diseño «Sala de proyección»**: oscuro y cinematográfico, con el arte del juego a pantalla completa en Inicio, selector de carátulas, pósters que reaccionan al ratón y transiciones; respeta la preferencia de movimiento reducido. Detalles en [DESIGN.md](DESIGN.md).
+- **Diseño «Sala de proyección»**: oscuro y cinematográfico, con el arte del juego a pantalla completa, pósters que reaccionan al ratón y transiciones; respeta la preferencia de movimiento reducido. Detalles en [DESIGN.md](DESIGN.md).
 - **Deshacer** al cambiar un estado o eliminar algo; confirmación antes de borrar un juego.
 
 ## Ejecutarla en tu ordenador

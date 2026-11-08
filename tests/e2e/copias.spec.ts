@@ -57,14 +57,14 @@ test("el inicio recuerda hacer una copia y deja de hacerlo al exportarla", async
   await expect(reminder(page)).toHaveCount(0);
   await page.reload();
   await expect(page.getByText("Cargando tu biblioteca…")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /Añadidos recientemente/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Menú principal" })).toBeVisible();
   await expect(reminder(page)).toHaveCount(0);
 });
 
 test("con solo datos de demostración no se pide copia", async ({ page }) => {
   await loadDemo(page);
   await openApp(page, "/");
-  await expect(page.getByRole("heading", { name: /Añadidos recientemente/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Menú principal" })).toBeVisible();
   await expect(reminder(page)).toHaveCount(0);
   await openApp(page, "/ajustes");
   await expect(page.getByText("Aún no has exportado ninguna copia desde este navegador.")).toBeVisible();
