@@ -101,6 +101,19 @@ test("desde el cofre, «Apuntar detalles» lleva al inventario del juego nuevo",
   await expect(inventory.getByRole("button", { name: "PS5, Físico" })).not.toBeFocused();
 });
 
+test("«En tu ludoteca» es la fecha de compra apuntada, no el día de meterlo en la app", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Hades", platform: "Switch 2" });
+  const inventory = await openFicha(page, "Hades");
+  const record = page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "En tu ludoteca" });
+  await expect(record).toContainText("---");
+
+  await inventory.getByRole("button", { name: /^Fecha de adquisición/ }).click();
+  await inventory.getByLabel("Fecha de adquisición").fill("2026-11-05");
+  await inventory.getByLabel("Fecha de adquisición").press("Enter");
+  await expect(record).toContainText("5 nov 2026");
+});
+
 test("en el móvil, con un título largo, nada se sale de la pantalla", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, "/biblioteca");
