@@ -11,18 +11,20 @@ type Common = {
   /** Texto cuando hay valor. Si falta, se ofrece el botón de añadir. */
   display: string | null;
   empty: string;
+  /** En una fila de datos: el hueco vacío es texto discreto, sin recuadro de añadir. */
+  quiet?: boolean;
 };
 
 type Props = Common &
   (
     | { kind: "number"; value: number | null | undefined; onSave: (v: number | null) => void; min?: number; max?: number; step?: number; integer?: boolean }
     | { kind: "date"; value: string | null | undefined; onSave: (v: string | null) => void }
-    | { kind: "text" | "multiline"; value: string | null | undefined; onSave: (v: string | null) => void; maxLength?: number }
+    | { kind: "text" | "multiline"; value: string | null | undefined; onSave: (v: string | null) => void; maxLength?: number; validate?: (text: string) => string | null }
   );
 
 /** Un dato que se ve como texto y se edita al pulsarlo. */
 export function Editable(props: Props) {
-  const { label, display, empty } = props;
+  const { label, display, empty, quiet } = props;
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -58,6 +60,8 @@ export function Editable(props: Props) {
       return close(refocus);
     }
     const text = raw.trim();
+    const problem = props.kind !== "date" && text ? props.validate?.(text) : null;
+    if (problem) return setError(problem);
     if (text !== (props.value ?? "")) props.onSave(text || null);
     close(refocus);
   };
@@ -67,19 +71,22 @@ export function Editable(props: Props) {
       <button
         ref={buttonRef}
         type="button"
-        className={display ? styles.value : styles.add}
+        className={display ? styles.value : quiet ? `${styles.value} ${styles.valueEmpty}` : styles.add}
         aria-label={display ? `${label}: ${display}. Editar` : `${label}: añadir`}
         onClick={() => {
           cancelled.current = false;
           setEditing(true);
         }}
       >
-        {display ?? (
-          <>
-            <Plus aria-hidden />
-            {empty}
-          </>
-        )}
+        {display ??
+          (quiet ? (
+            empty
+          ) : (
+            <>
+              <Plus aria-hidden />
+              {empty}
+            </>
+          ))}
       </button>
     );
   }

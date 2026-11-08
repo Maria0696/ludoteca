@@ -163,7 +163,12 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
+}
+.winActions .go {
+  height: 48px;
+  padding: 0 18px;
+  font-size: 21px;
 }
 
 .form {
@@ -378,7 +383,7 @@
     min-height: 190px;
   }
   .room[data-fase="open"] .scene {
-    min-height: 450px;
+    min-height: 520px;
   }
   .rays {
     bottom: 60px;

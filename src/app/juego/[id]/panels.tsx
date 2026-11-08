@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageUp, Pencil, Plus, Trash2, Trophy } from "lucide-react";
+import { ImageUp, Plus, Trash2, Trophy } from "lucide-react";
 import { TROPHY_URL } from "@/components/pixel/sprites";
 import { formatDate, formatMoney, formatNumber, relativeDay } from "@/lib/format";
 import {
@@ -8,7 +8,6 @@ import {
   type Game,
   type GameList,
   type GameStatus,
-  AVAILABILITY_LABEL,
   FORMAT_LABEL,
   MODE_LABEL,
   MOOD_LABEL,
@@ -33,15 +32,6 @@ const copyLine = (c: Copy) =>
   [FORMAT_LABEL[c.format], c.edition, c.pricePaid != null ? formatMoney(c.pricePaid) : null, c.store, c.acquiredAt ? formatDate(c.acquiredAt) : null]
     .filter(Boolean)
     .join(" · ");
-
-function shelfSummary(c: Copy): string | null {
-  const parts: string[] = [];
-  if (c.hasCase) parts.push(c.format === "digital" ? "Caja decorativa" : "Con caja");
-  if (c.hasFullArtwork) parts.push("carátula completa");
-  if (c.artworkPrintPending) parts.push("carátula por imprimir");
-  if (c.shelfLocation) parts.push(c.shelfLocation);
-  return parts.length ? parts.join(" · ") : null;
-}
 
 function Meter({ percent, cells }: { percent: number; cells: number }) {
   return (
@@ -284,52 +274,6 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
       </div>
       <Chips label="Cómo se juega" options={MODE_LABEL} value={game.modes} onChange={(v) => update({ modes: v })} />
       <Chips label="Tipo de experiencia" options={MOOD_LABEL} value={game.moods} onChange={(v) => update({ moods: v })} />
-    </>
-  );
-}
-
-export function CopiesPanel({ copies, onAdd, onEdit, onDelete }: { copies: Copy[]; onAdd: () => void; onEdit: (c: Copy) => void; onDelete: (c: Copy) => void }) {
-  return (
-    <>
-      <div className={styles.panelTop}>
-        <h2 id="tus-copias" className={styles.panelHead}>
-          Tus copias
-        </h2>
-        <button type="button" className={styles.action} onClick={onAdd}>
-          <Plus aria-hidden />
-          Añadir copia
-        </button>
-      </div>
-      {copies.length === 0 ? (
-        <p>Este juego no tiene copias. Añade una para indicar plataforma y formato.</p>
-      ) : (
-        <ul className={styles.copies}>
-          {copies.map((c) => (
-            <li key={c.id} className={styles.copy}>
-              <div>
-                <p className={styles.copyName}>
-                  <strong>{c.platform}</strong>
-                  <span>{FORMAT_LABEL[c.format]}</span>
-                </p>
-                <p>
-                  {c.lentTo ? `Prestada a ${c.lentTo}${c.lentAt ? ` desde ${formatDate(c.lentAt)}` : ""}` : AVAILABILITY_LABEL[c.availability]}
-                  {c.availability === "suscripcion" && c.subscriptionService ? ` · ${c.subscriptionService}` : ""}
-                </p>
-                {shelfSummary(c) && <p>{shelfSummary(c)}</p>}
-              </div>
-              <span className={styles.copyActions}>
-                <button type="button" className={styles.action} onClick={() => onEdit(c)} aria-label={`Editar la copia de ${c.platform}`}>
-                  <Pencil aria-hidden />
-                  Editar
-                </button>
-                <button type="button" className={styles.action} onClick={() => onDelete(c)} aria-label={`Eliminar la copia de ${c.platform}`}>
-                  <Trash2 aria-hidden />
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
     </>
   );
 }

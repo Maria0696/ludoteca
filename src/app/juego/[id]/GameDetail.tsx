@@ -10,14 +10,14 @@ import { useAddGame } from "@/components/game/AddGameProvider";
 import { TROPHY_URL } from "@/components/pixel/sprites";
 import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
-import { type Copy, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
 import { Celebration } from "./Celebration";
-import { CopyEditor } from "./CopyEditor";
 import { CoverDialog } from "./CoverDialog";
-import { CopiesPanel, MorePanel, PlayOptions, Quests, Records, STATUS_COLOR } from "./panels";
+import { Inventory } from "./Inventory";
+import { MorePanel, PlayOptions, Quests, Records, STATUS_COLOR } from "./panels";
 import { STAGES, TROPHY_STAGE, keeperLine, reachedStages } from "./progress";
 
 /** El nombre va en una sola línea: si no cabe, la letra se reduce hasta que quepa. */
@@ -53,8 +53,7 @@ function GameTitle({ title }: { title: string }) {
 export function GameDetail({ id }: { id: string }) {
   const router = useRouter();
   const { library, actions } = useLibrary();
-  const { open: openAdd } = useAddGame();
-  const [editing, setEditing] = useState<Copy | null>(null);
+  const { open: openAdd, details } = useAddGame();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [coverDialog, setCoverDialog] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -165,6 +164,9 @@ export function GameDetail({ id }: { id: string }) {
           </div>
         </header>
 
+        {/* El cofre puede mandar aquí: `round` lo vuelve a montar con esa copia elegida. */}
+        <Inventory key={details.round} gameId={game.id} copies={copies} onAdd={() => openAdd({ gameId: game.id })} />
+
         <div ref={columnsRef} className={styles.columns}>
           <section className={`${styles.window} ${styles.panel}`} aria-label="Misiones">
             <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} />
@@ -179,26 +181,19 @@ export function GameDetail({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className={styles.lower}>
-          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="tus-copias">
-            <CopiesPanel copies={copies} onAdd={() => openAdd({ gameId: game.id })} onEdit={setEditing} onDelete={(c) => actions.deleteCopy(c.id)} />
-          </section>
-          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="mas-datos">
-            <MorePanel
-              game={game}
-              lists={library.lists}
-              update={update}
-              onToggleList={(listId) => actions.toggleInList(listId, game.id)}
-              onChangeCover={() => setCoverDialog(true)}
-              onDelete={() => setConfirmDelete(true)}
-            />
-          </section>
-        </div>
+        <section className={`${styles.window} ${styles.panel}`} aria-labelledby="mas-datos">
+          <MorePanel
+            game={game}
+            lists={library.lists}
+            update={update}
+            onToggleList={(listId) => actions.toggleInList(listId, game.id)}
+            onChangeCover={() => setCoverDialog(true)}
+            onDelete={() => setConfirmDelete(true)}
+          />
+        </section>
       </div>
 
       {celebrating && <Celebration title={game.title} onClose={() => setCelebrating(false)} />}
-
-      {editing && <CopyEditor key={editing.id} copy={editing} onClose={() => setEditing(null)} />}
 
       <Dialog
         open={confirmDelete}

@@ -18,7 +18,7 @@ import styles from "./loot.module.css";
 
 type Picked = Pick<CatalogGame, "igdbId" | "coverUrl" | "backdropUrl" | "genres" | "modes" | "moods" | "lengthHours">;
 type Phase = "form" | "shake" | "open";
-type Won = { id: string; title: string; coverUrl?: string | null; line: string; copy: boolean };
+type Won = { id: string; copyId: string | null; title: string; coverUrl?: string | null; line: string; copy: boolean };
 
 const SHAKE_MS = 680;
 const LONG_TITLE = 28;
@@ -36,11 +36,13 @@ const formatName = (format: Format) => (format === "fisico" ? "Físico" : "Digit
 export function AddGameDialog({
   open,
   onClose,
+  onDetails,
   initialGameId,
   initialTitle,
 }: {
   open: boolean;
   onClose: () => void;
+  onDetails: (gameId: string, copyId: string | null) => void;
   initialGameId?: string;
   initialTitle?: string;
 }) {
@@ -59,13 +61,13 @@ export function AddGameDialog({
   const [won, setWon] = useState<Won | null>(null);
   const [round, setRound] = useState(0);
   const roomRef = useRef<HTMLDivElement>(null);
-  const againRef = useRef<HTMLButtonElement>(null);
+  const detailsRef = useRef<HTMLButtonElement>(null);
   const timer = useRef(0);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   useEffect(() => {
-    if (phase === "open") againRef.current?.focus({ preventScroll: true });
+    if (phase === "open") detailsRef.current?.focus({ preventScroll: true });
   }, [phase]);
 
   // Una vez guardado el juego, ya no cuenta como repetido del propio formulario.
@@ -92,8 +94,8 @@ export function AddGameDialog({
     const copy = { platform: platform.trim(), format };
     const place = `${copy.platform} · ${formatName(format)}`;
     if (target) {
-      actions.addCopy(target.id, copy);
-      setWon({ id: target.id, title: target.title, coverUrl: target.coverUrl, line: `${place} · Otra copia`, copy: true });
+      const added = actions.addCopy(target.id, copy);
+      setWon({ id: target.id, copyId: added.id, title: target.title, coverUrl: target.coverUrl, line: `${place} · Otra copia`, copy: true });
     } else {
       const game = actions.addGame(
         {
@@ -109,7 +111,7 @@ export function AddGameDialog({
         },
         copy,
       );
-      setWon({ id: game.id, title: game.title, coverUrl: game.coverUrl, line: `${place} · ${STATUS_LABEL[status]}`, copy: false });
+      setWon({ id: game.id, copyId: null, title: game.title, coverUrl: game.coverUrl, line: `${place} · ${STATUS_LABEL[status]}`, copy: false });
     }
     roomRef.current?.closest("dialog")?.scrollTo({ top: 0 });
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -166,7 +168,19 @@ export function AddGameDialog({
                 </h2>
                 <p>{won.line}</p>
                 <div className={styles.winActions}>
-                  <button ref={againRef} type="button" className={styles.go} onClick={addAnother}>
+                  <button
+                    ref={detailsRef}
+                    type="button"
+                    className={styles.go}
+                    onClick={() => {
+                      onDetails(won.id, won.copyId);
+                      router.push(`/juego/${won.id}`);
+                      onClose();
+                    }}
+                  >
+                    Apuntar detalles
+                  </button>
+                  <button type="button" className={`${styles.go} ${styles.goAlt}`} onClick={addAnother}>
                     Añadir otro
                   </button>
                   <button
