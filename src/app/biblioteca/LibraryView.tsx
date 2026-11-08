@@ -362,6 +362,9 @@ interface EntryGroup {
 const PLATFORM_LONG: Record<string, string> = {
   PS5: "PlayStation 5",
   PS4: "PlayStation 4",
+  PS3: "PlayStation 3",
+  PS2: "PlayStation 2",
+  PS1: "PlayStation",
   "Xbox Series": "Xbox Series",
 };
 
