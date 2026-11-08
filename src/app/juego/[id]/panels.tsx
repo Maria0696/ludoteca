@@ -186,6 +186,8 @@ export function Quests({
 
 export function Records({ game, copies, update }: { game: Game; copies: Copy[]; update: Update }) {
   const percent = progressPercent(game);
+  // El día que lo conseguiste, según lo que has apuntado; no cuándo lo metiste en la app.
+  const firstOwned = copies.flatMap((c) => c.acquiredAt ?? []).sort()[0];
   const rows: { name: string; value: React.ReactNode; stage?: number }[] = [
     {
       name: "Última partida",
@@ -205,7 +207,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
     },
     { name: "Tu nota", value: game.rating != null ? `${formatNumber(game.rating)} / 10` : "---" },
     ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
-    { name: "En tu ludoteca", value: formatDate(game.createdAt), stage: 0 },
+    { name: "En tu ludoteca", value: firstOwned ? formatDate(firstOwned) : "---", stage: 0 },
   ];
   return (
     <>
