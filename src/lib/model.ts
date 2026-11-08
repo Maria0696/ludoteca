@@ -57,16 +57,15 @@ export const MOOD_LABEL: Record<Mood, string> = {
 
 export const PRIORITY_LABEL: Record<Priority, string> = { alta: "Alta", media: "Media", baja: "Baja" };
 
-export const DEFAULT_PLATFORMS = [
-  "PS5",
-  "PS4",
-  "Switch 2",
-  "Switch",
-  "Xbox Series",
-  "Xbox One",
-  "PC",
-  "Steam Deck",
-] as const;
+/** Consolas conocidas por familia, de la más nueva a la más antigua. */
+export const PLATFORM_FAMILIES: readonly { name: string; platforms: readonly string[] }[] = [
+  { name: "PlayStation", platforms: ["PS5", "PS4", "PS3", "PS2", "PS1", "PS Vita", "PSP"] },
+  { name: "Xbox", platforms: ["Xbox Series", "Xbox 360", "Xbox"] },
+  { name: "Nintendo", platforms: ["Switch 2", "Switch", "Wii U", "Wii", "GameCube", "N64", "SNES", "NES", "3DS", "DS", "GBA", "Game Boy"] },
+  { name: "Otras", platforms: ["PC", "Meta Quest", "Dreamcast", "Mega Drive"] },
+];
+
+export const DEFAULT_PLATFORMS = PLATFORM_FAMILIES.flatMap((family) => family.platforms);
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha con formato AAAA-MM-DD");
 const optionalText = z.string().trim().max(2000).nullish();

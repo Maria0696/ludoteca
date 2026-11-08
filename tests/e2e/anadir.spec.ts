@@ -37,14 +37,40 @@ test("el cofre entrega el juego y se puede seguir añadiendo", async ({ page }) 
   // Una plataforma que no está en la lista.
   await dialog.getByLabel("Título").fill("Tetris");
   await dialog.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: "Otra…" }).click();
-  await dialog.getByLabel("Nombre de la plataforma").fill("Game Boy");
+  await dialog.getByLabel("Nombre de la plataforma").fill("Neo Geo");
   await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
-  await expect(dialog.getByText("Game Boy · Físico · Pendiente")).toBeVisible();
+  await expect(dialog.getByText("Neo Geo · Físico · Pendiente")).toBeVisible();
 
   await dialog.getByRole("button", { name: "Ver ficha" }).click();
   await expect(dialog).toBeHidden();
   await expect(page).toHaveURL(/\/juego\//);
   await expect(page.getByRole("heading", { level: 1, name: "Tetris" })).toBeVisible();
+});
+
+test("las consolas están por familias y la que escribes a mano se queda", async ({ page }) => {
+  const dialog = await openDialog(page);
+  const platforms = dialog.getByRole("radiogroup", { name: "Plataforma" });
+
+  for (const [family, platform] of [
+    ["PlayStation", "PS3"],
+    ["PlayStation", "PS2"],
+    ["PlayStation", "PS1"],
+    ["Xbox", "Xbox Series"],
+    ["Nintendo", "GameCube"],
+    ["Otras", "PC"],
+    ["Otras", "Meta Quest"],
+  ]) {
+    await expect(platforms.getByRole("group", { name: family }).getByRole("radio", { name: platform, exact: true })).toBeVisible();
+  }
+  await expect(platforms.getByRole("radio", { name: "Steam Deck" })).toHaveCount(0);
+  await expect(platforms.getByRole("radio", { name: "Xbox One" })).toHaveCount(0);
+
+  await dialog.getByLabel("Título").fill("Metal Slug");
+  await platforms.getByRole("radio", { name: "Otra…" }).click();
+  await dialog.getByLabel("Nombre de la plataforma").fill("Neo Geo");
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  await dialog.getByRole("button", { name: "Añadir otro" }).click();
+  await expect(platforms.getByRole("group", { name: "Otras" }).getByRole("radio", { name: "Neo Geo", exact: true })).toBeVisible();
 });
 
 test("un juego repetido se añade como otra copia", async ({ page }) => {
