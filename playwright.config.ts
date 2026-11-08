@@ -21,6 +21,17 @@ const sinServicios = {
   IGDB_CLIENT_SECRET: "",
 };
 
+/** La pantalla de título ya vista hoy: cada prueba llega directa al menú. */
+const tituloVisto = {
+  cookies: [],
+  origins: [
+    {
+      origin: "http://localhost:3100",
+      localStorage: [{ name: "ludoteca:titulo-visto", value: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()) }],
+    },
+  ],
+};
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 45_000,
@@ -37,12 +48,12 @@ export default defineConfig({
     {
       name: "escritorio",
       testIgnore: /(movil|acceso)\.spec\.ts/,
-      use: { baseURL: "http://localhost:3100", viewport: { width: 1440, height: 900 } },
+      use: { baseURL: "http://localhost:3100", viewport: { width: 1440, height: 900 }, storageState: tituloVisto },
     },
     {
       name: "movil",
       testMatch: /movil\.spec\.ts/,
-      use: { ...devices["Pixel 7"], channel: "chrome", baseURL: "http://localhost:3100", viewport: { width: 390, height: 844 } },
+      use: { ...devices["Pixel 7"], channel: "chrome", baseURL: "http://localhost:3100", viewport: { width: 390, height: 844 }, storageState: tituloVisto },
     },
     {
       name: "acceso",

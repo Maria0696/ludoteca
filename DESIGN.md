@@ -30,19 +30,19 @@ Los botones secundarios, chips y pestañas son píldoras translúcidas (`#ffffff
 
 ## Componentes
 
-- **Cartel de Inicio** (`Hero`): el arte del juego destacado a pantalla completa, con un lento movimiento de cámara y fundido entre juegos. El selector de carátulas cambia el destacado al pasar por ellas; avanza solo cada 8 s, con barra de progreso, hasta que lo tocas. Sin arte apaisado, usa la carátula difuminada como luz ambiente y la muestra flotando.
+- **Menú principal de Inicio** (`MainMenu`): el inicio es la pantalla de un juego. Una vez al día sale la pantalla de título: «LUDOTECA» golpe a golpe y «Pulsa Start», que se salta con cualquier tecla, clic o toque. Detrás, cinco opciones enormes en cursiva (Continuar, Nueva partida, Elegir modo, Novedades, Récords) con barra blanca en la elegida, y a la derecha un panel oblicuo: partidas guardadas con horas y progreso, carátulas, modos de juego y récords. El fondo es el arte del juego señalado, con chispas que suben. Anton y Chakra Petch, amarillo `#ffdd33` y fondo `#05060e`; solo en esta pantalla.
 - **Póster** (`GameCard`): carátula 3:4 con radio de 12 px que se eleva y se amplía al pasar el ratón; debajo, título, estado con punto de color y plataformas en etiqueta.
 - **Filas** (`.shelf`): pósters en fila con desplazamiento horizontal y ajuste por elemento.
 - **Ficha de aventura**: la historia de cada juego en píxeles. Arriba, una isla con 7 niveles (llegó a tu ludoteca, tu copia, primera partida, en marcha, tu nota, terminado y 100 %) y la guardiana en el último conseguido, que comenta cómo va el juego. Debajo, carátula en alta calidad, nombre en una sola línea, estados e «Inserta moneda» (He jugado hoy); misiones a la izquierda; récords y «Para elegir a qué jugar» a la derecha; copias y más datos al final. Los datos se editan al pulsarlos. Al 100 %, celebración y trofeo permanente, con ventanas doradas.
 - **Propuesta de «¿A qué juego?»**: panel con el arte del juego difuminado hacia la derecha.
 - **Diálogo**: `<dialog>` nativo con fondo desenfocado; en móvil, hoja inferior.
-- **Puerta de «Entrar»**: la única pantalla en píxeles de la app. Lienzo de baja resolución con estanterías de cajas de juegos, una puerta con el rótulo «Ludoteca» y la guardiana, un personaje propio. El acceso es una conversación en un cuadro de diálogo con letra de terminal (VT323) y de arcade (Press Start 2P). El campo se puede usar desde el primer momento, sin esperar al texto.
+- **Puerta de «Entrar»**: pantalla en píxeles. Lienzo de baja resolución con estanterías de cajas de juegos, una puerta con el rótulo «Ludoteca» y la guardiana, un personaje propio. El acceso es una conversación en un cuadro de diálogo con letra de terminal (VT323) y de arcade (Press Start 2P). El campo se puede usar desde el primer momento, sin esperar al texto.
 
 ## Movimiento
 
 - Al cambiar de pantalla, el contenido entra con un fundido y un ligero ascenso (380 ms).
 - Los pósters entran escalonados (35 ms entre uno y otro, con un tope de 14).
-- Cartel: fundido entre juegos de 1,1 s, movimiento de cámara de 24 s y entrada del texto con desenfoque.
+- Menú principal: en la pantalla de título las letras caen una a una y la pantalla tiembla con un destello (1,05 s); al entrar, las opciones llegan escalonadas (65 ms) y el panel cambia en 360 ms. El fondo funde en 520 ms.
 - Pulsación: `scale(0.96)` en 140 ms. Elevación de pósters: 420 ms con curva de salida fuerte.
 - Barras de estadísticas que crecen al entrar.
 - «Entrar»: el texto aparece letra a letra (24 ms por letra), la guardiana respira y niega si te equivocas, las antorchas parpadean y, al entrar, la puerta se abre (0,9 s) y la cámara entra en la luz hasta fundir a negro (0,85 s).

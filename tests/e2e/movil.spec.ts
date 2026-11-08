@@ -31,4 +31,12 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   // Objetivos táctiles de al menos 44 px en la barra inferior.
   const heights = await nav.getByRole("link").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
   for (const h of heights) expect(h).toBeGreaterThanOrEqual(44);
+
+  // El menú del inicio cabe en el móvil y cambia de apartado al tocarlo.
+  await nav.getByRole("link", { name: "Inicio" }).click();
+  await expect(page.getByRole("heading", { name: "Partidas guardadas" })).toBeVisible();
+  await page.getByRole("group", { name: "Menú principal" }).getByRole("button", { name: "Récords" }).click();
+  await expect(page.getByRole("heading", { name: "Tu colección" })).toBeVisible();
+  const overflowInicio = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflowInicio).toBeLessThanOrEqual(0);
 });
