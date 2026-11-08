@@ -103,7 +103,8 @@
     transform: rotate(4deg) translateY(-3px);
   }
 }
-.prize {
+/* Más específico que el `.cover` global, que la dejaría en el flujo de la escena. */
+.scene .prize {
   position: absolute;
   z-index: 1;
   left: 50%;
@@ -183,7 +184,7 @@
 }
 .head h2 {
   font-family: var(--heavy);
-  font-size: clamp(36px, 4.4vw, 62px);
+  font-size: clamp(34px, min(4.4vw, 7.2vh), 62px);
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: 0.015em;
@@ -359,7 +360,10 @@
   .peek {
     width: 58px;
   }
-  .prize {
+  .win {
+    top: 58px;
+  }
+  .scene .prize {
     bottom: 68px;
     width: 116px;
   }
