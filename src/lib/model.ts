@@ -57,11 +57,11 @@ export const MOOD_LABEL: Record<Mood, string> = {
 
 export const PRIORITY_LABEL: Record<Priority, string> = { alta: "Alta", media: "Media", baja: "Baja" };
 
-/** Consolas conocidas por familia, de la más nueva a la más antigua. */
+/** Consolas conocidas por familia y por año de salida, de la más nueva a la más antigua. */
 export const PLATFORM_FAMILIES: readonly { name: string; platforms: readonly string[] }[] = [
-  { name: "PlayStation", platforms: ["PS5", "PS4", "PS3", "PS2", "PS1", "PS Vita", "PSP"] },
+  { name: "PlayStation", platforms: ["PS5", "PS4", "PS Vita", "PS3", "PSP", "PS2", "PS1"] },
   { name: "Xbox", platforms: ["Xbox Series", "Xbox 360", "Xbox"] },
-  { name: "Nintendo", platforms: ["Switch 2", "Switch", "Wii U", "Wii", "GameCube", "N64", "SNES", "NES", "3DS", "DS", "GBA", "Game Boy"] },
+  { name: "Nintendo", platforms: ["Switch 2", "Switch", "Wii U", "3DS", "Wii", "DS", "GameCube", "GBA", "N64", "SNES", "Game Boy", "NES"] },
   { name: "Otras", platforms: ["PC", "Meta Quest", "Dreamcast", "Mega Drive"] },
 ];
 
