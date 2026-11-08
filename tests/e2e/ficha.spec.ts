@@ -35,6 +35,7 @@ test("jugar hoy supera niveles y el 100 % da un trofeo que se conserva", async (
   await cards(page).getByRole("link", { name: /Tunic/ }).click();
   await expect(page.getByRole("button", { name: "Tu copia, conseguido" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Primera partida, pendiente" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Tus récords" }).getByText("PC", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: /He jugado hoy/ }).click();
   await expect(page.getByText("¡Nivel superado: Primera partida!")).toBeVisible();
@@ -76,6 +77,14 @@ test("el nombre y los estados van en una sola línea, y los recuadros igualados"
   const left = await page.getByRole("region", { name: "Misiones" }).boundingBox();
   const right = await page.getByRole("region", { name: "Tus récords" }).locator("xpath=..").boundingBox();
   expect(Math.round(left!.height)).toBe(Math.round(right!.height));
+
+  // Los recuadros de abajo se alinean con los de arriba.
+  const copiesBox = await page.getByRole("region", { name: "Tus copias" }).boundingBox();
+  const moreBox = await page.getByRole("region", { name: "Más datos" }).boundingBox();
+  expect(Math.round(copiesBox!.x)).toBe(Math.round(left!.x));
+  expect(Math.round(copiesBox!.width)).toBe(Math.round(left!.width));
+  expect(Math.round(moreBox!.x)).toBe(Math.round(right!.x));
+  expect(Math.round(moreBox!.width)).toBe(Math.round(right!.width));
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);

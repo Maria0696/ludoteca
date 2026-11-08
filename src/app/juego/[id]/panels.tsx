@@ -214,7 +214,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
         ),
     },
     { name: "Tu nota", value: game.rating != null ? `${formatNumber(game.rating)} / 10` : "---" },
-    ...copies.map((c) => ({ name: `Copia ${c.platform}`, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
+    ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
     { name: "En tu ludoteca", value: formatDate(game.createdAt), stage: 0 },
   ];
   return (
@@ -230,7 +230,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
           </li>
         )}
         {rows.map((row, i) => (
-          <li key={row.name} className={styles.record} style={{ color: RECORD_COLORS[i % RECORD_COLORS.length], animationDelay: `${i * 70}ms` }} data-stage={row.stage}>
+          <li key={i} className={styles.record} style={{ color: RECORD_COLORS[i % RECORD_COLORS.length], animationDelay: `${i * 70}ms` }} data-stage={row.stage}>
             <span>{i + 1}º</span>
             <span>{row.name}</span>
             <span className={styles.recordValue}>{row.value}</span>
