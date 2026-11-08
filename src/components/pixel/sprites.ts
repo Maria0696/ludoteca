@@ -70,6 +70,14 @@ const CHEST_OPEN = ["..DDDDDDDDDDDDDDDD..",".DGGGGGGGGGGGGGGGGD.","DGBBBBBBBBBBB
 
 const CHEST_PALETTE: Record<string, string> = { D: "#3a2212", G: "#e9b94a", B: "#8a5a2b", Y: "#ffd76a", W: "#fff8d0", K: "#1a1008", L: "#ffe27a" };
 
+const CARTRIDGE = [".DDDDDDDDDD.", "DGGGGGGGGGGD", "DGLLLLLLLLGD", "DGLCCCCCCLGD", "DGLCCCCCCLGD", "DGLLLLLLLLGD", "DGGGGGGGGGGD", "DGGGGGGGGGGD", ".DYDYDYDYDD.", ".DDDDDDDDDD."];
+
+const CARTRIDGE_PALETTE: Record<string, string> = { D: "#141230", G: "#8a8fc0", L: "#f3ead2", C: "#e0705a", Y: "#ffd76a" };
+
+const DIGITAL = ["....GGGG....", "....GGGG....", "....GGGG....", "....GGGG....", ".GGGGGGGGGG.", "..GGGGGGGG..", "...GGGGGG...", "....GGGG....", ".....GG.....", "D..........D", "DDDDDDDDDDDD"];
+
+const DIGITAL_PALETTE: Record<string, string> = { G: "#ffd76a", D: "#c9cdf0" };
+
 /** Convierte un dibujo en una imagen SVG nítida a cualquier tamaño. */
 function spriteUrl(rows: string[], palette: Record<string, string>): string {
   const width = Math.max(...rows.map((row) => row.length));
@@ -92,3 +100,5 @@ export const KEEPER_URL = spriteUrl(KEEPER, KEEPER_PALETTE);
 export const TROPHY_URL = spriteUrl(TROPHY, TROPHY_PALETTE);
 export const CHEST_CLOSED_URL = spriteUrl(CHEST_CLOSED, CHEST_PALETTE);
 export const CHEST_OPEN_URL = spriteUrl(CHEST_OPEN, CHEST_PALETTE);
+export const CARTRIDGE_URL = spriteUrl(CARTRIDGE, CARTRIDGE_PALETTE);
+export const DIGITAL_URL = spriteUrl(DIGITAL, DIGITAL_PALETTE);

@@ -78,13 +78,13 @@ test("el nombre y los estados van en una sola línea, y los recuadros igualados"
   const right = await page.getByRole("region", { name: "Tus récords" }).locator("xpath=..").boundingBox();
   expect(Math.round(left!.height)).toBe(Math.round(right!.height));
 
-  // Los recuadros de abajo se alinean con los de arriba.
-  const copiesBox = await page.getByRole("region", { name: "Tus copias" }).boundingBox();
+  // El inventario va entre la carátula y las misiones, y los recuadros anchos se alinean.
+  const inventoryBox = await page.getByRole("region", { name: "Inventario" }).boundingBox();
   const moreBox = await page.getByRole("region", { name: "Más datos" }).boundingBox();
-  expect(Math.round(copiesBox!.x)).toBe(Math.round(left!.x));
-  expect(Math.round(copiesBox!.width)).toBe(Math.round(left!.width));
-  expect(Math.round(moreBox!.x)).toBe(Math.round(right!.x));
-  expect(Math.round(moreBox!.width)).toBe(Math.round(right!.width));
+  expect(inventoryBox!.y).toBeLessThan(left!.y);
+  expect(Math.round(inventoryBox!.x)).toBe(Math.round(left!.x));
+  expect(Math.round(moreBox!.x)).toBe(Math.round(left!.x));
+  expect(Math.round(moreBox!.width)).toBe(Math.round(inventoryBox!.width));
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);

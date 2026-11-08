@@ -23,15 +23,17 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await page.getByRole("textbox", { name: "Notas", exact: true }).fill("Me falta el Panteón.");
   await page.getByRole("textbox", { name: "Notas", exact: true }).blur();
 
-  // Editar la copia: precio y estantería, como digital con caja decorativa.
-  await page.getByRole("button", { name: "Editar la copia de Switch" }).click();
-  const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Precio pagado (€)").fill("14,99");
-  await dialog.getByLabel("Tengo caja (decorativa)").check();
-  await dialog.getByLabel("Carátula pendiente de imprimir").check();
-  await dialog.getByLabel("Ubicación").fill("Balda 2");
-  await dialog.getByRole("button", { name: "Guardar copia" }).click();
-  await expect(dialog).toBeHidden();
+  // La copia se rellena en el inventario: precio y estantería, como digital con caja decorativa.
+  const inventory = page.getByRole("region", { name: "Inventario" });
+  await inventory.getByRole("button", { name: /^Precio/ }).click();
+  await inventory.getByLabel("Precio").fill("14,99");
+  await inventory.getByLabel("Precio").press("Enter");
+  await inventory.getByLabel("Tengo caja (decorativa)").check();
+  await inventory.getByLabel("Carátula pendiente de imprimir").check();
+  await inventory.getByRole("button", { name: /^Ubicación/ }).click();
+  await inventory.getByLabel("Ubicación").fill("Balda 2");
+  await inventory.getByLabel("Ubicación").press("Enter");
+  await expect(inventory.getByRole("button", { name: /^Ubicación: Balda 2/ })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Hollow Knight" })).toBeVisible();
@@ -40,9 +42,12 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await expect(page.getByRole("button", { name: /^Horas jugadas: 12 h/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Notas: Me falta el Panteón\./ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Tus récords" }).getByText("14,99 €")).toBeVisible();
-  await expect(page.getByText("Caja decorativa · carátula por imprimir · Balda 2")).toBeVisible();
+  await expect(inventory.getByRole("button", { name: /^Precio: 14,99/ })).toBeVisible();
+  await expect(inventory.getByRole("button", { name: /^Ubicación: Balda 2/ })).toBeVisible();
+  await expect(inventory.getByLabel("Tengo caja (decorativa)")).toBeChecked();
+  await expect(inventory.getByLabel("Carátula pendiente de imprimir")).toBeChecked();
   // La caja decorativa no cambia el formato.
-  await expect(page.getByText("Digital", { exact: true }).first()).toBeVisible();
+  await expect(inventory.getByRole("radio", { name: "Digital" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("validación del alta: sin título ni plataforma no se guarda", async ({ page }) => {

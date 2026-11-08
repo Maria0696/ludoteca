@@ -26,7 +26,7 @@ test("el cofre entrega el juego y se puede seguir añadiendo", async ({ page }) 
 
   await expect(dialog.getByRole("heading", { name: "¡Has conseguido Tunic!" })).toBeVisible();
   await expect(dialog.getByText("PC · Digital · Jugando")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Añadir otro" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Apuntar detalles" })).toBeFocused();
   // El juego recién guardado no se avisa como repetido.
   await expect(dialog.getByText(/^Ya tienes/)).toHaveCount(0);
 
