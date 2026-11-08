@@ -188,7 +188,7 @@
 }
 .room[data-fase="entrando"] .box {
   opacity: 0;
-  transition: opacity 300ms 500ms ease;
+  transition: opacity 300ms 750ms ease;
 }
 
 @media (max-width: 600px) {
