@@ -1,49 +1,10 @@
+import { KEEPER, KEEPER_PALETTE as PALETTE } from "@/components/pixel/sprites";
+
 /*
  * La escena de «Entrar», dibujada en un lienzo de píxeles grandes: el muro,
  * las estanterías de cajas de juegos, la puerta y la guardiana (un personaje
  * propio de la app).
  */
-
-const KEEPER = [
-  ".....hhhhhh.......",
-  "...hhHHHHHHhh.....",
-  "..hHHHHHHHHHHh....",
-  "..hHHHHHHHHHHh....",
-  "..hHHffffffHHh....",
-  "..hHfeffffefHh....",
-  "..hHffffffffHh....",
-  "..hHfffmmfffHh....",
-  "...hHffffffHh.....",
-  "....hhHHHHhh......",
-  "...rRRgggRRr......",
-  "..rRRRRgRRRRr.....",
-  ".rRRrRRgRRrRRr....",
-  ".rRrrRRgRRrrRRr...",
-  ".ffrrRRgRRrr.ffLL.",
-  ".ffrrRRgRRrr..LYYL",
-  "...rRRRgRRRr..LYYL",
-  "...rRRRgRRRr..LLLL",
-  "...rRRRgRRRr......",
-  "..rRRRRgRRRRr.....",
-  "..rRRRRgRRRRr.....",
-  "..rRRRRgRRRRr.....",
-  "...bbb...bbb......",
-  "...bbb...bbb......",
-];
-
-const PALETTE: Record<string, string> = {
-  h: "#1f5d6b",
-  H: "#2f8a99",
-  f: "#e9c39b",
-  e: "#1a1426",
-  m: "#b5705a",
-  r: "#3d2a6b",
-  R: "#5a3f9a",
-  g: "#ffd76a",
-  L: "#3a3340",
-  Y: "#ffe27a",
-  b: "#2a2030",
-};
 
 /** Letras de 3×5 para el rótulo de encima de la puerta. */
 const SIGN: Record<string, string[]> = {
