@@ -64,6 +64,12 @@ const TROPHY = [
 
 const TROPHY_PALETTE: Record<string, string> = { Y: "#ffd76a", W: "#fff8d0", O: "#c8962a", G: "#e9b94a", B: "#6b4a2a" };
 
+const CHEST_CLOSED = ["..DDDDDDDDDDDDDDDD..",".DGGGGGGGGGGGGGGGGD.","DGBBBBBBBBBBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGGGGGGGGYYGGGGGGGGD","DDDDDDDDYWWYDDDDDDDD","DGBBBBBBYWWYBBBBBBGD","DGBBBBBBBYYBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGGGGGGGGGGGGGGGGGGD",".DDDDDDDDDDDDDDDDDD."];
+
+const CHEST_OPEN = ["..DDDDDDDDDDDDDDDD..",".DGGGGGGGGGGGGGGGGD.","DGBBBBBBBBBBBBBBBBGD","DGGGGGGGGGGGGGGGGGGD","DKKKKKKKKKKKKKKKKKKD","DKKLLLLLLLLLLLLLLKKD","DDDDDDDDDDDDDDDDDDDD","DGBBBBBBBBBBBBBBBBGD","DGBBBBBBBYYBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGBBBBBBBBBBBBBBBBGD","DGGGGGGGGGGGGGGGGGGD",".DDDDDDDDDDDDDDDDDD."];
+
+const CHEST_PALETTE: Record<string, string> = { D: "#3a2212", G: "#e9b94a", B: "#8a5a2b", Y: "#ffd76a", W: "#fff8d0", K: "#1a1008", L: "#ffe27a" };
+
 /** Convierte un dibujo en una imagen SVG nítida a cualquier tamaño. */
 function spriteUrl(rows: string[], palette: Record<string, string>): string {
   const width = Math.max(...rows.map((row) => row.length));
@@ -84,3 +90,5 @@ function spriteUrl(rows: string[], palette: Record<string, string>): string {
 
 export const KEEPER_URL = spriteUrl(KEEPER, KEEPER_PALETTE);
 export const TROPHY_URL = spriteUrl(TROPHY, TROPHY_PALETTE);
+export const CHEST_CLOSED_URL = spriteUrl(CHEST_CLOSED, CHEST_PALETTE);
+export const CHEST_OPEN_URL = spriteUrl(CHEST_OPEN, CHEST_PALETTE);

@@ -1,4 +1,4 @@
-import { type Page, expect } from "@playwright/test";
+import { type Locator, type Page, expect } from "@playwright/test";
 
 export async function openApp(page: Page, path = "/") {
   await page.goto(path);
@@ -11,6 +11,11 @@ export async function loadDemo(page: Page) {
   await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
 }
 
+/** Elige plataforma en la ventana de añadir juego. */
+export async function choosePlatform(dialog: Locator, platform: string) {
+  await dialog.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: platform, exact: true }).click();
+}
+
 export async function addGame(
   page: Page,
   game: { title: string; platform: string; format?: "Físico" | "Digital"; status?: string },
@@ -20,10 +25,12 @@ export async function addGame(
   await expect(dialog).toBeVisible();
   const title = dialog.getByLabel("Título");
   if (await title.count()) await title.fill(game.title);
-  await dialog.getByLabel("Plataforma").selectOption(game.platform);
+  await choosePlatform(dialog, game.platform);
   if (game.format) await dialog.getByRole("radio", { name: game.format, exact: true }).click();
   if (game.status) await dialog.getByRole("radio", { name: game.status, exact: true }).click();
   await dialog.getByRole("button", { name: /^Añadir (a la biblioteca|copia)$/ }).click();
+  await expect(dialog.getByRole("button", { name: "Añadir otro" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Cerrar" }).click();
   await expect(dialog).toBeHidden();
 }
 
