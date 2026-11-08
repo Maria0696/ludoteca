@@ -120,6 +120,7 @@ test("si Supabase no responde, lo dice en español y deja reintentar", async ({ 
   await page.keyboard.press("Enter");
   await expect(guardianSays(page, "alert", "La puerta no responde")).toBeAttached();
   await expect(page.getByRole("button", { name: "Decir" })).toBeEnabled();
+  expect(await page.evaluate(() => localStorage.getItem("ludoteca:titulo-visto"))).toBeNull();
 });
 
 test("al entrar bien, la puerta se abre", async ({ page }) => {
@@ -142,6 +143,9 @@ test("al entrar bien, la puerta se abre", async ({ page }) => {
   await expect(guardianSays(page, "status", "Todo en orden")).toBeAttached();
   expect(await shownAtDoor).toBe("Todo en orden. Pasa, tu colección te espera.");
   await expect(page.locator("main")).toHaveAttribute("data-fase", "entrando");
+  // Tras cruzar la puerta, hoy ya no sale la pantalla de título.
+  const seen = await page.evaluate(() => [localStorage.getItem("ludoteca:titulo-visto"), new Intl.DateTimeFormat("sv-SE").format(new Date())]);
+  expect(seen[0]).toBe(seen[1]);
 });
 
 test("con los dos campos rellenos por un gestor de contraseñas no pregunta dos veces", async ({ page }) => {

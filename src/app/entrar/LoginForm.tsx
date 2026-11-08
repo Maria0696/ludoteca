@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/config";
 import { safeNextPath } from "@/lib/redirect";
 import { getBrowserSupabase } from "@/lib/supabase/client";
+import { markTitleScreenSeen } from "@/lib/title-screen";
 import styles from "./entrar.module.css";
 import { arcade, terminal } from "./fonts";
 import { drawScene, initialScene, makeGameBoxes, pixelSize } from "./scene";
@@ -170,6 +171,8 @@ export function LoginForm() {
       complain(text, passwordRef.current);
       return;
     }
+    // Quien acaba de cruzar la puerta ya ha entrado: hoy no hace falta «Pulsa Start».
+    markTitleScreenSeen();
     const target = safeNextPath(params.get("next"), window.location.origin);
     router.prefetch(target);
     say(LINES.welcome);
