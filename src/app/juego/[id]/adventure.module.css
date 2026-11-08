@@ -373,6 +373,15 @@
   align-content: start;
   min-width: 0;
 }
+.lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 30px;
+  align-items: stretch;
+}
+.lower > .panel {
+  align-content: start;
+}
 .panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -904,6 +913,22 @@ button.slot:hover {
   }
 }
 
+/* Ficha técnica */
+.synopsis {
+  white-space: pre-line;
+}
+.synopsis .value {
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .synopsis .value:hover {
+    color: var(--gold);
+  }
+}
+.synopsis .editWrap {
+  width: 100%;
+}
+
 /* Más datos */
 .moreActions {
   display: flex;
@@ -1038,6 +1063,7 @@ button.slot:hover {
     bottom: -12px;
   }
   .columns,
+  .lower,
   .inventoryBody {
     grid-template-columns: minmax(0, 1fr);
   }

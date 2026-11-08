@@ -52,6 +52,26 @@ interface IgdbGame {
   platforms?: { abbreviation?: string; name: string }[];
   game_modes?: { name: string }[];
   aggregated_rating?: number;
+  summary?: string;
+  franchise?: { name: string };
+  franchises?: { name: string }[];
+  collections?: { name: string }[];
+  involved_companies?: { developer?: boolean; company?: { name: string } }[];
+  age_ratings?: { organization?: { name: string }; rating_category?: { rating: string } }[];
+}
+
+const BASE_FIELDS =
+  "name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating";
+const DETAIL_FIELDS =
+  "summary,franchise.name,franchises.name,collections.name,involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating";
+
+const PEGI_AGES: Record<string, string> = { Three: "3", Seven: "7", Twelve: "12", Sixteen: "16", Eighteen: "18" };
+
+function pegiRating(ratings: IgdbGame["age_ratings"] = []): string | null {
+  const rating = ratings.find((r) => /pegi/i.test(r.organization?.name ?? ""))?.rating_category?.rating;
+  if (!rating) return null;
+  const age = rating.match(/\d+/)?.[0] ?? PEGI_AGES[rating];
+  return age ? `PEGI ${age}` : null;
 }
 
 const GENRES_ES: Record<string, string> = {
@@ -180,13 +200,11 @@ export async function GET(request: Request) {
   if (!id && q.length < 2) return NextResponse.json<CatalogResponse>({ ok: true, results: [] });
 
   try {
-    const fields =
-      "fields name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating;";
     const safe = q.replace(/["\\]/g, " ").slice(0, 80);
-    const games = await igdb<IgdbGame[]>(
-      "games",
-      id ? `${fields} where id = ${id}; limit 1;` : `search "${safe}"; ${fields} where version_parent = null; limit 8;`,
-    );
+    const query = (fields: string) =>
+      id ? `fields ${fields}; where id = ${id}; limit 1;` : `search "${safe}"; fields ${fields}; where version_parent = null; limit 8;`;
+    // Si IGDB rechaza los detalles, la búsqueda sigue funcionando con lo básico.
+    const games = await igdb<IgdbGame[]>("games", query(`${BASE_FIELDS},${DETAIL_FIELDS}`)).catch(() => igdb<IgdbGame[]>("games", query(BASE_FIELDS)));
     const ids = games.map((g) => g.id);
     const times = ids.length
       ? await igdb<{ game_id: number; normally?: number; hastily?: number }[]>(
@@ -213,6 +231,11 @@ export async function GET(request: Request) {
         lengthHours: seconds ? Math.round((seconds / 3600) * 2) / 2 : null,
         // Un valor fuera de escala impediría guardar el juego: mejor sin nota.
         criticRating: critics != null && critics >= 0 && critics <= 100 ? Math.round(critics) : null,
+        summary: g.summary?.trim().slice(0, 2000) || null,
+        developer: (g.involved_companies ?? []).flatMap((c) => (c.developer && c.company ? [c.company.name] : [])).join(", ") || null,
+        saga: g.franchise?.name ?? g.franchises?.[0]?.name ?? g.collections?.[0]?.name ?? null,
+        releaseDate: g.first_release_date ? new Date(g.first_release_date * 1000).toISOString().slice(0, 10) : null,
+        ageRating: pegiRating(g.age_ratings),
       };
     });
     return NextResponse.json<CatalogResponse>({ ok: true, results });

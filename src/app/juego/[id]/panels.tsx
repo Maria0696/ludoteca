@@ -16,6 +16,7 @@ import {
 } from "@/lib/model";
 import styles from "./adventure.module.css";
 import { Editable } from "./Editable";
+import { Row } from "./Inventory";
 import { progressPercent } from "./progress";
 
 type Update = (patch: Partial<Game>) => void;
@@ -324,6 +325,69 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
       </div>
       <Chips label="Cómo se juega" options={MODE_LABEL} value={game.modes} onChange={(v) => update({ modes: v })} />
       <Chips label="Tipo de experiencia" options={MOOD_LABEL} value={game.moods} onChange={(v) => update({ moods: v })} />
+    </>
+  );
+}
+
+const DETAILS = ["summary", "developer", "saga", "releaseDate", "ageRating"] as const;
+
+/** Lo que el catálogo sabe del juego. Solo rellena huecos: lo que hayas corregido se queda. */
+export function TechSheet({ game, update }: { game: Game; update: Update }) {
+  const [lookup, setLookup] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const missing = DETAILS.filter((key) => !game[key]);
+
+  async function fetchDetails() {
+    setLookup("loading");
+    try {
+      const res = await fetch(`/api/catalogo?id=${game.igdbId}`);
+      const data = (await res.json()) as CatalogResponse;
+      if (!data.ok) return setLookup("error");
+      const found = data.results[0];
+      const patch: Partial<Game> = {};
+      for (const key of missing) if (found?.[key]) patch[key] = found[key];
+      if (Object.keys(patch).length) update(patch);
+      setLookup("done");
+    } catch {
+      setLookup("error");
+    }
+  }
+
+  const text = (label: string, field: "developer" | "saga" | "ageRating") => (
+    <Row label={label}>
+      <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} onSave={(v) => update({ [field]: v })} />
+    </Row>
+  );
+
+  return (
+    <>
+      <div className={styles.panelTop}>
+        <h2 id="ficha-tecnica" className={styles.panelHead}>
+          Ficha técnica
+        </h2>
+        {game.igdbId != null &&
+          missing.length > 0 &&
+          (lookup === "done" ? (
+            <span className={styles.statNote} role="status">
+              IGDB no tiene más datos
+            </span>
+          ) : (
+            <button type="button" className={styles.add} disabled={lookup === "loading"} onClick={fetchDetails} aria-label="Traer los datos de IGDB">
+              <Search aria-hidden />
+              {lookup === "loading" ? "Buscando…" : lookup === "error" ? "Reintentar" : "Traer de IGDB"}
+            </button>
+          ))}
+      </div>
+      <div className={styles.synopsis}>
+        <Editable kind="multiline" quiet rows={8} label="Sinopsis" value={game.summary} display={game.summary ?? null} empty="Añadir sinopsis" onSave={(summary) => update({ summary })} />
+      </div>
+      <dl className={styles.stats}>
+        {text("Desarrolladora", "developer")}
+        {text("Saga", "saga")}
+        <Row label="Lanzamiento">
+          <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />
+        </Row>
+        {text("Edad", "ageRating")}
+      </dl>
     </>
   );
 }

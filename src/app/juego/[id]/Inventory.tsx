@@ -26,7 +26,7 @@ const linkHost = (url: string) => {
   }
 };
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+export function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className={styles.statRow}>
       <dt>{label}</dt>

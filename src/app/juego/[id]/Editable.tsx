@@ -19,7 +19,7 @@ type Props = Common &
   (
     | { kind: "number"; value: number | null | undefined; onSave: (v: number | null) => void; min?: number; max?: number; step?: number; integer?: boolean }
     | { kind: "date"; value: string | null | undefined; onSave: (v: string | null) => void }
-    | { kind: "text" | "multiline"; value: string | null | undefined; onSave: (v: string | null) => void; maxLength?: number; validate?: (text: string) => string | null }
+    | { kind: "text" | "multiline"; value: string | null | undefined; onSave: (v: string | null) => void; maxLength?: number; validate?: (text: string) => string | null; rows?: number }
   );
 
 /** Un dato que se ve como texto y se edita al pulsarlo. */
@@ -116,7 +116,7 @@ export function Editable(props: Props) {
   return (
     <span className={styles.editWrap}>
       {props.kind === "multiline" ? (
-        <textarea {...shared} rows={3} defaultValue={initial} maxLength={props.maxLength ?? 2000} />
+        <textarea {...shared} rows={props.rows ?? 3} defaultValue={initial} maxLength={props.maxLength ?? 2000} />
       ) : (
         <input
           {...shared}
