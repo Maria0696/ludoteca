@@ -13,9 +13,14 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await expect(page.getByRole("heading", { level: 1, name: "Hollow Knight" })).toBeVisible();
 
   await page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { name: "Jugando" }).click();
+  await page.getByRole("button", { name: "8 de 10", exact: true }).click();
+  await page.getByRole("button", { name: /^Tu valoración/ }).click();
   await page.getByLabel("Tu valoración").fill("8,5");
+  await page.getByLabel("Tu valoración").press("Enter");
+  await page.getByRole("button", { name: /^Horas jugadas/ }).click();
   await page.getByLabel("Horas jugadas").fill("12");
   await page.getByLabel("Horas jugadas").press("Enter");
+  await page.getByRole("button", { name: /^Notas/ }).click();
   await page.getByRole("textbox", { name: "Notas", exact: true }).fill("Me falta el Panteón.");
   await page.getByRole("textbox", { name: "Notas", exact: true }).blur();
 
@@ -32,10 +37,10 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Hollow Knight" })).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByLabel("Tu valoración")).toHaveValue("8,5");
-  await expect(page.getByLabel("Horas jugadas")).toHaveValue("12");
-  await expect(page.getByRole("textbox", { name: "Notas", exact: true })).toHaveValue("Me falta el Panteón.");
-  await expect(page.getByText("14,99 €")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Tu valoración: 8,5/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Horas jugadas: 12 h/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Notas: Me falta el Panteón\./ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Tus récords" }).getByText("14,99 €")).toBeVisible();
   await expect(page.getByText("Caja decorativa · carátula por imprimir · Balda 2")).toBeVisible();
   // La caja decorativa no cambia el formato.
   await expect(page.getByText("Digital", { exact: true }).first()).toBeVisible();

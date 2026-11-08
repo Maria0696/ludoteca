@@ -32,9 +32,11 @@ test("pasar un deseo a la biblioteca conservando sus datos", async ({ page }) =>
 
   await page.goto("/biblioteca");
   await cards(page).getByRole("link", { name: /Okami HD/ }).click();
-  await expect(page.getByText("15,99 €")).toBeVisible();
-  await expect(page.getByText("GAME", { exact: true })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Notas", exact: true })).toHaveValue(/Edición con caja si aparece\.\s+Precio objetivo en la lista de deseos: 12 €/);
+  await expect(page.getByRole("region", { name: "Tus récords" }).getByText("15,99 €")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Misiones" }).getByText(/GAME/)).toBeVisible();
+  const notes = page.getByRole("region", { name: "Misiones" }).getByRole("button", { name: /^Notas:/ });
+  await expect(notes).toContainText("Edición con caja si aparece.");
+  await expect(notes).toContainText("Precio objetivo en la lista de deseos: 12");
 });
 
 test("las recomendaciones respetan filtros y disponibilidad", async ({ page }) => {
