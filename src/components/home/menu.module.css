@@ -552,6 +552,24 @@
   }
 }
 
+/* En escritorio el escenario mide siempre lo mismo: si creciera con el panel,
+   la lista se movería bajo el ratón y elegiría otra opción sin querer. */
+@media (min-width: 900px) {
+  .stage {
+    height: max(calc(100dvh - var(--bottombar)), 540px);
+  }
+  .body {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .panel {
+    min-height: 0;
+    overflow: hidden auto;
+    align-content: safe center;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff40 transparent;
+  }
+}
+
 /* Portátiles bajos: las cuatro partidas caben sin mover la página. */
 @media (min-width: 900px) and (max-height: 780px) {
   .slot {
