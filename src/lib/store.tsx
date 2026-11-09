@@ -40,6 +40,8 @@ interface Actions {
   setStatus(id: string, status: GameStatus): void;
   markPlayedToday(id: string): void;
   deleteGame(id: string): void;
+  /** Vacía la biblioteca; si no lo consigue del todo, avisa con un error. */
+  deleteAllGames(): Promise<void>;
   addCopy(gameId: string, copy: NewCopyInput): Copy;
   updateCopy(id: string, patch: Partial<Copy>): void;
   deleteCopy(id: string): void;
@@ -434,6 +436,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           copies: [...before.copies, ...plan.copies],
         });
         return plan.counts;
+      },
+
+      async deleteAllGames() {
+        const repo = repoRef.current;
+        if (!repo) throw new Error("La biblioteca aún no está lista.");
+        await repo.deleteAllGames();
+        const data = await repo.load();
+        commit(data);
+        // Sin permiso, la base de datos no da error: simplemente no borra nada.
+        if (data.games.length) throw new Error("Algunos juegos no se han podido eliminar.");
       },
 
       async loadDemo() {

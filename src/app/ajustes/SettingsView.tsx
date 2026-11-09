@@ -11,6 +11,7 @@ import { backupSummary as summary, downloadBackup } from "@/lib/backup-download"
 import { describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
 import { DEMO_ART } from "@/lib/demo-art";
 import { useLibrary } from "@/lib/store";
+import { DeleteAllGames } from "./DeleteAllGames";
 import styles from "./settings.module.css";
 
 export function SettingsView() {
@@ -267,6 +268,8 @@ export function SettingsView() {
       >
         <p>Se eliminan los juegos, copias, deseos y listas de demostración. Tus {realCount} juegos no se tocan.</p>
       </Dialog>
+
+      <DeleteAllGames />
 
       {plan && <ImportDialog plan={plan} onClose={() => setPlan(null)} />}
     </div>
