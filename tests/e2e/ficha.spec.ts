@@ -188,7 +188,7 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
     );
   });
   const sheet = page.getByRole("region", { name: "Ficha técnica" });
-  const bring = sheet.getByRole("button", { name: "Traer los datos de IGDB" });
+  const bring = (what: string) => sheet.getByRole("button", { name: `Traer de IGDB: ${what}` });
 
   await openApp(page, "/biblioteca");
   await addFromCatalog(page, "Cr con ficha");
@@ -197,26 +197,35 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
   await expect(sheet.getByRole("button", { name: /^Saga: Saga del mar/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Lanzamiento: .*2020/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();
-  await expect(bring).toHaveCount(0);
+  await expect(sheet.getByRole("button", { name: /^Traer de IGDB/ })).toHaveCount(0);
 
   await page.goto("/biblioteca");
   await addFromCatalog(page, "Cr sin ficha");
 
-  // Si IGDB no tiene nada, lo dice.
-  await bring.click();
-  await expect(sheet.getByRole("status")).toHaveText("IGDB no tiene más datos");
-  await expect(bring).toHaveCount(0);
+  // Si IGDB no tiene un dato, lo dice en ese dato y los demás siguen disponibles.
+  await bring("saga").click();
+  await expect(sheet.getByRole("status")).toHaveText("IGDB no tiene este dato");
+  await expect(bring("saga")).toHaveCount(0);
+  await expect(bring("desarrolladora")).toBeVisible();
   await page.reload();
 
-  // Lo escrito a mano no se pisa.
+  // Lo escrito a mano se queda y su botón desaparece.
   await sheet.getByRole("button", { name: "Desarrolladora: añadir" }).click();
-  await sheet.getByLabel("Desarrolladora").fill("La mía");
-  await sheet.getByLabel("Desarrolladora").press("Enter");
+  await sheet.getByRole("textbox", { name: "Desarrolladora" }).fill("La mía");
+  await sheet.getByRole("textbox", { name: "Desarrolladora" }).press("Enter");
+  await expect(bring("desarrolladora")).toHaveCount(0);
+
+  // Cada botón trae solo su dato.
   byId = catalog([{ ...game, ...details, igdbId: 2, title: "Cr sin ficha" }]);
-  await bring.click();
+  await bring("saga").click();
   await expect(sheet.getByRole("button", { name: /^Saga: Saga del mar/ })).toBeVisible();
+  await expect(bring("saga")).toHaveCount(0);
+  await expect(sheet.getByRole("button", { name: "Edad: añadir" })).toBeVisible();
+  await bring("edad").click();
+  await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Desarrolladora: La mía/ })).toBeVisible();
-  await expect(bring).toHaveCount(0);
+  await expect(bring("sinopsis")).toBeVisible();
+  await expect(bring("lanzamiento")).toBeVisible();
 
   await page.reload();
   await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();
@@ -237,32 +246,42 @@ test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un 
     return route.fulfill(byId);
   });
   const panel = page.getByRole("region", { name: "Para elegir a qué jugar" });
-  const bring = panel.getByRole("button", { name: "Traer de IGDB la duración y cómo se juega" });
+  const bringLength = panel.getByRole("button", { name: "Traer de IGDB: duración total" });
+  const bringModes = panel.getByRole("button", { name: "Traer de IGDB: cómo se juega" });
+  const bringMoods = panel.getByRole("button", { name: "Traer de IGDB: tipo de experiencia" });
 
+  // El botón solo sale en el dato que falta.
   await openApp(page, "/biblioteca");
   await addFromCatalog(page, "Cr sin duración");
-  await bring.click();
-  await expect(panel.getByRole("status")).toHaveText("IGDB no tiene la duración");
+  await expect(bringModes).toHaveCount(0);
+  await expect(bringMoods).toHaveCount(0);
+  await bringLength.click();
+  await expect(panel.getByRole("status")).toHaveText("IGDB no tiene este dato");
   expect(asked[0]).toContain("duracion=1");
 
   await page.goto("/biblioteca");
   await addFromCatalog(page, "Cr para elegir");
+  await expect(bringModes).toBeVisible();
   await panel.getByRole("button", { name: "Competitivo" }).click();
+  await expect(bringModes).toHaveCount(0);
 
   // Un fallo no se confunde con que IGDB no lo tenga.
   byId = { status: 502, json: { ok: false, reason: "error", message: "IGDB respondió 500." } };
-  await bring.click();
-  await expect(bring).toContainText("Reintentar");
+  await bringLength.click();
+  await expect(bringLength).toContainText("Reintentar");
   await expect(panel.getByRole("status")).toHaveCount(0);
 
-  // Rellena lo vacío y no pisa lo marcado a mano.
+  // Cada botón trae solo su dato y no pisa lo marcado a mano.
   byId = catalog([{ ...bare, modes: ["solo"], moods: ["historia"], lengthHours: 12.5 }]);
-  await bring.click();
+  await bringLength.click();
   await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
+  await expect(bringLength).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Historia" })).toHaveAttribute("aria-pressed", "false");
+  await bringMoods.click();
   await expect(panel.getByRole("button", { name: "Historia" })).toHaveAttribute("aria-pressed", "true");
+  await expect(bringMoods).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Competitivo" })).toHaveAttribute("aria-pressed", "true");
   await expect(panel.getByRole("button", { name: "Un jugador" })).toHaveAttribute("aria-pressed", "false");
-  await expect(bring).toHaveCount(0);
 
   await page.reload();
   await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();

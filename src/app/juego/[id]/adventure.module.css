@@ -576,6 +576,12 @@
   color: var(--soft);
   font-size: 21px;
 }
+.fieldLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
 .pair {
   display: flex;
   flex-wrap: wrap;
@@ -842,6 +848,9 @@ button.slot:hover {
   margin: 0 0 0 auto;
   text-align: right;
   overflow-wrap: break-word;
+}
+.statRow .fieldLine {
+  justify-content: flex-end;
 }
 .statRow dd:has(.editWrap) {
   flex: 1 1 60%;
