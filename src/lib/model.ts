@@ -123,7 +123,6 @@ export const copySchema = z.object({
   // Estantería: campos opcionales, válidos también para copias digitales con caja decorativa.
   hasCase: z.boolean().nullish(),
   hasFullArtwork: z.boolean().nullish(),
-  artworkPrintPending: z.boolean().nullish(),
   artworkUrl: optionalText,
   shelfLocation: optionalText,
   lentTo: optionalText,
@@ -238,7 +237,6 @@ export function createCopy(gameId: string, input: NewCopyInput): Copy {
     store: null,
     hasCase: null,
     hasFullArtwork: null,
-    artworkPrintPending: null,
     artworkUrl: null,
     shelfLocation: null,
     lentTo: null,

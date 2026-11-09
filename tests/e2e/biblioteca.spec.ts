@@ -29,7 +29,7 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await inventory.getByLabel("Precio").fill("14,99");
   await inventory.getByLabel("Precio").press("Enter");
   await inventory.getByLabel("Tengo caja (decorativa)").check();
-  await inventory.getByLabel("Carátula pendiente de imprimir").check();
+  await inventory.getByLabel("Tiene la carátula completa").check();
   await inventory.getByRole("button", { name: /^Ubicación/ }).click();
   await inventory.getByLabel("Ubicación").fill("Balda 2");
   await inventory.getByLabel("Ubicación").press("Enter");
@@ -45,7 +45,8 @@ test("añadir un juego, editarlo y conservar los cambios tras recargar", async (
   await expect(inventory.getByRole("button", { name: /^Precio: 14,99/ })).toBeVisible();
   await expect(inventory.getByRole("button", { name: /^Ubicación: Balda 2/ })).toBeVisible();
   await expect(inventory.getByLabel("Tengo caja (decorativa)")).toBeChecked();
-  await expect(inventory.getByLabel("Carátula pendiente de imprimir")).toBeChecked();
+  await expect(inventory.getByLabel("Tiene la carátula completa")).toBeChecked();
+  await expect(inventory.getByLabel("Carátula pendiente de imprimir")).toHaveCount(0);
   // La caja decorativa no cambia el formato.
   await expect(inventory.getByRole("radio", { name: "Digital" })).toHaveAttribute("aria-checked", "true");
 });
