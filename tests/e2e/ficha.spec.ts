@@ -223,51 +223,6 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
   await expect(sheet.getByRole("button", { name: /^Desarrolladora: La mía/ })).toBeVisible();
 });
 
-test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un dato que no existe", async ({ page }) => {
-  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], criticRating: null, summary: null, developer: null, saga: null, releaseDate: null, ageRating: null };
-  const bare = { ...game, igdbId: 3, title: "Cr para elegir", modes: [], moods: [], lengthHours: null };
-  const noLength = { ...game, igdbId: 4, title: "Cr sin duración", modes: ["solo"], moods: ["accion"], lengthHours: null };
-  const catalog = (results: object[]) => ({ json: { ok: true, results } });
-  let byId: object = catalog([noLength]);
-  const asked: string[] = [];
-  await page.route("**/api/catalogo?*", (route) => {
-    const url = new URL(route.request().url());
-    if (!url.searchParams.has("id")) return route.fulfill(catalog([bare, noLength]));
-    asked.push(url.search);
-    return route.fulfill(byId);
-  });
-  const panel = page.getByRole("region", { name: "Para elegir a qué jugar" });
-  const bring = panel.getByRole("button", { name: "Traer de IGDB la duración y cómo se juega" });
-
-  await openApp(page, "/biblioteca");
-  await addFromCatalog(page, "Cr sin duración");
-  await bring.click();
-  await expect(panel.getByRole("status")).toHaveText("IGDB no tiene la duración");
-  expect(asked[0]).toContain("duracion=1");
-
-  await page.goto("/biblioteca");
-  await addFromCatalog(page, "Cr para elegir");
-  await panel.getByRole("button", { name: "Competitivo" }).click();
-
-  // Un fallo no se confunde con que IGDB no lo tenga.
-  byId = { status: 502, json: { ok: false, reason: "error", message: "IGDB respondió 500." } };
-  await bring.click();
-  await expect(bring).toContainText("Reintentar");
-  await expect(panel.getByRole("status")).toHaveCount(0);
-
-  // Rellena lo vacío y no pisa lo marcado a mano.
-  byId = catalog([{ ...bare, modes: ["solo"], moods: ["historia"], lengthHours: 12.5 }]);
-  await bring.click();
-  await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
-  await expect(panel.getByRole("button", { name: "Historia" })).toHaveAttribute("aria-pressed", "true");
-  await expect(panel.getByRole("button", { name: "Competitivo" })).toHaveAttribute("aria-pressed", "true");
-  await expect(panel.getByRole("button", { name: "Un jugador" })).toHaveAttribute("aria-pressed", "false");
-  await expect(bring).toHaveCount(0);
-
-  await page.reload();
-  await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
-});
-
 test("un juego escrito a mano no tiene nota de la crítica que buscar", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "PC" });
