@@ -181,6 +181,9 @@ export function LibraryView() {
           {library.copies.length === 1 ? "copia" : "copias"}
         </p>
         <div className={styles.headActions}>
+          <Link href="/importar" className="btn btn-sm">
+            Importar de Steam
+          </Link>
           <div className={styles.viewToggle} role="group" aria-label="Vista">
             <button type="button" className="btn btn-sm" aria-pressed={view === "caratulas"} onClick={() => setParams({ vista: null })}>
               <LayoutGrid aria-hidden />
@@ -422,6 +425,9 @@ function FirstRun() {
             <button type="button" className="btn btn-sticker" onClick={() => open()}>
               Añadir el primer juego
             </button>
+            <Link href="/importar" className="btn">
+              Importar de Steam
+            </Link>
             <button
               type="button"
               className="btn"

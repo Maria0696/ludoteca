@@ -37,8 +37,9 @@ Abre http://localhost:3000. Sin variables de entorno funciona en **modo local**:
 | Vercel (Hobby) | Alojar la app | Gratis | Sí |
 | Supabase (Free) | Base de datos, inicio de sesión y sincronización entre dispositivos | Gratis | Sí, para usarla en Vercel con tus datos a salvo |
 | IGDB (vía Twitch) | Buscar carátulas, géneros y duración | Gratis para uso no comercial | No: todo se puede escribir a mano |
+| Steam Web API | Importar tus juegos y horas de Steam | Gratis | No: solo para la pantalla de importar |
 
-Las variables están documentadas en [.env.example](.env.example). Las claves privadas (`IGDB_CLIENT_SECRET`) solo se usan en el servidor.
+Las variables están documentadas en [.env.example](.env.example). Las claves privadas (`IGDB_CLIENT_SECRET`, `STEAM_API_KEY`) solo se usan en el servidor.
 
 ### 1. Subir el código a GitHub
 
@@ -79,6 +80,8 @@ En el plan gratuito, Supabase pausa los proyectos con poca actividad durante una
 3. Pulsa **New Secret** y apunta el *Client ID* y el *Client Secret*.
 
 IGDB es gratuito para uso no comercial según el acuerdo de desarrolladores de Twitch, con un límite de 4 peticiones por segundo. La app indica la fuente al mostrar resultados.
+
+Para importar de Steam, crea una clave en https://steamcommunity.com/dev/apikey y guárdala como `STEAM_API_KEY`. En la privacidad de tu perfil de Steam, «Detalles de los juegos» debe estar en público.
 
 ### 4. Desplegar en Vercel
 

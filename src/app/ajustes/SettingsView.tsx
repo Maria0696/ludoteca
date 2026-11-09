@@ -1,6 +1,7 @@
 "use client";
 
 import { Cloud, Download, HardDrive, LogOut, Upload } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -202,6 +203,20 @@ export function SettingsView() {
           <p className="muted" style={{ fontSize: 12 }}>
             Datos del catálogo proporcionados por IGDB.com, gratuito para uso no comercial.
           </p>
+        </div>
+      </section>
+
+      <section className={styles.row} aria-labelledby="h-steam">
+        <div className={styles.label}>
+          <h2 id="h-steam">Steam</h2>
+          <p>Trae tus juegos y tus horas. Puedes repetirlo cuando quieras: no se duplica nada.</p>
+        </div>
+        <div className={styles.panel}>
+          <div className={styles.actions}>
+            <Link href="/importar" className="btn">
+              Importar de Steam
+            </Link>
+          </div>
         </div>
       </section>
 

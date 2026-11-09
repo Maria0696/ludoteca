@@ -19,6 +19,7 @@ const sinServicios = {
   OWNER_EMAIL: "",
   IGDB_CLIENT_ID: "",
   IGDB_CLIENT_SECRET: "",
+  STEAM_API_KEY: "",
 };
 
 /** La pantalla de título ya vista hoy: cada prueba llega directa al menú. */

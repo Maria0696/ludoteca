@@ -77,6 +77,8 @@ export const gameSchema = z.object({
   /** Arte apaisado para los fondos; si falta, se usa la carátula difuminada. */
   backdropUrl: z.string().max(2_000_000).nullish(),
   igdbId: z.number().int().nullish(),
+  /** Número del juego en Steam, si llegó desde allí. */
+  steamAppId: z.number().int().positive().nullish(),
   genres: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
   tags: z.array(z.string().trim().min(1).max(60)).max(50).default([]),
   status: z.enum(GAME_STATUSES).default("pendiente"),
@@ -191,6 +193,62 @@ export function todayIso(): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
+}
+
+export type NewGameInput = Partial<Omit<Game, "id" | "createdAt" | "updatedAt">> & { title: string };
+export type NewCopyInput = Partial<Omit<Copy, "id" | "gameId" | "createdAt" | "updatedAt">> & Pick<Copy, "platform" | "format">;
+
+export function createGame(input: NewGameInput): Game {
+  const stamp = nowIso();
+  return {
+    coverUrl: null,
+    backdropUrl: null,
+    igdbId: null,
+    genres: [],
+    tags: [],
+    status: "pendiente",
+    completed100: false,
+    favorite: false,
+    rating: null,
+    hoursPlayed: null,
+    notes: null,
+    startedAt: null,
+    finishedAt: null,
+    lastPlayedAt: null,
+    modes: [],
+    moods: [],
+    sessionMinutes: null,
+    lengthHours: null,
+    ...input,
+    title: input.title.trim(),
+    id: newId(),
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
+}
+
+export function createCopy(gameId: string, input: NewCopyInput): Copy {
+  const stamp = nowIso();
+  return {
+    edition: null,
+    availability: "comprado",
+    subscriptionService: null,
+    acquiredAt: null,
+    pricePaid: null,
+    store: null,
+    hasCase: null,
+    hasFullArtwork: null,
+    artworkPrintPending: null,
+    artworkUrl: null,
+    shelfLocation: null,
+    lentTo: null,
+    lentAt: null,
+    ...input,
+    id: newId(),
+    gameId,
+    createdAt: stamp,
+    updatedAt: stamp,
+  };
 }
 
 /** Título normalizado para detectar duplicados: sin acentos, mayúsculas, puntuación ni artículos iniciales. */
