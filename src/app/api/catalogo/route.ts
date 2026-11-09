@@ -28,8 +28,9 @@ export async function GET(request: Request) {
 
   try {
     const safe = q.replace(/["\\]/g, " ").slice(0, 80);
-    const results = await fetchCatalogGames((fields) =>
-      id ? `fields ${fields}; where id = ${id}; limit 1;` : `search "${safe}"; fields ${fields}; where version_parent = null; limit 8;`,
+    const results = await fetchCatalogGames(
+      (fields) => (id ? `fields ${fields}; where id = ${id}; limit 1;` : `search "${safe}"; fields ${fields}; where version_parent = null; limit 8;`),
+      { requireTimes: params.has("duracion") },
     );
     return NextResponse.json<CatalogResponse>({ ok: true, results });
   } catch (e) {

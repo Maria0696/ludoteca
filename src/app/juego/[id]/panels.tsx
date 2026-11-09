@@ -304,11 +304,49 @@ function Chips<T extends string>({ label, options, value, onChange }: { label: s
 }
 
 export function PlayOptions({ game, update }: { game: Game; update: Update }) {
+  const [lookup, setLookup] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const noLength = game.lengthHours == null;
+  const noModes = game.modes.length === 0;
+  const noMoods = game.moods.length === 0;
+
+  // Solo rellena lo que esté vacío: lo que hayas marcado se queda.
+  async function fetchOptions() {
+    setLookup("loading");
+    try {
+      const res = await fetch(`/api/catalogo?id=${game.igdbId}&duracion=1`);
+      const data = (await res.json()) as CatalogResponse;
+      if (!data.ok) return setLookup("error");
+      const found = data.results[0];
+      const patch: Partial<Game> = {};
+      if (noLength && found?.lengthHours != null) patch.lengthHours = found.lengthHours;
+      if (noModes && found?.modes.length) patch.modes = found.modes;
+      if (noMoods && found?.moods.length) patch.moods = found.moods;
+      if (Object.keys(patch).length) update(patch);
+      setLookup("done");
+    } catch {
+      setLookup("error");
+    }
+  }
+
   return (
     <>
-      <h2 id="para-elegir" className={styles.panelHead}>
-        Para elegir a qué jugar
-      </h2>
+      <div className={styles.panelTop}>
+        <h2 id="para-elegir" className={styles.panelHead}>
+          Para elegir a qué jugar
+        </h2>
+        {game.igdbId != null &&
+          (noLength || noModes || noMoods) &&
+          (lookup === "done" ? (
+            <span className={styles.statNote} role="status">
+              {noLength && !noModes && !noMoods ? "IGDB no tiene la duración" : "IGDB no tiene más datos"}
+            </span>
+          ) : (
+            <button type="button" className={styles.add} disabled={lookup === "loading"} onClick={fetchOptions} aria-label="Traer de IGDB la duración y cómo se juega">
+              <Search aria-hidden />
+              {lookup === "loading" ? "Buscando…" : lookup === "error" ? "Reintentar" : "Traer de IGDB"}
+            </button>
+          ))}
+      </div>
       <div className={styles.pair}>
         <div className={styles.field}>
           <span className={styles.label}>Una sesión dura unos</span>
