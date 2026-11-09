@@ -21,6 +21,8 @@ export interface Repository {
   deleteCopy(id: string): Promise<void>;
   deleteWish(id: string): Promise<void>;
   deleteList(id: string): Promise<void>;
+  /** Borra todos los juegos y sus copias y vacía las listas; los deseos no se tocan. */
+  deleteAllGames(): Promise<void>;
   /** Elimina todos los registros marcados como demostración. */
   deleteDemo(): Promise<void>;
 }

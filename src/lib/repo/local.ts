@@ -104,6 +104,10 @@ export class LocalRepository implements Repository {
     return this.commit((d) => ({ ...d, lists: d.lists.filter((l) => l.id !== id) }));
   }
 
+  deleteAllGames() {
+    return this.commit((d) => ({ ...d, games: [], copies: [], lists: d.lists.map((l) => ({ ...l, gameIds: [] })) }));
+  }
+
   deleteDemo() {
     return this.commit((d) => {
       const demoGames = new Set(d.games.filter((g) => g.demo).map((g) => g.id));

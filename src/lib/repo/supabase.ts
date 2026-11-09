@@ -123,6 +123,14 @@ export class SupabaseRepository implements Repository {
     return this.remove("lists", "id", id);
   }
 
+  async deleteAllGames() {
+    // Las copias se borran en cascada con su juego. Supabase exige un filtro para borrar.
+    const games = await this.db.from("games").delete().not("id", "is", null);
+    if (games.error) throw new Error(games.error.message);
+    const lists = await this.db.from("lists").update({ game_ids: [] }).not("id", "is", null);
+    if (lists.error) throw new Error(lists.error.message);
+  }
+
   async deleteDemo() {
     await this.remove("copies", "demo", true);
     await this.remove("games", "demo", true);
