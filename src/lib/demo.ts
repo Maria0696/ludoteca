@@ -42,12 +42,12 @@ interface DemoGame {
   completed100?: boolean;
   finishedMonthsAgo?: number;
   lastPlayedDaysAgo?: number;
-  copies: { platform: string; format: "fisico" | "digital"; acquiredMonthsAgo: number; price?: number; store?: string; edition?: string; availability?: Copy["availability"]; hasCase?: boolean; hasFullArtwork?: boolean; artworkPrintPending?: boolean; shelf?: string; lentTo?: string }[];
+  copies: { platform: string; format: "fisico" | "digital"; acquiredMonthsAgo: number; price?: number; store?: string; edition?: string; availability?: Copy["availability"]; hasCase?: boolean; hasFullArtwork?: boolean; shelf?: string; lentTo?: string }[];
 }
 
 const GAMES: DemoGame[] = [
   { title: "Hades", status: "jugando", genres: ["Roguelike", "Acción"], modes: ["solo"], moods: ["accion", "reto", "rapida"], session: 30, length: 22, rating: 9.5, hours: 41, favorite: true, lastPlayedDaysAgo: 1,
-    copies: [{ platform: "Switch", format: "digital", acquiredMonthsAgo: 30, price: 24.99, store: "Nintendo eShop", hasCase: true, hasFullArtwork: false, artworkPrintPending: true, shelf: "Balda 2" }] },
+    copies: [{ platform: "Switch", format: "digital", acquiredMonthsAgo: 30, price: 24.99, store: "Nintendo eShop", hasCase: true, hasFullArtwork: false, shelf: "Balda 2" }] },
   { title: "Hollow Knight", status: "pausado", genres: ["Metroidvania", "Plataformas"], modes: ["solo"], moods: ["reto", "accion"], session: 60, length: 30, rating: 9, hours: 18, lastPlayedDaysAgo: 120,
     copies: [{ platform: "Switch", format: "digital", acquiredMonthsAgo: 40, price: 14.99, store: "Nintendo eShop", hasCase: true, hasFullArtwork: true, shelf: "Balda 2" }] },
   { title: "Spiritfarer", status: "jugando", genres: ["Gestión", "Aventura"], modes: ["solo", "coop_local"], moods: ["tranquila", "historia"], session: 45, length: 30, rating: 8.5, hours: 12, lastPlayedDaysAgo: 4,
@@ -163,7 +163,6 @@ export function createDemoLibrary(today = new Date()): Library {
         store: c.store ?? null,
         hasCase: c.hasCase ?? (c.format === "fisico" ? true : null),
         hasFullArtwork: c.hasFullArtwork ?? (c.format === "fisico" ? true : null),
-        artworkPrintPending: c.artworkPrintPending ?? null,
         artworkUrl: null,
         shelfLocation: c.shelf ?? null,
         lentTo: c.lentTo ?? null,

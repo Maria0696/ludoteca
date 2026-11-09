@@ -107,7 +107,7 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
     />
   );
 
-  const check = (field: "hasCase" | "hasFullArtwork" | "artworkPrintPending", label: string) => (
+  const check = (field: "hasCase" | "hasFullArtwork", label: string) => (
     <label className={styles.toggle}>
       <input type="checkbox" checked={Boolean(copy[field])} onChange={(e) => save({ [field]: e.target.checked } as Partial<Copy>)} />
       {label}
@@ -207,7 +207,6 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
             <div className={styles.toggles}>
               {check("hasCase", digital ? "Tengo caja (decorativa)" : "Tengo caja")}
               {check("hasFullArtwork", "Tiene la carátula completa")}
-              {check("artworkPrintPending", "Carátula pendiente de imprimir")}
             </div>
             {digital && <p className={styles.statNote}>Una caja decorativa no cambia el formato: la copia sigue siendo digital.</p>}
           </div>

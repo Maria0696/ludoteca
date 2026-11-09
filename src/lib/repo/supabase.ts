@@ -23,7 +23,7 @@ const copyCols: [keyof Copy, string][] = [
   ["id", "id"], ["gameId", "game_id"], ["platform", "platform"], ["edition", "edition"], ["format", "format"],
   ["availability", "availability"], ["subscriptionService", "subscription_service"], ["acquiredAt", "acquired_at"],
   ["pricePaid", "price_paid"], ["store", "store"], ["hasCase", "has_case"], ["hasFullArtwork", "has_full_artwork"],
-  ["artworkPrintPending", "artwork_print_pending"], ["artworkUrl", "artwork_url"], ["shelfLocation", "shelf_location"],
+  ["artworkUrl", "artwork_url"], ["shelfLocation", "shelf_location"],
   ["lentTo", "lent_to"], ["lentAt", "lent_at"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
