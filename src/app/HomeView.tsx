@@ -59,18 +59,20 @@ export function HomeView() {
             <button type="button" className="btn btn-sticker btn-lg" onClick={() => open()}>
               Añadir el primer juego
             </button>
-            <button
-              type="button"
-              className="btn btn-lg"
-              disabled={loadingDemo}
-              onClick={async () => {
-                setLoadingDemo(true);
-                await actions.loadDemo();
-                setLoadingDemo(false);
-              }}
-            >
-              {loadingDemo ? "Cargando…" : "Probar con datos de demostración"}
-            </button>
+            {mode === "local" && (
+              <button
+                type="button"
+                className="btn btn-lg"
+                disabled={loadingDemo}
+                onClick={async () => {
+                  setLoadingDemo(true);
+                  await actions.loadDemo();
+                  setLoadingDemo(false);
+                }}
+              >
+                {loadingDemo ? "Cargando…" : "Probar con datos de demostración"}
+              </button>
+            )}
           </div>
         </div>
       </div>

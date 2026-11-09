@@ -11,7 +11,7 @@ Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, list
 - **¿A qué juego?**: reglas explicables, sin IA. Respeta la plataforma, la disponibilidad (las copias prestadas no cuentan), la partida (nueva o continuar), la compañía y el tipo de experiencia. Compara tu tiempo con lo que dura una sesión, no con el juego entero. Explica cada propuesta y los datos que faltan. Puedes descartar y pedir otras.
 - **Inicio**: el menú principal de un juego, con «Pulsa Start» una vez al día: partidas guardadas con lo que juegas, pendientes, modos para «¿A qué juego?», novedades y récords.
 - **Estadísticas**: títulos, copias, estados, plataformas, formatos, terminados este año, horas y gasto, indicando cuándo faltan datos.
-- **Listas propias**, **copia de seguridad JSON** (importar valida el archivo y te deja decidir cada coincidencia) y **datos de demostración** marcados y retirables de una vez. Los juegos de demostración se ilustran con obras de dominio público; sus créditos están en Ajustes.
+- **Listas propias**, **copia de seguridad JSON** (importar valida el archivo y te deja decidir cada coincidencia). En modo local (desarrollo y pruebas) hay además **datos de demostración** marcados y retirables de una vez, ilustrados con obras de dominio público cuyos créditos están en Ajustes.
 - **Diseño «Sala de proyección»**: oscuro y cinematográfico, con el arte del juego a pantalla completa, pósters que reaccionan al ratón y transiciones; respeta la preferencia de movimiento reducido. Detalles en [DESIGN.md](DESIGN.md).
 - **Deshacer** al cambiar un estado o eliminar algo; confirmación antes de borrar un juego.
 
@@ -103,7 +103,7 @@ Hay tres capas, de fuera hacia dentro:
 
 - **Añadir juego** (el botón blanco con «+» de la barra superior) desde cualquier pantalla. Si el título ya existe, propone añadir otra copia.
 - Toca una carátula para abrir la ficha. Todo se guarda solo al salir de cada campo.
-- En **Ajustes**: exporta una copia de seguridad, impórtala, carga o retira los datos de demostración y comprueba si el catálogo está conectado.
+- En **Ajustes**: exporta una copia de seguridad, impórtala y comprueba si el catálogo está conectado. En modo local también puedes cargar o retirar los datos de demostración.
 - **Copias de seguridad**: el plan gratuito de Supabase no guarda copias por ti, así que exporta una de vez en cuando. Ajustes muestra cuándo hiciste la última desde ese navegador. Si pasa más de un mes (o no has hecho ninguna) y tienes juegos o deseos propios, el inicio te lo recuerda; «Ahora no» lo esconde una semana.
 
 ## Comprobaciones

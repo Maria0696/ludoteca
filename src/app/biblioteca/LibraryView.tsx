@@ -428,20 +428,22 @@ function FirstRun() {
             <Link href="/importar" className="btn">
               Importar de Steam
             </Link>
-            <button
-              type="button"
-              className="btn"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                await actions.loadDemo();
-                setLoading(false);
-              }}
-            >
-              {loading ? "Cargando…" : "Probar con datos de demostración"}
-            </button>
+            {mode === "local" && (
+              <button
+                type="button"
+                className="btn"
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  await actions.loadDemo();
+                  setLoading(false);
+                }}
+              >
+                {loading ? "Cargando…" : "Probar con datos de demostración"}
+              </button>
+            )}
           </div>
-          <p style={{ fontSize: 12 }}>Los datos de demostración se retiran de una vez desde Ajustes.</p>
+          {mode === "local" && <p style={{ fontSize: 12 }}>Los datos de demostración se retiran de una vez desde Ajustes.</p>}
         </div>
       </div>
     </div>

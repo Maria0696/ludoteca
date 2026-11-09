@@ -28,6 +28,8 @@ export function SettingsView() {
 
   const demoCount = library.games.filter((g) => g.demo).length + library.wishlist.filter((w) => w.demo).length;
   const realCount = library.games.filter((g) => !g.demo).length;
+  // En tu biblioteca real no se ofrece; solo aparecería para retirar datos que hubieran quedado.
+  const showDemo = mode === "local" || demoCount > 0;
 
   useEffect(() => {
     fetch("/api/catalogo/estado")
@@ -153,40 +155,42 @@ export function SettingsView() {
         </div>
       </section>
 
-      <section className={styles.row} aria-labelledby="h-demo">
-        <div className={styles.label}>
-          <h2 id="h-demo">Datos de demostración</h2>
-          <p>Juegos inventados para probar la app. Están marcados y se retiran de una vez sin tocar tu colección.</p>
-        </div>
-        <div className={styles.panel}>
-          <p>
-            {demoCount > 0
-              ? `Ahora hay ${demoCount} elementos de demostración junto a ${realCount} juegos tuyos.`
-              : "No hay datos de demostración cargados."}
-          </p>
-          <div className={styles.actions}>
-            {demoCount > 0 ? (
-              <button type="button" className="btn btn-danger" onClick={() => setConfirmDemo(true)}>
-                Retirar datos de demostración
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  await actions.loadDemo();
-                  setBusy(false);
-                  toast("Datos de demostración cargados");
-                }}
-              >
-                {busy ? "Cargando…" : "Cargar datos de demostración"}
-              </button>
-            )}
+      {showDemo && (
+        <section className={styles.row} aria-labelledby="h-demo">
+          <div className={styles.label}>
+            <h2 id="h-demo">Datos de demostración</h2>
+            <p>Juegos inventados para probar la app. Están marcados y se retiran de una vez sin tocar tu colección.</p>
           </div>
-        </div>
-      </section>
+          <div className={styles.panel}>
+            <p>
+              {demoCount > 0
+                ? `Ahora hay ${demoCount} elementos de demostración junto a ${realCount} juegos tuyos.`
+                : "No hay datos de demostración cargados."}
+            </p>
+            <div className={styles.actions}>
+              {demoCount > 0 ? (
+                <button type="button" className="btn btn-danger" onClick={() => setConfirmDemo(true)}>
+                  Retirar datos de demostración
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    await actions.loadDemo();
+                    setBusy(false);
+                    toast("Datos de demostración cargados");
+                  }}
+                >
+                  {busy ? "Cargando…" : "Cargar datos de demostración"}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={styles.row} aria-labelledby="h-catalogo">
         <div className={styles.label}>
@@ -221,27 +225,29 @@ export function SettingsView() {
         </div>
       </section>
 
-      <section className={styles.row} aria-labelledby="h-creditos">
-        <div className={styles.label}>
-          <h2 id="h-creditos">Imágenes de demostración</h2>
-          <p>Los juegos de demostración se ilustran con obras de dominio público, no con sus carátulas oficiales.</p>
-        </div>
-        <div className={styles.panel}>
-          <details>
-            <summary className={styles.summary}>Ver las {DEMO_ART.length} obras y sus fuentes</summary>
-            <ul className={styles.credits}>
-              {DEMO_ART.map((a) => (
-                <li key={a.key}>
-                  <a href={a.page} target="_blank" rel="noreferrer">
-                    {a.title}
-                  </a>
-                  {a.creator ? `, ${a.creator}` : ""} · {a.license} · {a.via}
-                </li>
-              ))}
-            </ul>
-          </details>
-        </div>
-      </section>
+      {showDemo && (
+        <section className={styles.row} aria-labelledby="h-creditos">
+          <div className={styles.label}>
+            <h2 id="h-creditos">Imágenes de demostración</h2>
+            <p>Los juegos de demostración se ilustran con obras de dominio público, no con sus carátulas oficiales.</p>
+          </div>
+          <div className={styles.panel}>
+            <details>
+              <summary className={styles.summary}>Ver las {DEMO_ART.length} obras y sus fuentes</summary>
+              <ul className={styles.credits}>
+                {DEMO_ART.map((a) => (
+                  <li key={a.key}>
+                    <a href={a.page} target="_blank" rel="noreferrer">
+                      {a.title}
+                    </a>
+                    {a.creator ? `, ${a.creator}` : ""} · {a.license} · {a.via}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        </section>
+      )}
 
       <Dialog
         open={confirmDemo}
