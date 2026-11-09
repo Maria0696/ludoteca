@@ -576,6 +576,12 @@
   color: var(--soft);
   font-size: 21px;
 }
+.fieldLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
 .pair {
   display: flex;
   flex-wrap: wrap;

@@ -237,32 +237,42 @@ test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un 
     return route.fulfill(byId);
   });
   const panel = page.getByRole("region", { name: "Para elegir a qué jugar" });
-  const bring = panel.getByRole("button", { name: "Traer de IGDB la duración y cómo se juega" });
+  const bringLength = panel.getByRole("button", { name: "Traer de IGDB: duración total" });
+  const bringModes = panel.getByRole("button", { name: "Traer de IGDB: cómo se juega" });
+  const bringMoods = panel.getByRole("button", { name: "Traer de IGDB: tipo de experiencia" });
 
+  // El botón solo sale en el dato que falta.
   await openApp(page, "/biblioteca");
   await addFromCatalog(page, "Cr sin duración");
-  await bring.click();
-  await expect(panel.getByRole("status")).toHaveText("IGDB no tiene la duración");
+  await expect(bringModes).toHaveCount(0);
+  await expect(bringMoods).toHaveCount(0);
+  await bringLength.click();
+  await expect(panel.getByRole("status")).toHaveText("IGDB no tiene este dato");
   expect(asked[0]).toContain("duracion=1");
 
   await page.goto("/biblioteca");
   await addFromCatalog(page, "Cr para elegir");
+  await expect(bringModes).toBeVisible();
   await panel.getByRole("button", { name: "Competitivo" }).click();
+  await expect(bringModes).toHaveCount(0);
 
   // Un fallo no se confunde con que IGDB no lo tenga.
   byId = { status: 502, json: { ok: false, reason: "error", message: "IGDB respondió 500." } };
-  await bring.click();
-  await expect(bring).toContainText("Reintentar");
+  await bringLength.click();
+  await expect(bringLength).toContainText("Reintentar");
   await expect(panel.getByRole("status")).toHaveCount(0);
 
-  // Rellena lo vacío y no pisa lo marcado a mano.
+  // Cada botón trae solo su dato y no pisa lo marcado a mano.
   byId = catalog([{ ...bare, modes: ["solo"], moods: ["historia"], lengthHours: 12.5 }]);
-  await bring.click();
+  await bringLength.click();
   await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
+  await expect(bringLength).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Historia" })).toHaveAttribute("aria-pressed", "false");
+  await bringMoods.click();
   await expect(panel.getByRole("button", { name: "Historia" })).toHaveAttribute("aria-pressed", "true");
+  await expect(bringMoods).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Competitivo" })).toHaveAttribute("aria-pressed", "true");
   await expect(panel.getByRole("button", { name: "Un jugador" })).toHaveAttribute("aria-pressed", "false");
-  await expect(bring).toHaveCount(0);
 
   await page.reload();
   await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
