@@ -116,6 +116,18 @@ test("los juegos de la familia llegan sin marcar y entran como prestados", async
   await expect(page.getByText("3 juegos para copiar")).toBeVisible();
 });
 
+test("un icono que no carga deja la inicial y los minutos sueltos no salen como 0 h", async ({ page }) => {
+  await page.route("https://media.steampowered.com/**", (route) => route.fulfill({ status: 404, body: "" }));
+  await mockSteam(page, [{ appId: 50, name: "Torre de Naipes", minutes: 2, icon: "https://media.steampowered.com/roto.jpg" }]);
+  await openApp(page, "/importar");
+  await searchProfile(page);
+  const row = page.getByRole("button", { name: /Torre de Naipes/ });
+  await expect(row).toContainText("2 min");
+  await expect(row.getByText("T", { exact: true })).toBeVisible();
+  await expect(row.locator("img")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Ludoteca" }).locator("img")).toHaveCount(0);
+});
+
 test("un perfil privado explica qué hacer", async ({ page }) => {
   await page.route("**/api/steam", (route) =>
     route.fulfill({ json: { ok: false, reason: "privado", message: "Steam no deja ver tus juegos. Pon «Detalles de los juegos» como público." } }),

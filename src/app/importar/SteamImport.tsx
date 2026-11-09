@@ -28,6 +28,8 @@ const NOTE: Record<SteamState, string | null> = {
 
 const hoursLabel = (minutes: number) => {
   if (!minutes) return "Sin jugar";
+  // Por debajo de 3 minutos, en horas se redondearía a 0.
+  if (minutes < 3) return `${minutes} min`;
   const hours = minutes / 60;
   return `${hours < 10 ? Math.round(hours * 10) / 10 : Math.round(hours)} h`.replace(".", ",");
 };
@@ -53,7 +55,9 @@ async function readSheets(appIds: number[]): Promise<Record<number, CatalogGame>
 }
 
 function GameIcon({ game, className }: { game: SteamGame; className?: string }) {
-  if (!game.icon) {
+  // Steam da la dirección de algunos iconos que luego no sirve.
+  const [broken, setBroken] = useState(false);
+  if (!game.icon || broken) {
     return (
       <span className={`${styles.noIcon} ${className ?? ""}`} aria-hidden>
         {game.name[0]}
@@ -61,7 +65,7 @@ function GameIcon({ game, className }: { game: SteamGame; className?: string }) 
     );
   }
   // eslint-disable-next-line @next/next/no-img-element -- icono de 32 píxeles servido por Steam
-  return <img className={className} src={game.icon} alt="" width={32} height={32} loading="lazy" />;
+  return <img className={className} src={game.icon} alt="" width={32} height={32} loading="lazy" onError={() => setBroken(true)} />;
 }
 
 export function SteamImport() {
