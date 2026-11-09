@@ -186,18 +186,24 @@ function guessMoods(g: IgdbGame): Mood[] {
   return [...out];
 }
 
-/** Pide juegos al catálogo. `query` recibe los campos y devuelve la consulta completa. */
-export async function fetchCatalogGames(query: (fields: string) => string): Promise<CatalogGame[]> {
+/**
+ * Pide juegos al catálogo. `query` recibe los campos y devuelve la consulta completa.
+ * Con `requireTimes`, un fallo al pedir la duración es un error y no «no la tiene».
+ */
+export async function fetchCatalogGames(query: (fields: string) => string, options: { requireTimes?: boolean } = {}): Promise<CatalogGame[]> {
   // Si IGDB rechaza los detalles, la búsqueda sigue funcionando con lo básico.
   const games = await igdb<IgdbGame[]>("games", query(`${BASE_FIELDS},${DETAIL_FIELDS}`)).catch(() => igdb<IgdbGame[]>("games", query(BASE_FIELDS)));
   const ids = games.map((g) => g.id);
   const times = ids.length
-    ? await igdb<{ game_id: number; normally?: number; hastily?: number }[]>(
+    ? await igdb<{ game_id: number; normally?: number; hastily?: number; completely?: number }[]>(
         "game_time_to_beats",
-        `fields game_id,normally,hastily; where game_id = (${ids.join(",")}); limit ${ids.length};`,
-      ).catch(() => [])
+        `fields game_id,normally,hastily,completely; where game_id = (${ids.join(",")}); limit ${ids.length};`,
+      ).catch((e: unknown) => {
+        if (options.requireTimes) throw e;
+        return [];
+      })
     : [];
-  const timeById = new Map(times.map((t) => [t.game_id, t.normally ?? t.hastily ?? null]));
+  const timeById = new Map(times.map((t) => [t.game_id, t.normally ?? t.hastily ?? t.completely ?? null]));
 
   return games.map((g) => {
     const seconds = timeById.get(g.id);
