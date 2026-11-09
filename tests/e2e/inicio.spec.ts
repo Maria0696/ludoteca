@@ -98,3 +98,26 @@ test("las flechas mueven el menú sin robar las de un cuadro de diálogo", async
   await page.keyboard.press("ArrowDown");
   await expect(item(page, "Continuar")).toHaveAttribute("aria-pressed", "true");
 });
+
+test("en una ventana baja, las opciones del menú no se mueven al cambiar de panel", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 640 });
+  await loadDemo(page);
+  await openApp(page, "/");
+  const options = page.getByRole("group", { name: "Menú principal" }).getByRole("button");
+  const tops = new Set<number>();
+  for (let i = 0; i < 5; i++) {
+    await options.nth(i).evaluate((button: HTMLElement) => button.click());
+    await page.waitForTimeout(450);
+    tops.add(Math.round((await options.first().boundingBox())!.y));
+  }
+  expect([...tops]).toHaveLength(1);
+
+  // Con el ratón quieto sobre el borde de una opción, la elegida no cambia sola.
+  const box = (await options.nth(2).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height - 3);
+  await page.waitForTimeout(300);
+  const chosen = page.getByRole("group", { name: "Menú principal" }).locator('[aria-pressed="true"]');
+  const label = await chosen.textContent();
+  await page.waitForTimeout(1000);
+  await expect(chosen).toHaveText(label!);
+});
