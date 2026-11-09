@@ -122,7 +122,8 @@ export function SteamImport() {
         // Sin acceso al almacenamiento, simplemente no se recuerda el perfil.
       }
       setList(data.games);
-      setSelected(new Set(data.games.map((g) => g.appId)));
+      // Los de la familia no son tuyos: quedan a un clic, pero sin marcar.
+      setSelected(new Set(data.games.filter((g) => !g.family).map((g) => g.appId)));
       setCopied(new Set());
       setPhase("eleccion");
     } catch {
@@ -242,7 +243,7 @@ export function SteamImport() {
                 <div className={styles.list}>
                   {visible.length === 0 && <p className={styles.none}>Ningún juego con ese nombre.</p>}
                   {visible.map((game) => {
-                    const note = NOTE[(frozen ?? states).get(game.appId) ?? "nuevo"];
+                    const note = NOTE[(frozen ?? states).get(game.appId) ?? "nuevo"] ?? (game.family ? "De tu familia de Steam: entraría como prestado" : null);
                     return (
                       <button
                         key={game.appId}
