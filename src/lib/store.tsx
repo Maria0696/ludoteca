@@ -9,8 +9,12 @@ import {
   type GameList,
   type GameStatus,
   type Library,
+  type NewCopyInput,
+  type NewGameInput,
   type WishItem,
   STATUS_LABEL,
+  createCopy,
+  createGame,
   emptyLibrary,
   newId,
   nowIso,
@@ -19,6 +23,7 @@ import {
 import { isSupabaseConfigured, localModeAllowed } from "./config";
 import { LocalRepository } from "./repo/local";
 import type { Changes, Repository, StorageMode } from "./repo/types";
+import { type SteamImportCounts, type SteamImportItem, planSteamImport } from "./steam-import";
 
 /*
  * Estado de la biblioteca en el cliente. Cada acción actualiza la pantalla
@@ -27,9 +32,6 @@ import type { Changes, Repository, StorageMode } from "./repo/types";
  */
 
 export type LoadState = "loading" | "ready" | "error" | "setup";
-
-export type NewGameInput = Partial<Omit<Game, "id" | "createdAt" | "updatedAt">> & { title: string };
-export type NewCopyInput = Partial<Omit<Copy, "id" | "gameId" | "createdAt" | "updatedAt">> & Pick<Copy, "platform" | "format">;
 
 interface Actions {
   reload(): Promise<void>;
@@ -51,6 +53,8 @@ interface Actions {
   deleteList(id: string): void;
   toggleInList(listId: string, gameId: string): void;
   applyChanges(changes: Changes): Promise<void>;
+  /** Guarda un grupo de juegos de Steam; si falla, avisa con un error y no cambia nada. */
+  importSteam(items: SteamImportItem[]): Promise<SteamImportCounts>;
   loadDemo(): Promise<void>;
   removeDemo(): Promise<void>;
 }
@@ -179,66 +183,17 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
     const findGame = (id: string) => libRef.current.games.find((g) => g.id === id);
 
-    const buildCopy = (gameId: string, input: NewCopyInput): Copy => {
-      const stamp = nowIso();
-      return {
-        edition: null,
-        availability: "comprado",
-        subscriptionService: null,
-        acquiredAt: null,
-        pricePaid: null,
-        store: null,
-        hasCase: null,
-        hasFullArtwork: null,
-        artworkPrintPending: null,
-        artworkUrl: null,
-        shelfLocation: null,
-        lentTo: null,
-        lentAt: null,
-        ...input,
-        id: newId(),
-        gameId,
-        createdAt: stamp,
-        updatedAt: stamp,
-      };
-    };
-
     const a: Actions = {
       reload,
 
       addGame(input, copyInput) {
-        const stamp = nowIso();
-        const game: Game = {
-          coverUrl: null,
-          backdropUrl: null,
-          igdbId: null,
-          genres: [],
-          tags: [],
-          status: "pendiente",
-          completed100: false,
-          favorite: false,
-          rating: null,
-          hoursPlayed: null,
-          notes: null,
-          startedAt: null,
-          finishedAt: null,
-          lastPlayedAt: null,
-          modes: [],
-          moods: [],
-          sessionMinutes: null,
-          lengthHours: null,
-          ...input,
-          title: input.title.trim(),
-          id: newId(),
-          createdAt: stamp,
-          updatedAt: stamp,
-        };
+        const game = createGame(input);
         if (game.status === "jugando") {
           game.startedAt ??= todayIso();
           game.lastPlayedAt ??= todayIso();
         }
         if (game.status === "completado") game.finishedAt ??= todayIso();
-        const copy = copyInput ? buildCopy(game.id, copyInput) : null;
+        const copy = copyInput ? createCopy(game.id, copyInput) : null;
         commit({
           ...libRef.current,
           games: [...libRef.current.games, game],
@@ -312,7 +267,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       },
 
       addCopy(gameId, input) {
-        const copy = buildCopy(gameId, input);
+        const copy = createCopy(gameId, input);
         void saveCopy(copy);
         return copy;
       },
@@ -407,7 +362,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           };
         }
         const latest = [...wish.prices].sort((x, y) => y.date.localeCompare(x.date))[0];
-        const copy = buildCopy(game.id, {
+        const copy = createCopy(game.id, {
           pricePaid: latest?.amount ?? null,
           store: latest?.store ?? null,
           acquiredAt: todayIso(),
@@ -463,6 +418,22 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         if (!repo) return;
         await repo.save(changes);
         commit(await repo.load());
+      },
+
+      async importSteam(items) {
+        const repo = repoRef.current;
+        if (!repo) throw new Error("La biblioteca aún no está lista.");
+        const plan = planSteamImport(libRef.current, items);
+        await repo.save({ games: plan.games, copies: plan.copies });
+        const before = libRef.current;
+        const changed = new Map(plan.games.map((g) => [g.id, g]));
+        const known = new Set(before.games.map((g) => g.id));
+        commit({
+          ...before,
+          games: [...before.games.map((g) => changed.get(g.id) ?? g), ...plan.games.filter((g) => !known.has(g.id))],
+          copies: [...before.copies, ...plan.copies],
+        });
+        return plan.counts;
       },
 
       async loadDemo() {

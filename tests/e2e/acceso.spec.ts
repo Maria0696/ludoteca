@@ -25,6 +25,17 @@ test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   expect(estado.status()).toBe(401);
 });
 
+test("sin sesión, las rutas de Steam responden 401", async ({ request }) => {
+  for (const [path, data] of [
+    ["/api/steam", { perfil: "alguien" }],
+    ["/api/steam/fichas", { appIds: [10] }],
+  ] as const) {
+    const res = await request.post(path, { data });
+    expect(res.status()).toBe(401);
+    expect(await res.json()).toMatchObject({ ok: false, reason: "no-autorizado" });
+  }
+});
+
 test("sin sesión, nadie puede mandar avisos de errores", async ({ request }) => {
   const res = await request.post("/api/errores", { data: { kind: "navegador", name: "Error", message: "Intruso", path: "/" } });
   expect(res.status()).toBe(401);
