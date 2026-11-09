@@ -394,62 +394,38 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
   );
 }
 
-const DETAILS = ["summary", "developer", "saga", "releaseDate", "ageRating"] as const;
-
-/** Lo que el catálogo sabe del juego. Solo rellena huecos: lo que hayas corregido se queda. */
+/** Lo que el catálogo sabe del juego. Cada hueco tiene su botón: lo que hayas corregido se queda. */
 export function TechSheet({ game, update }: { game: Game; update: Update }) {
-  const [lookup, setLookup] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const missing = DETAILS.filter((key) => !game[key]);
-
-  async function fetchDetails() {
-    setLookup("loading");
-    try {
-      const res = await fetch(`/api/catalogo?id=${game.igdbId}`);
-      const data = (await res.json()) as CatalogResponse;
-      if (!data.ok) return setLookup("error");
-      const found = data.results[0];
-      const patch: Partial<Game> = {};
-      for (const key of missing) if (found?.[key]) patch[key] = found[key];
-      if (Object.keys(patch).length) update(patch);
-      setLookup("done");
-    } catch {
-      setLookup("error");
-    }
-  }
+  const bring = (what: string, field: "summary" | "developer" | "saga" | "releaseDate" | "ageRating") =>
+    game.igdbId != null &&
+    !game[field] && <FillFromIgdb igdbId={game.igdbId} what={what} update={update} read={(found) => (found[field] ? { [field]: found[field] } : null)} />;
 
   const text = (label: string, field: "developer" | "saga" | "ageRating") => (
     <Row label={label}>
-      <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} onSave={(v) => update({ [field]: v })} />
+      <div className={styles.fieldLine}>
+        <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} onSave={(v) => update({ [field]: v })} />
+        {bring(label.toLowerCase(), field)}
+      </div>
     </Row>
   );
 
   return (
     <>
-      <div className={styles.panelTop}>
-        <h2 id="ficha-tecnica" className={styles.panelHead}>
-          Ficha técnica
-        </h2>
-        {game.igdbId != null &&
-          missing.length > 0 &&
-          (lookup === "done" ? (
-            <span className={styles.statNote} role="status">
-              IGDB no tiene más datos
-            </span>
-          ) : (
-            <button type="button" className={styles.add} disabled={lookup === "loading"} onClick={fetchDetails} aria-label="Traer los datos de IGDB">
-              <Search aria-hidden />
-              {lookup === "loading" ? "Buscando…" : lookup === "error" ? "Reintentar" : "Traer de IGDB"}
-            </button>
-          ))}
-      </div>
-      <div className={styles.synopsis}>
+      <h2 id="ficha-tecnica" className={styles.panelHead}>
+        Ficha técnica
+      </h2>
+      <div className={`${styles.synopsis} ${game.summary ? "" : styles.fieldLine}`}>
         <Editable kind="multiline" quiet rows={8} label="Sinopsis" value={game.summary} display={game.summary ?? null} empty="Añadir sinopsis" onSave={(summary) => update({ summary })} />
+        {bring("sinopsis", "summary")}
       </div>
       <dl className={styles.stats}>
         {text("Desarrolladora", "developer")}
         {text("Saga", "saga")}
         <Row label="Lanzamiento">
-          <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />
+          <div className={styles.fieldLine}>
+            <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />
+            {bring("lanzamiento", "releaseDate")}
+          </div>
         </Row>
         {text("Edad", "ageRating")}
       </dl>

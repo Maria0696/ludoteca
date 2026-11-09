@@ -849,6 +849,9 @@ button.slot:hover {
   text-align: right;
   overflow-wrap: break-word;
 }
+.statRow .fieldLine {
+  justify-content: flex-end;
+}
 .statRow dd:has(.editWrap) {
   flex: 1 1 60%;
 }
