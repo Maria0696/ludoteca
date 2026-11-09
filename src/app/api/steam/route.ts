@@ -29,7 +29,7 @@ interface Vanity {
 interface Owned {
   response?: {
     game_count?: number;
-    games?: { appid: number; name?: string; playtime_forever?: number; img_icon_url?: string }[];
+    games?: { appid: number; name?: string; playtime_forever?: number; img_icon_url?: string; family_shared?: boolean }[];
   };
 }
 
@@ -45,6 +45,7 @@ function toGames(owned: NonNullable<NonNullable<Owned["response"]>["games"]>): S
         appId: g.appid,
         name,
         minutes: g.playtime_forever ?? 0,
+        family: Boolean(g.family_shared),
         icon: hasIcon ? `https://media.steampowered.com/steamcommunity/public/images/apps/${g.appid}/${g.img_icon_url}.jpg` : null,
       },
     ];
@@ -85,7 +86,11 @@ export async function POST(request: Request) {
     const owned = await steam<Owned>(key, "IPlayerService/GetOwnedGames/v1", {
       steamid: steamId,
       include_appinfo: "1",
+      // Sin estas opciones, Steam se calla los gratis sin jugar y los de la familia.
       include_played_free_games: "1",
+      include_free_sub: "1",
+      include_all_free_games: "1",
+      include_family_licenses: "1",
     });
     // Con los detalles de los juegos ocultos, Steam responde sin ningún dato.
     if (owned.response?.game_count === undefined) {

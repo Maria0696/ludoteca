@@ -103,6 +103,19 @@ test("avisa de los juegos que ya tienes", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Faro sin Mar/ })).not.toContainText("Ya la tienes");
 });
 
+test("los juegos de la familia llegan sin marcar y entran como prestados", async ({ page }) => {
+  const family: SteamGame = { appId: 40, name: "Granja Orbital", minutes: 120, icon: null, family: true };
+  expect(planSteamImport(emptyLibrary(), [{ game: family }]).copies[0]).toMatchObject({ availability: "prestado", store: "Steam" });
+
+  await mockSteam(page, [...GAMES, family]);
+  await openApp(page, "/importar");
+  await searchProfile(page);
+  const row = page.getByRole("button", { name: /Granja Orbital/ });
+  await expect(row).toHaveAttribute("aria-pressed", "false");
+  await expect(row).toContainText("De tu familia de Steam");
+  await expect(page.getByText("3 juegos para copiar")).toBeVisible();
+});
+
 test("un perfil privado explica qué hacer", async ({ page }) => {
   await page.route("**/api/steam", (route) =>
     route.fulfill({ json: { ok: false, reason: "privado", message: "Steam no deja ver tus juegos. Pon «Detalles de los juegos» como público." } }),

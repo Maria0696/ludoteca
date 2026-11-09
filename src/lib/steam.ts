@@ -8,6 +8,8 @@ export interface SteamGame {
   minutes: number;
   /** Icono pequeño del juego, si Steam lo tiene. */
   icon: string | null;
+  /** Jugado gracias a la familia de Steam, sin ser de esta cuenta. */
+  family?: boolean;
 }
 
 export type SteamLibraryResponse =

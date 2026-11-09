@@ -129,7 +129,7 @@ export function planSteamImport(library: Library, items: SteamImportItem[]): Ste
     index.add(saved);
     changed.set(saved.id, saved);
     if (!index.steamCopies.has(saved.id)) {
-      copies.push(createCopy(saved.id, { platform: "PC", format: "digital", store: "Steam" }));
+      copies.push(createCopy(saved.id, { platform: "PC", format: "digital", store: "Steam", availability: steam.family ? "prestado" : "comprado" }));
       index.steamCopies.add(saved.id);
     }
   }
