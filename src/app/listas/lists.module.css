@@ -1,46 +1,33 @@
+/* Mis listas en la carcasa: «Tus listas» y la lista elegida, cada una en su ventana. */
 .page {
   padding: 24px var(--gutter) 0;
 }
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  min-height: 36px;
-  margin-bottom: 12px;
-}
-.back svg {
-  width: 16px;
-  height: 16px;
-}
 .title {
-  font-family: var(--font-display);
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
   margin-bottom: 24px;
 }
 .layout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 40px;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 32px;
   align-items: start;
 }
 .aside {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 .newList {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
+.newList :global(.error) {
+  color: var(--danger);
+  font-family: var(--font-term);
+  font-size: 19px;
+}
 .lists {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 .lists button {
   width: 100%;
@@ -49,33 +36,40 @@
   gap: 12px;
   align-items: center;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 6px 12px;
   border: 0;
-  border-radius: 12px;
-  background: #ffffff0a;
-  color: #d4d4d8;
-  font-weight: 600;
-  font-size: 15px;
+  border-radius: 0;
+  background: var(--raised);
+  box-shadow: var(--pixel-frame-soft);
+  color: var(--text);
+  font-family: var(--font-term);
+  font-size: 21px;
+  line-height: 1.05;
   transition: background-color 180ms ease;
   text-align: left;
   cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lists button:not([aria-current="true"]):hover {
+    background: var(--hover);
+  }
 }
 /* La lista elegida, como lo elegido en toda la carcasa: papel con texto oscuro. */
 .lists button[aria-current="true"] {
   background: var(--paper);
   color: var(--window);
+  box-shadow: none;
 }
 .lists button[aria-current="true"] small {
   color: var(--frame-soft);
 }
 .lists small {
-  font-weight: 600;
-  font-size: 12px;
+  font-size: 18px;
   color: var(--muted);
 }
 .main {
   display: grid;
-  gap: 32px;
+  gap: 28px;
   min-width: 0;
 }
 .listHead {
@@ -96,6 +90,7 @@
 }
 .pickerSearch {
   position: relative;
+  display: block;
 }
 .pickerSearch svg {
   position: absolute;
@@ -105,15 +100,10 @@
   width: 16px;
   height: 16px;
   color: var(--muted);
+  pointer-events: none;
 }
-.pickerSearch input {
-  width: 100%;
-  height: 44px;
-  border-radius: 999px;
-  border: 0;
-  background: #ffffff14;
-  color: var(--text);
-  padding: 0 14px 0 34px;
+.pickerSearch :global(.input) {
+  padding-left: 36px;
 }
 .pickerList {
   display: grid;
@@ -121,7 +111,9 @@
   overflow: auto;
 }
 .pickerList li {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
+  font-family: var(--font-term);
+  font-size: 21px;
 }
 .pickerList :global(.check) {
   min-height: 52px;
@@ -130,8 +122,10 @@
   width: 30px;
   flex: none;
 }
-.pickerCover :global(.cover-fallback strong) {
-  font-size: 6px;
+/* En la miniatura no cabe el título: basta con el cartón. */
+.pickerCover :global(.cover-fallback strong),
+.pickerCover :global(.cover-fallback span) {
+  display: none;
 }
 
 @media (max-width: 899px) {
@@ -139,14 +133,30 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .title {
-    font-size: 40px;
+  /* Dentro de la ventana caben dos tarjetas por fila, como en el resto de rejillas del móvil. */
+  .main {
+    padding: 14px;
+  }
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
   }
   .lists {
     display: flex;
+    gap: 8px;
     overflow-x: auto;
+    padding: 2px 2px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--frame-soft) transparent;
   }
+  .lists li {
+    flex: none;
+  }
+  /* Un nombre largo se parte en líneas en vez de estirar el botón. */
   .lists button {
-    white-space: nowrap;
+    max-width: min(70vw, 260px);
+  }
+  .lists button span {
+    overflow-wrap: anywhere;
   }
 }

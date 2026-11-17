@@ -145,6 +145,7 @@ export function WishEditor({ wish, onClose }: { wish?: WishItem; onClose: () => 
                       onClick={() => setPrices((list) => list.filter((x) => x.id !== p.id))}
                     >
                       <Trash2 aria-hidden />
+                      Quitar
                     </button>
                   </li>
                 ))}
@@ -232,7 +233,7 @@ export function PriceDialog({ wish, onClose }: { wish: WishItem; onClose: () => 
           <label htmlFor="price-store">Tienda</label>
           <input id="price-store" className="input" value={store} onChange={(e) => setStore(e.target.value)} />
         </div>
-        <p className="hint muted" style={{ fontSize: 12 }}>
+        <p className={styles.note}>
           Por ahora los precios se anotan a mano. El seguimiento automático queda para una versión posterior.
         </p>
       </form>

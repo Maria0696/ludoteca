@@ -18,35 +18,33 @@
   }
 }
 
+/* Sin content-visibility: recortaba el marco al pasar por encima y el contorno del foco. */
 .card {
   min-width: 0;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
 }
 .cardLink {
   display: block;
   text-decoration: none;
   border-radius: var(--radius-card);
 }
+/* Tarjeta de la carcasa: carátula cuadrada con borde suave; al pasar por encima, borde de papel. */
 .cardArt {
   display: block;
-  border-radius: var(--radius-card);
-  transition: transform 420ms var(--ease-out), box-shadow 420ms var(--ease-out);
+  border-radius: 0;
+  box-shadow: var(--pixel-frame-soft);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
 }
-.cardArt :global(.cover img) {
-  transition: transform 900ms var(--ease-out);
+.cardArt :global(.cover) {
+  border-radius: 0;
 }
 @media (hover: hover) and (pointer: fine) {
   .cardLink:hover .cardArt {
-    transform: translateY(-8px) scale(1.03);
-    box-shadow: 0 30px 50px -18px #000, 0 0 0 1px #ffffff1f;
-  }
-  .cardLink:hover .cardArt :global(.cover img) {
-    transform: scale(1.06);
+    transform: translateY(-4px);
+    box-shadow: var(--pixel-frame);
   }
 }
 .cardLink:active .cardArt {
-  transform: scale(0.97);
+  transform: translateY(2px);
 }
 .cardLink:focus-visible {
   outline-offset: 6px;
@@ -56,8 +54,10 @@
   align-items: center;
   gap: 5px;
   margin-top: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-term);
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -66,16 +66,17 @@
   width: 14px;
   height: 14px;
   flex: none;
-  fill: #fbbf24;
-  color: #fbbf24;
+  fill: var(--gold);
+  color: var(--gold);
 }
 .cardMeta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 6px;
-  margin-top: 5px;
-  font-size: 13px;
+  margin-top: 6px;
+  font-family: var(--font-term);
+  font-size: 18px;
   color: var(--muted);
   min-width: 0;
 }

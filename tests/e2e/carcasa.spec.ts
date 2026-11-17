@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { loadDemo, openApp } from "./helpers";
+import { expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -117,6 +117,87 @@ test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la
   await expect(menu.getByRole("button", { name: "Récords", exact: true })).toHaveCount(0);
   await page.goto("/biblioteca");
   await expect(page.getByRole("region", { name: "Récords de horas" }).getByRole("heading")).toHaveText("Récords · horas");
+});
+
+test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async ({ page }) => {
+  await openApp(page, "/estadisticas");
+  // Estadísticas aún no está migrada (paso 3): su título usa Bricolage.
+  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Bricolage|Albert/);
+});
+
+test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/deseos");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Lista de deseos" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  const win = page.getByRole("region", { name: "Deseos" });
+  expect(await win.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  const rowFrames = await win.getByRole("listitem").evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow));
+  for (const shadow of rowFrames) expect(shadow).toBe("none");
+  await expectCarcasaText(page.locator("main"));
+  // Editar y quitar dicen lo que hacen.
+  await expect(page.getByRole("button", { name: "Editar Hollow Knight: Silksong" })).toHaveText("Editar");
+  await expect(page.getByRole("button", { name: "Quitar Hollow Knight: Silksong de la lista" })).toHaveText("Quitar");
+  // En el diálogo de editar, quitar un precio también dice lo que hace.
+  await page.getByRole("button", { name: "Editar Hollow Knight: Silksong" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^Quitar el precio de/ }).first()).toHaveText("Quitar");
+  await page.keyboard.press("Escape");
+  // Sus diálogos también están en la carcasa.
+  for (const open of [/^Precio$/, "Ya lo tengo", "Editar Hollow Knight: Silksong"]) {
+    await page.getByRole("button", { name: open }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expectCarcasaText(dialog);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  }
+});
+
+test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura", async ({ page }) => {
+  await openApp(page, "/deseos");
+  await page.getByRole("button", { name: "Añadir el primer deseo" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Título").fill("Un juego con un título larguísimo que no tiene carátula todavía");
+  await dialog.getByRole("button", { name: "Añadir deseo" }).click();
+  await expect(dialog).toBeHidden();
+  await expectCarcasaText(page.locator("main"));
+});
+
+test("Mis listas en la carcasa: dos ventanas, tarjetas legibles y foco visible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/listas");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Mis listas" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["Tus listas", /^Lista /]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await expectCarcasaText(page.locator("main"));
+  // Con el teclado, el foco se ve también en la lista elegida (papel).
+  const current = page.locator('button[aria-current="true"]').first();
+  await current.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(current).toBeFocused();
+  expect(await current.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+  // La tarjeta no recorta su marco ni el contorno del foco.
+  expect(await page.locator("main li").filter({ has: page.getByRole("link") }).first().evaluate((el) => getComputedStyle(el).contentVisibility)).not.toBe("auto");
+  // El diálogo de añadir juegos a la lista, también.
+  await page.getByRole("button", { name: "Añadir juegos" }).click();
+  await expectCarcasaText(page.getByRole("dialog"));
+  await page.keyboard.press("Escape");
+
+  // El error al crear una lista sin nombre, en la carcasa y en rojo.
+  await page.getByRole("button", { name: "Crear" }).click();
+  const error = page.getByText("Ponle un nombre a la lista.");
+  await expect(error).toBeVisible();
+  expect(await error.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 107, 107)");
+  await expectCarcasaText(page.locator("main"));
+
+  // Una lista vacía: su aviso no lleva un segundo marco dentro de la ventana.
+  await page.getByLabel("Nombre de la nueva lista").fill("Vacía");
+  await page.getByRole("button", { name: "Crear" }).click();
+  const empty = page.getByRole("heading", { name: "Lista vacía" }).locator("..");
+  expect(await empty.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
