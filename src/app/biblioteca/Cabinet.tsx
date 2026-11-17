@@ -41,7 +41,13 @@ export const Cabinet = memo(function Cabinet({
   return (
     <li className={`${styles.cab} rise`} style={{ "--i": index, "--sc": status.color } as React.CSSProperties}>
       <div className={styles.cabBody}>
-        <Link href={`/juego/${game.id}`} className={styles.cabLink} onFocus={() => onChoose(game.id)} onPointerEnter={() => onChoose(game.id)}>
+        <Link
+          href={`/juego/${game.id}`}
+          className={styles.cabLink}
+          onFocus={() => onChoose(game.id)}
+          // Solo si el ratón se mueve de verdad: al reordenarse la rejilla, una cabina puede quedar bajo el ratón quieto.
+          onPointerMove={(e) => e.pointerType === "mouse" && onChoose(game.id)}
+        >
           <span className={styles.marquee} data-card-title>
             {game.title}
             {game.favorite && <Star aria-label="Favorito" className={styles.fav} />}

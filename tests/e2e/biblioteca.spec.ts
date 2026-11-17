@@ -147,7 +147,17 @@ test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las fle
 
   // Pasar por encima o llegar con el teclado muestra el juego en «Elegido».
   const chosen = page.getByRole("region", { name: "Elegido" });
-  await expect(chosen).toContainText("A Short Hike");
+  const celeste = cards(page).filter({ hasText: "Celeste" }).getByRole("link");
+  const box = (await celeste.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(chosen).toContainText("Celeste");
+
+  // Con el ratón quieto, una cabina que queda debajo (al reordenar o al cargar) no pasa a ser la elegida.
+  const hike = cards(page).filter({ hasText: "A Short Hike" }).getByRole("link");
+  await hike.dispatchEvent("pointerover", { pointerType: "mouse", bubbles: true });
+  await hike.dispatchEvent("pointerenter", { pointerType: "mouse" });
+  await page.waitForTimeout(200);
+  await expect(chosen).toContainText("Celeste");
   await cards(page).filter({ hasText: "Celeste" }).getByRole("link").hover();
   await expect(chosen).toContainText("Celeste");
   await expect(chosen).toContainText("CLEAR!");
