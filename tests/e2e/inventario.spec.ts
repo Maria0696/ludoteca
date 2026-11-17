@@ -109,7 +109,7 @@ test("«En tu ludoteca» es la fecha de compra apuntada, no el día de meterlo e
   await expect(record).toContainText("---");
 
   await inventory.getByRole("button", { name: /^Fecha de adquisición/ }).click();
-  await inventory.getByLabel("Fecha de adquisición").fill("2026-11-05");
+  await inventory.getByLabel("Fecha de adquisición").fill("05/11/2026");
   await inventory.getByLabel("Fecha de adquisición").press("Enter");
   await expect(record).toContainText("5 nov 2026");
 });

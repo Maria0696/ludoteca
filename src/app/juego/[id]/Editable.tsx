@@ -2,7 +2,8 @@
 
 import { Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { parseDecimal } from "@/lib/format";
+import { DateInput } from "@/components/ui/DateInput";
+import { isoToDmy, parseDecimal, parseDmy } from "@/lib/format";
 import styles from "./adventure.module.css";
 
 type Common = {
@@ -27,6 +28,8 @@ export function Editable(props: Props) {
   const { label, display, empty, quiet } = props;
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Lo escrito en una fecha, como día/mes/año. */
+  const [dateText, setDateText] = useState("");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const cancelled = useRef(false);
   const returnFocus = useRef(false);
@@ -44,13 +47,12 @@ export function Editable(props: Props) {
     setEditing(false);
   };
 
-  const commit = (field: HTMLInputElement | HTMLTextAreaElement, refocus: boolean) => {
-    const raw = field.value;
+  const commit = (raw: string, refocus: boolean) => {
     if (props.kind === "date") {
-      // Una fecha a medias (o el 31 de febrero) llega vacía: no es «sin fecha».
-      if (field.validity.badInput) return setError("Fecha incompleta o imposible. Escríbela así: 03/10/2025.");
-      // Chrome toma «25» como el año 25, no 2025.
-      if (raw && Number(raw.slice(0, 4)) < 1950) return setError("Escribe el año con cuatro cifras, por ejemplo 2025.");
+      const parsed = parseDmy(raw);
+      if (!parsed.ok) return setError(parsed.error);
+      if (parsed.iso !== (props.value ?? null)) props.onSave(parsed.iso);
+      return close(refocus);
     }
     if (props.kind === "number") {
       const n = parseDecimal(raw);
@@ -67,7 +69,7 @@ export function Editable(props: Props) {
       return close(refocus);
     }
     const text = raw.trim();
-    const problem = props.kind !== "date" && text ? props.validate?.(text) : null;
+    const problem = text ? props.validate?.(text) : null;
     if (problem) return setError(problem);
     if (text !== (props.value ?? "")) props.onSave(text || null);
     close(refocus);
@@ -82,6 +84,7 @@ export function Editable(props: Props) {
         aria-label={display ? `${label}: ${display}. Editar` : `${label}: añadir`}
         onClick={() => {
           cancelled.current = false;
+          if (props.kind === "date") setDateText(isoToDmy(props.value));
           setEditing(true);
         }}
       >
@@ -98,23 +101,26 @@ export function Editable(props: Props) {
     );
   }
 
-  const shared = {
+  const field = {
     "aria-label": label,
     "aria-invalid": error ? true : undefined,
     autoFocus: true,
     className: styles.edit,
     onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => e.target.select(),
-    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (!cancelled.current) commit(e.target, false);
-    },
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       if (e.key === "Escape") {
         cancelled.current = true;
         close(true);
       } else if (e.key === "Enter" && props.kind !== "multiline") {
         e.preventDefault();
-        commit(e.currentTarget, true);
+        commit(e.currentTarget.value, true);
       }
+    },
+  };
+  const shared = {
+    ...field,
+    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (!cancelled.current) commit(e.target.value, false);
     },
   };
 
@@ -122,12 +128,22 @@ export function Editable(props: Props) {
 
   return (
     <span className={styles.editWrap}>
-      {props.kind === "multiline" ? (
+      {props.kind === "date" ? (
+        <DateInput
+          {...field}
+          value={dateText}
+          onChange={setDateText}
+          onLeave={() => {
+            if (!cancelled.current) commit(dateText, false);
+          }}
+          pickClassName={styles.datePick}
+        />
+      ) : props.kind === "multiline" ? (
         <textarea {...shared} rows={props.rows ?? 3} defaultValue={initial} maxLength={props.maxLength ?? 2000} />
       ) : (
         <input
           {...shared}
-          type={props.kind === "date" ? "date" : "text"}
+          type="text"
           inputMode={props.kind === "number" ? "decimal" : undefined}
           maxLength={props.kind === "text" ? props.maxLength : undefined}
           defaultValue={initial}

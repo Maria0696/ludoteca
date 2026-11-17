@@ -1,5 +1,6 @@
 import { type Page, expect, test } from "@playwright/test";
 import { STAGES, currentStage, keeperLine, progressPercent, reachedStages } from "../../src/app/juego/[id]/progress";
+import { isoToDmy, parseDmy } from "../../src/lib/format";
 import type { Copy, Game } from "../../src/lib/model";
 import { addGame, cards, openApp } from "./helpers";
 
@@ -135,37 +136,55 @@ test("la nota de Metacritic se apunta a mano, junto a la tuya, y se conserva", a
   await expect(records.getByRole("button", { name: "Nota de Metacritic: añadir" })).toBeVisible();
 });
 
-test("una fecha mal escrita avisa en vez de borrar o cambiar la que había", async ({ page }) => {
+test("las fechas se leen como día/mes/año", () => {
+  expect(parseDmy("3/10/2025")).toEqual({ ok: true, iso: "2025-10-03" });
+  expect(parseDmy(" 03-10-2025 ")).toEqual({ ok: true, iso: "2025-10-03" });
+  expect(parseDmy("3.10.2025")).toEqual({ ok: true, iso: "2025-10-03" });
+  expect(parseDmy("03102025")).toEqual({ ok: true, iso: "2025-10-03" });
+  expect(parseDmy("29/02/2024")).toEqual({ ok: true, iso: "2024-02-29" });
+  expect(parseDmy("")).toEqual({ ok: true, iso: null });
+  expect(parseDmy("29/02/2025").ok).toBe(false);
+  expect(parseDmy("13/13/2025").ok).toBe(false);
+  expect(parseDmy("03/10/25")).toEqual({ ok: false, error: "Escribe el año con cuatro cifras, por ejemplo 2025." });
+  expect(parseDmy("ayer").ok).toBe(false);
+  expect(isoToDmy("2025-10-03")).toBe("03/10/2025");
+});
+
+test("la fecha se escribe como día/mes/año, se elige en el calendario y una mal escrita avisa", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "PC" });
   await cards(page).getByRole("link", { name: /Celeste/ }).click();
   const quests = page.getByRole("region", { name: "Misiones" });
   const finished = quests.getByLabel("Terminado", { exact: true });
-  const saved = quests.getByRole("button", { name: "Terminado: 10 oct 2025. Editar" });
+  const saved = quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" });
 
-  // Día y mes iguales: el orden del campo depende del idioma de Chrome (en Linux, mes/día).
+  // Siempre día/mes/año, sea cual sea el idioma del navegador.
   await quests.getByRole("button", { name: "Terminado: añadir" }).click();
-  await finished.pressSequentially("10102025");
+  await finished.fill("3/10/2025");
   await finished.press("Enter");
   await expect(saved).toBeVisible();
-
-  // Una fecha a medias llega vacía: antes se guardaba como «sin fecha».
   await saved.click();
-  await finished.press("Backspace");
+  await expect(finished).toHaveValue("03/10/2025");
+
+  // Una fecha imposible o con el año en dos cifras avisa y no toca la guardada.
+  await finished.fill("31/02/2025");
   await finished.press("Enter");
-  await expect(quests.getByText("Fecha incompleta o imposible", { exact: false })).toBeVisible();
-  await finished.press("Escape");
-  await expect(saved).toBeVisible();
-
-  // Con el año en dos cifras se guardaba el año 25.
-  await saved.click();
-  await finished.pressSequentially("101025");
+  await expect(quests.getByText("Esa fecha no existe", { exact: false })).toBeVisible();
+  await finished.fill("05/10/25");
   await finished.blur();
   await expect(quests.getByText("Escribe el año con cuatro cifras", { exact: false })).toBeVisible();
   await finished.press("Escape");
+  await expect(saved).toBeVisible();
+
+  // El día elegido en el calendario pasa al texto y se guarda al salir.
+  await saved.click();
+  await quests.getByLabel("Elegir en el calendario").fill("2024-12-24");
+  await expect(finished).toHaveValue("24/12/2024");
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(quests.getByRole("button", { name: "Terminado: 24 dic 2024. Editar" })).toBeVisible();
 
   await page.reload();
-  await expect(saved).toBeVisible();
+  await expect(quests.getByRole("button", { name: "Terminado: 24 dic 2024. Editar" })).toBeVisible();
 });
 
 test("la nota de la crítica llega con las sugerencias y se puede traer después", async ({ page }) => {
