@@ -1,39 +1,53 @@
 /*
- * Sala de proyección: tokens y piezas compartidas.
- * Fondo casi negro y neutro; el color lo ponen las carátulas y el arte de
- * cada juego. El blanco marca la acción principal. Cada estado tiene su
- * color de punto, siempre acompañado de su nombre.
+ * Una sola máquina: la carcasa común de ventanas de píxeles.
+ * Fondo morado oscuro, ventanas con borde de píxel color papel, letra de
+ * terminal para leer y de píxeles para títulos. El dorado marca la acción
+ * principal y lo elegido; nada más. Cada estado tiene su color, siempre
+ * con su etiqueta arcade y su nombre normal.
  */
 
 :root {
-  --bg: #0b0b0d;
-  --surface: #141417;
-  --raised: #1c1c21;
-  --hover: #24242a;
-  --line: #26262c;
-  --control: #34343c;
-  --text: #f4f4f5;
-  --muted: #a1a1aa;
-  --faint: #8b8b94;
-  --primary: #ffffff;
-  --primary-ink: #0b0b0d;
-  --danger: #f87171;
-  --danger-bg: #2a1416;
-  --ok: #4ade80;
+  --paper: #f3ead2;
+  --gold: #ffd76a;
+  --gold-ink: #1b1400;
+  --window: #12101f;
+  --frame-soft: #4a4a7a;
 
-  --st-pendiente: #a1a1aa;
-  --st-jugando: #4ade80;
-  --st-pausado: #fbbf24;
-  --st-completado: #60a5fa;
-  --st-abandonado: #71717a;
+  --bg: #1a1526;
+  --surface: var(--window);
+  --raised: #1f2140;
+  --hover: #2a2c55;
+  --line: var(--frame-soft);
+  --control: var(--frame-soft);
+  --text: var(--paper);
+  --muted: #c9cdf0;
+  --faint: #9a9cc4;
+  --primary: var(--gold);
+  --primary-ink: var(--gold-ink);
+  --danger: #ff6b6b;
+  --danger-bg: #3a1a22;
+  --ok: #5dff8b;
 
-  /* --font-display y --font-text los define next/font en <html>. */
+  --st-pendiente: #ffe94d;
+  --st-jugando: #5dff8b;
+  --st-pausado: #ffb13d;
+  --st-completado: #3ff2ff;
+  --st-abandonado: #ff4d6d;
+
+  /* Borde de píxel: sombras sin desenfoque, como las ventanas de la ficha. */
+  --pixel-frame: 0 -4px 0 var(--paper), 0 4px 0 var(--paper), -4px 0 0 var(--paper), 4px 0 0 var(--paper);
+  --pixel-frame-soft: 0 -3px 0 var(--frame-soft), 0 3px 0 var(--frame-soft), -3px 0 0 var(--frame-soft), 3px 0 0 var(--frame-soft);
+
+  /* next/font define en <html> --font-arcade, --font-terminal, --font-display y --font-text. */
+  --font-pixel: var(--font-arcade), "Courier New", monospace;
+  --font-term: var(--font-terminal), "Courier New", monospace;
+  /* Texto de las pantallas aún sin pasar a la carcasa (pasos 2 y 3). */
   --font: var(--font-text), system-ui, sans-serif;
-  --radius-control: 999px;
-  --radius-field: 10px;
-  --radius-card: 12px;
-  --radius-panel: 16px;
-  --radius-dialog: 20px;
+  --radius-control: 0;
+  --radius-field: 0;
+  --radius-card: 0;
+  --radius-panel: 0;
+  --radius-dialog: 0;
   --gutter: 48px;
   --topbar: 72px;
   --bottombar: 0px;
@@ -98,7 +112,7 @@ a {
 }
 
 ::selection {
-  background: #ffffff33;
+  background: #ffd76a55;
   color: #fff;
 }
 

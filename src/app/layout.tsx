@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AppShell } from "@/components/shell/AppShell";
-import { display, text } from "./fonts";
+import { fontVariables } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0b0d",
+  themeColor: "#1a1526",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es-ES" className={`${display.variable} ${text.variable}`}>
+    <html lang="es-ES" className={fontVariables}>
       <body>
         <AppShell>{children}</AppShell>
       </body>

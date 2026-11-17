@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { sendErrorReport } from "@/lib/error-report";
-import { display, text } from "./fonts";
+import { fontVariables } from "./fonts";
 import "./globals.css";
 
 /**
@@ -15,7 +15,7 @@ export default function GlobalError({ error, retry }: { error: unknown; retry: (
   }, [error]);
 
   return (
-    <html lang="es-ES" className={`${display.variable} ${text.variable}`}>
+    <html lang="es-ES" className={fontVariables}>
       <body>
         <title>Algo ha fallado · Ludoteca</title>
         <main style={{ padding: "48px var(--gutter)" }}>
