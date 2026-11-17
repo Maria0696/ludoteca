@@ -10,7 +10,8 @@ import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import type { CatalogGame } from "@/lib/catalog";
 import { findSameTitle } from "@/lib/filters";
-import { formatDate, formatMoney, parseDecimal } from "@/lib/format";
+import { DateInput } from "@/components/ui/DateInput";
+import { formatDate, formatMoney, isoToDmy, parseDecimal, parseDmy } from "@/lib/format";
 import { type Format, type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, newId, todayIso } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import styles from "./wishlist.module.css";
@@ -160,11 +161,13 @@ export function PriceDialog({ wish, onClose }: { wish: WishItem; onClose: () => 
   const { actions } = useLibrary();
   const [amount, setAmount] = useState("");
   const [store, setStore] = useState("");
-  const [date, setDate] = useState(todayIso());
+  const [date, setDate] = useState(isoToDmy(todayIso()));
   const [submitted, setSubmitted] = useState(false);
   const value = parseDecimal(amount);
   const error = value == null ? "Escribe el precio." : Number.isNaN(value) || value < 0 ? "Escribe un importe, por ejemplo 19,99." : null;
-  const dateError = !date ? "Indica la fecha." : date > todayIso() ? "La fecha no puede ser futura." : null;
+  const parsedDate = parseDmy(date);
+  const dateIso = parsedDate.ok ? parsedDate.iso : null;
+  const dateError = !parsedDate.ok ? parsedDate.error : !dateIso ? "Indica la fecha." : dateIso > todayIso() ? "La fecha no puede ser futura." : null;
 
   return (
     <Dialog
@@ -190,9 +193,9 @@ export function PriceDialog({ wish, onClose }: { wish: WishItem; onClose: () => 
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitted(true);
-          if (error || dateError || value == null) return;
+          if (error || dateError || value == null || !dateIso) return;
           actions.updateWish(wish.id, {
-            prices: [...wish.prices, { id: newId(), amount: value, store: store.trim() || null, date }],
+            prices: [...wish.prices, { id: newId(), amount: value, store: store.trim() || null, date: dateIso }],
           });
           if (wish.targetPrice != null && value <= wish.targetPrice) toast(`«${wish.title}» está en tu precio objetivo o por debajo`);
           onClose();
@@ -213,7 +216,15 @@ export function PriceDialog({ wish, onClose }: { wish: WishItem; onClose: () => 
           </div>
           <div className="field">
             <label htmlFor="price-date">Fecha</label>
-            <input id="price-date" className="input" type="date" value={date} max={todayIso()} onChange={(e) => setDate(e.target.value)} />
+            <DateInput
+              id="price-date"
+              className="input"
+              value={date}
+              max={todayIso()}
+              aria-invalid={submitted && dateError ? true : undefined}
+              pickClassName="btn btn-icon"
+              onChange={setDate}
+            />
             {submitted && dateError && <p className="error">{dateError}</p>}
           </div>
         </div>
@@ -238,11 +249,13 @@ export function ConvertDialog({ wish, onClose }: { wish: WishItem; onClose: () =
   const [format, setFormat] = useState<Format>("fisico");
   const [price, setPrice] = useState(latest ? String(latest.amount).replace(".", ",") : "");
   const [store, setStore] = useState(latest?.store ?? "");
-  const [date, setDate] = useState(todayIso());
+  const [date, setDate] = useState(isoToDmy(todayIso()));
   const existing = findSameTitle(library, wish.title);
   const [asCopy, setAsCopy] = useState(Boolean(existing));
   const [submitted, setSubmitted] = useState(false);
   const priceValue = parseDecimal(price);
+  const parsedDate = parseDmy(date);
+  const dateError = parsedDate.ok ? null : parsedDate.error;
   const platformError = !platform.trim() ? "Elige la plataforma de tu copia." : null;
   const priceError = Number.isNaN(priceValue) || (priceValue != null && priceValue < 0) ? "Escribe un importe, por ejemplo 19,99." : null;
 
@@ -270,10 +283,10 @@ export function ConvertDialog({ wish, onClose }: { wish: WishItem; onClose: () =
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitted(true);
-          if (platformError || priceError) return;
+          if (platformError || priceError || !parsedDate.ok) return;
           const game = actions.convertWish(
             wish.id,
-            { platform: platform.trim(), format, pricePaid: priceValue, store: store.trim() || null, acquiredAt: date || null },
+            { platform: platform.trim(), format, pricePaid: priceValue, store: store.trim() || null, acquiredAt: parsedDate.iso },
             asCopy ? existing?.id : undefined,
           );
           toast(`«${game.title}» ya está en tu biblioteca`, {
@@ -341,7 +354,15 @@ export function ConvertDialog({ wish, onClose }: { wish: WishItem; onClose: () =
           </div>
           <div className="field">
             <label htmlFor="conv-date">Fecha de compra</label>
-            <input id="conv-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <DateInput
+              id="conv-date"
+              className="input"
+              value={date}
+              aria-invalid={submitted && dateError ? true : undefined}
+              pickClassName="btn btn-icon"
+              onChange={setDate}
+            />
+            {submitted && dateError && <p className="error">{dateError}</p>}
           </div>
         </div>
       </form>
