@@ -563,12 +563,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex-wrap: wrap;
+  row-gap: 2px;
   font-family: var(--font-term);
   font-size: 20px;
   font-weight: 400;
   line-height: 1;
   color: var(--muted);
-  white-space: nowrap;
 }
 .state::before {
   content: "";
@@ -580,6 +581,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .state b {
   font-weight: 400;
+  white-space: nowrap;
   letter-spacing: 0.05em;
   color: var(--dot, var(--st-pendiente));
 }

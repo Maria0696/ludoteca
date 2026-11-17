@@ -69,6 +69,17 @@ test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", 
   await expect(proposal).toContainText("Jugando");
   await page.goto("/listas");
   await expect(page.getByText("PRESS START").first()).toBeVisible();
+  // En una tarjeta estrecha, el nombre baja de línea antes que cortarse.
+  const state = page.locator(".state").first();
+  const overflow = await state.evaluate((el) => {
+    const card = el.closest("li")!.getBoundingClientRect();
+    return Math.max(...[...el.childNodes].map((n) => {
+      const r = document.createRange();
+      r.selectNodeContents(n);
+      return r.getBoundingClientRect().right;
+    })) - card.right;
+  });
+  expect(overflow).toBeLessThanOrEqual(0);
 });
 
 test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la biblioteca", async ({ page }) => {
