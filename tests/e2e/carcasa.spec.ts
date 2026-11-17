@@ -136,6 +136,21 @@ test("Estadísticas en la carcasa: título en píxeles, una ventana por sección
   await expectCarcasaText(page.locator("main"));
 });
 
+test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el arte detrás", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/que-juego");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "¿A qué juego?" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  // Un form con nombre accesible tiene el rol «form»; la sección de resultados, «region».
+  for (const box of [page.getByRole("form", { name: "Tu sesión" }), page.getByRole("region", { name: /^Mis propuestas/ })]) {
+    expect(await box.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  const picks = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) });
+  for (const shadow of await picks.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(shadow).toBe("none");
+  await expect(picks.first().locator("img[aria-hidden]")).toHaveCount(1); // el arte difuminado se conserva
+  await expectCarcasaText(page.locator("main"));
+});
+
 test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");
