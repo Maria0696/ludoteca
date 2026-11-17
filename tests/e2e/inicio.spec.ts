@@ -104,6 +104,47 @@ test("las flechas mueven el menú sin robar las de un cuadro de diálogo", async
   await expect(item(page, "Continuar")).toHaveAttribute("aria-pressed", "true");
 });
 
+test("dentro de cada panel, ↑ y ↓ recorren sus opciones", async ({ page }) => {
+  await loadDemo(page);
+  await openApp(page, "/");
+  const focused = page.locator(":focus");
+
+  // Elegir modo: los modos en columna y, debajo, «Elegir con calma».
+  await item(page, "Elegir modo").click();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("link", { name: /Modo rápido/ })).toBeFocused();
+  for (const next of [/Modo historia/, /Cooperativo/, /Modo relax/, /Elegir con calma/]) {
+    await page.keyboard.press("ArrowDown");
+    await expect(focused).toHaveText(next);
+  }
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByRole("link", { name: /Modo relax/ })).toBeFocused();
+  await expect(item(page, "Elegir modo")).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(item(page, "Elegir modo")).toBeFocused();
+
+  // Continuar: ↓ pasa por las partidas y, tras la última, llega a las acciones.
+  await item(page, "Continuar").click();
+  await page.keyboard.press("ArrowRight");
+  const slots = page.getByRole("group", { name: "Partidas guardadas" }).getByRole("button");
+  const count = await slots.count();
+  for (let i = 1; i < count; i++) await page.keyboard.press("ArrowDown");
+  await expect(slots.last()).toBeFocused();
+  await expect(slots.last()).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("ArrowDown");
+  await expect(focused).toHaveText(/^(He jugado hoy|Retomar)$/);
+  await page.keyboard.press("ArrowUp");
+  await expect(slots.last()).toBeFocused();
+
+  // Novedades: en la rejilla de carátulas, ↓ baja a la de debajo.
+  await item(page, "Novedades").click();
+  await page.keyboard.press("ArrowRight");
+  const covers = page.locator('[aria-label="Menú de inicio"] a[href^="/juego/"]');
+  await covers.first().focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(covers.nth(4)).toBeFocused();
+});
+
 test("en una ventana baja, las opciones del menú no se mueven al cambiar de panel", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 640 });
   await loadDemo(page);
