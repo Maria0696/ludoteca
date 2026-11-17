@@ -34,6 +34,31 @@ export async function addGame(
   await expect(dialog).toBeHidden();
 }
 
+/**
+ * Comprueba que todo el texto visible de `root` está en la carcasa: ni Albert
+ * Sans ni Bricolage Grotesque, y nada en VT323 por debajo de 18 px.
+ */
+export async function expectCarcasaText(root: Locator): Promise<void> {
+  const offenders = await root.evaluate((rootEl) => {
+    const out: string[] = [];
+    for (const el of [rootEl, ...rootEl.querySelectorAll("*")]) {
+      const own = [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim());
+      if (!own) continue;
+      const rect = el.getBoundingClientRect();
+      const s = getComputedStyle(el);
+      // Solo lo que se ve: fuera lo invisible y el texto solo para lectores de pantalla.
+      if (!rect.width || !rect.height || s.visibility === "hidden" || el.closest(".sr-only")) continue;
+      const family = s.fontFamily;
+      const size = parseFloat(s.fontSize);
+      const text = (el.textContent ?? "").trim().slice(0, 40);
+      if (/Albert|Bricolage/i.test(family)) out.push(`«${text}»: ${family.split(",")[0]} ${size}px`);
+      else if (/VT323/i.test(family) && size < 18) out.push(`«${text}»: VT323 ${size}px`);
+    }
+    return out;
+  });
+  if (offenders.length) throw new Error(`Texto fuera de la carcasa:\n${offenders.join("\n")}`);
+}
+
 /** Tarjetas visibles en la rejilla de la biblioteca. */
 export function cards(page: Page) {
   return page.getByRole("list", { name: "Juegos" }).getByRole("listitem").filter({ has: page.getByRole("link") });

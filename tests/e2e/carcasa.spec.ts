@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { loadDemo, openApp } from "./helpers";
+import { expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -118,6 +118,12 @@ test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la
   await expect(menu.getByRole("button", { name: "Récords", exact: true })).toHaveCount(0);
   await page.goto("/biblioteca");
   await expect(page.getByRole("region", { name: "Récords de horas" }).getByRole("heading")).toHaveText("Récords · horas");
+});
+
+test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async ({ page }) => {
+  await openApp(page, "/deseos");
+  // Deseos aún no está migrada: su título usa Bricolage.
+  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Bricolage|Albert/);
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
