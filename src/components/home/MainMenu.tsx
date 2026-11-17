@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KEEPER_URL } from "@/components/pixel/sprites";
 import { progressPercent } from "@/app/juego/[id]/progress";
 import type { LibraryEntry } from "@/lib/filters";
 import { relativeDay } from "@/lib/format";
@@ -199,18 +198,13 @@ export function MainMenu({
   const [preview, setPreview] = useState<Art>(null);
   const [title, setTitle] = useState<"on" | "leaving" | "off">(() => (titleScreenDue() ? "on" : "off"));
   const [animateIn, setAnimateIn] = useState(false);
-  const [now, setNow] = useState(() => new Date());
+  const [now] = useState(() => new Date());
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef(0);
 
   const shownSaves = useMemo(() => saves.slice(0, MAX_SAVES), [saves]);
   const selected = shownSaves.find((s) => s.game.id === slotId) ?? shownSaves[0];
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 20_000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (title === "on") markTitleScreenSeen();
@@ -290,12 +284,6 @@ export function MainMenu({
       <Backdrop art={preview ?? defaultArt()} />
       <div className={styles.shade} />
       <Embers className={styles.embers} />
-
-      <div className={styles.hudBar} inert={hidden}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- dibujo propio en SVG */}
-        <img src={KEEPER_URL} alt="" />
-        <span className={styles.clock}>{now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
-      </div>
 
       <div className={styles.notices} inert={hidden} style={{ visibility: hidden ? "hidden" : undefined }}>
         {notices}
