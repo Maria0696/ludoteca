@@ -141,29 +141,31 @@ test("una fecha mal escrita avisa en vez de borrar o cambiar la que había", asy
   await cards(page).getByRole("link", { name: /Celeste/ }).click();
   const quests = page.getByRole("region", { name: "Misiones" });
   const finished = quests.getByLabel("Terminado", { exact: true });
+  const saved = quests.getByRole("button", { name: "Terminado: 10 oct 2025. Editar" });
 
+  // Día y mes iguales: el orden del campo depende del idioma de Chrome (en Linux, mes/día).
   await quests.getByRole("button", { name: "Terminado: añadir" }).click();
-  await finished.pressSequentially("03102025");
+  await finished.pressSequentially("10102025");
   await finished.press("Enter");
-  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+  await expect(saved).toBeVisible();
 
-  // Chrome deja «3/10/2025» a medias: antes se guardaba como «sin fecha».
-  await quests.getByRole("button", { name: /^Terminado: 3 oct 2025/ }).click();
-  await finished.pressSequentially("3/10/2025");
+  // Una fecha a medias llega vacía: antes se guardaba como «sin fecha».
+  await saved.click();
+  await finished.press("Backspace");
   await finished.press("Enter");
   await expect(quests.getByText("Fecha incompleta o imposible", { exact: false })).toBeVisible();
   await finished.press("Escape");
-  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+  await expect(saved).toBeVisible();
 
   // Con el año en dos cifras se guardaba el año 25.
-  await quests.getByRole("button", { name: /^Terminado: 3 oct 2025/ }).click();
-  await finished.pressSequentially("05/10/25");
+  await saved.click();
+  await finished.pressSequentially("101025");
   await finished.blur();
   await expect(quests.getByText("Escribe el año con cuatro cifras", { exact: false })).toBeVisible();
   await finished.press("Escape");
 
   await page.reload();
-  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+  await expect(saved).toBeVisible();
 });
 
 test("la nota de la crítica llega con las sugerencias y se puede traer después", async ({ page }) => {
