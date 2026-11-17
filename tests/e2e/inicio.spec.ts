@@ -136,13 +136,27 @@ test("dentro de cada panel, ↑ y ↓ recorren sus opciones", async ({ page }) =
   await page.keyboard.press("ArrowUp");
   await expect(slots.last()).toBeFocused();
 
-  // Novedades: en la rejilla de carátulas, ↓ baja a la de debajo.
+  // Novedades: → entra en la primera carátula y en la rejilla se va en las cuatro direcciones.
   await item(page, "Novedades").click();
   await page.keyboard.press("ArrowRight");
   const covers = page.locator('[aria-label="Menú de inicio"] a[href^="/juego/"]');
-  await covers.first().focus();
+  await expect(covers.first()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(covers.nth(4)).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(covers.nth(5)).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(covers.nth(4)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByRole("link", { name: /^Ver todo/ })).toBeFocused();
+
+  // ← solo vuelve al menú cuando no queda nada a la izquierda.
+  await covers.nth(1).focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(covers.first()).toBeFocused();
+  await page.keyboard.press("ArrowLeft");
+  await expect(item(page, "Novedades")).toBeFocused();
 });
 
 test("en una ventana baja, las opciones del menú no se mueven al cambiar de panel", async ({ page }) => {
