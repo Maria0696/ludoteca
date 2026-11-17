@@ -94,7 +94,7 @@ Aquí solo se cambia el aspecto y los nombres. La estructura, el orden de las se
 | Texto, datos, botones y etiquetas | VT323 | 21–23 px; nunca por debajo de 18 px |
 | Cifras grandes | VT323 | 32–56 px |
 
-La letra de píxeles no tiene mayúsculas con tilde: nunca se pone en mayúsculas forzadas un texto que pueda llevar tilde, y los textos con tilde van en VT323.
+Nunca se ponen en mayúsculas forzadas (`text-transform: uppercase`) los textos en Press Start 2P que puedan llevar tilde. Escritos tal cual, los títulos con tilde sí van en Press Start 2P («Añadir a la lista de deseos», «Último aviso»): las tildes de la letra se dibujan bien (decidido el 17/11/2026, tras la revisión del paso 1).
 
 ### Piezas
 
@@ -104,7 +104,7 @@ La letra de píxeles no tiene mayúsculas con tilde: nunca se pone en mayúscula
 - **Campos y desplegables**: fondo oscuro, borde suave y foco dorado.
 - **Estado**: rombo de color, etiqueta arcade en su color y nombre normal (`◆ PRESS START · Pendiente`). Sustituye al punto de color de `StatusMark`. Donde no cabe, la etiqueta arcade con el nombre normal accesible.
 - **Barra superior**: fondo de ventana y línea inferior de papel. «Ludoteca» en Press Start 2P dorado y destinos en VT323; el destino actual, en dorado con texto oscuro. Buscador y «Añadir juego» como campo y botón principal.
-- **Barra inferior (móvil)**: igual que la superior. Objetivos de al menos 44 px.
+- **Barra inferior (móvil)**: igual que la superior. Objetivos de al menos 44 px. Usa **nombres cortos**, como es habitual en las barras de pestañas del móvil: «Jugar» para «¿A qué juego?» y «Resumen» para «Estadísticas», que a 18 px no cabe (decidido el 17/11/2026).
 - **Diálogos y hoja inferior**: ventana con borde de papel.
 - **Avisos** (sonner): ventana pequeña con borde de papel; «Deshacer» como botón secundario.
 

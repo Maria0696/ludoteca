@@ -43,6 +43,9 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
     expect(family).toMatch(/VT323/i);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  // Cada nombre cabe en su columna, sin invadir la de al lado.
+  const spill = await nav.getByRole("link").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+  for (const s of spill) expect(s).toBeLessThanOrEqual(0);
   await page.setViewportSize({ width: 412, height: 915 });
 
   // El menú del inicio cabe en el móvil y cambia de apartado al tocarlo.
