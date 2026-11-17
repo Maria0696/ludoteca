@@ -186,6 +186,10 @@ test("un título largo cabe en el rótulo de la cabina sin cortarse a media lín
     // Nada del rótulo queda escondido por debajo: o cabe entero, o termina en «…».
     const hidden = await marquee.evaluate((el) => el.scrollHeight - el.clientHeight);
     expect(hidden).toBeLessThanOrEqual(0);
+    // El nombre y el estado se leen sin esfuerzo: nada de letra de 8 px.
+    const size = (el: Element) => parseFloat(getComputedStyle(el).fontSize);
+    expect(await marquee.evaluate(size)).toBeGreaterThanOrEqual(16);
+    expect(await card.locator("[data-status]").evaluate(size)).toBeGreaterThanOrEqual(16);
     await expect(card.getByRole("link")).toHaveAttribute("title", "The Legend of Zelda: Ocarina of Time");
   }
 });
