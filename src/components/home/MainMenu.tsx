@@ -63,6 +63,30 @@ function Backdrop({ art }: { art: Art }) {
   );
 }
 
+/**
+ * La opción más cercana por encima o por debajo, como en el menú de una consola:
+ * en una columna es la siguiente; en una rejilla, la que queda justo debajo.
+ */
+function nearestVertical(panel: HTMLElement, from: HTMLElement, dir: 1 | -1): HTMLElement | null {
+  const r = from.getBoundingClientRect();
+  let best: HTMLElement | null = null;
+  let bestScore = Infinity;
+  for (const el of panel.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)")) {
+    if (el === from || el.tabIndex < 0) continue;
+    const c = el.getBoundingClientRect();
+    if (!c.width || !c.height) continue;
+    const dy = dir === 1 ? c.top - r.bottom : r.top - c.bottom;
+    if (dy < -4) continue; // en la misma fila o en la dirección contraria
+    const dx = Math.max(0, c.left - r.right, r.left - c.right);
+    const score = dy + dx * 3;
+    if (score < bestScore) {
+      best = el;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 function Cover({ entry, isNew, onPreview }: { entry: LibraryEntry; isNew?: boolean; onPreview: (art: Art) => void }) {
   const { game } = entry;
   return (
@@ -97,10 +121,13 @@ function Saves({ saves, selected, onSelect, total, onNew }: { saves: LibraryEntr
   }
 
   const { game } = selected;
+  /** Elige la partida de al lado. En los extremos no hace nada: el panel lleva a la opción siguiente. */
   const move = (delta: number) => {
-    const next = (saves.findIndex((s) => s.game.id === game.id) + delta + saves.length) % saves.length;
+    const next = saves.findIndex((s) => s.game.id === game.id) + delta;
+    if (next < 0 || next >= saves.length) return false;
     onSelect(saves[next].game.id);
     listRef.current?.querySelectorAll("button")[next]?.focus();
+    return true;
   };
 
   return (
@@ -118,9 +145,9 @@ function Saves({ saves, selected, onSelect, total, onNew }: { saves: LibraryEntr
         aria-label="Partidas guardadas"
         onKeyDown={(e) => {
           if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+          if (!move(e.key === "ArrowDown" ? 1 : -1)) return;
           e.preventDefault();
           e.stopPropagation();
-          move(e.key === "ArrowDown" ? 1 : -1);
         }}
       >
         {saves.map((entry) => {
@@ -339,6 +366,12 @@ export function MainMenu({
             if (e.key === "ArrowLeft") {
               e.preventDefault();
               focusItem(item);
+            } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && panelRef.current) {
+              const next = nearestVertical(panelRef.current, e.target as HTMLElement, e.key === "ArrowDown" ? 1 : -1);
+              if (next) {
+                e.preventDefault();
+                next.focus();
+              }
             }
           }}
         >
