@@ -24,8 +24,13 @@ test.describe("pantalla de título", () => {
     await expect(menu(page)).toBeVisible();
     await expect(startLine(page)).toHaveCount(0);
 
-    // Se puede volver a ella y entrar con un clic.
-    await page.getByRole("button", { name: "Pantalla de título" }).click();
+    // No hay botón para volver a ella ni rótulo de «Jugadora 1».
+    await expect(page.getByRole("button", { name: "Pantalla de título" })).toHaveCount(0);
+    await expect(page.getByText("Jugadora 1")).toHaveCount(0);
+
+    // Al día siguiente vuelve, y también se entra con un clic.
+    await page.evaluate(() => localStorage.removeItem("ludoteca:titulo-visto"));
+    await page.reload();
     await startLine(page).click();
     await expect(menu(page)).toBeVisible();
   });
