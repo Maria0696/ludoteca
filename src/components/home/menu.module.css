@@ -11,10 +11,10 @@
   isolation: isolate;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: calc(100dvh - var(--bottombar));
   margin-bottom: -64px;
-  padding-top: var(--topbar); /* la barra superior flota por encima */
+  padding-top: calc(var(--topbar) + 14px); /* la barra superior flota por encima */
   background: var(--ground);
   color: #fff;
   font-family: var(--hud);
@@ -60,26 +60,16 @@
   pointer-events: none;
 }
 
-.hudBar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px var(--gutter);
-  font-weight: 700;
-}
-.hudBar img {
-  width: 30px;
-  display: block;
-}
-.clock {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
+/* Cada parte en su fila: sin avisos, la primera queda vacía y nada se descoloca. */
+.notices {
+  grid-row: 1;
 }
 .notices:empty {
   display: none;
 }
 
 .body {
+  grid-row: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
   align-items: center;
@@ -410,6 +400,7 @@
 }
 
 .foot {
+  grid-row: 3;
   display: flex;
   flex-wrap: wrap;
   gap: 6px 20px;
@@ -574,7 +565,7 @@
 }
 @media (max-width: 899px) {
   .stage {
-    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
   }
   .body {
     grid-template-columns: minmax(0, 1fr);
