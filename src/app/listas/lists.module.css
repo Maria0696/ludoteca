@@ -60,9 +60,13 @@
   text-align: left;
   cursor: pointer;
 }
+/* La lista elegida, como lo elegido en toda la carcasa: papel con texto oscuro. */
 .lists button[aria-current="true"] {
-  background: #fff;
-  color: #0b0b0d;
+  background: var(--paper);
+  color: var(--window);
+}
+.lists button[aria-current="true"] small {
+  color: var(--frame-soft);
 }
 .lists small {
   font-weight: 600;

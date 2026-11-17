@@ -55,9 +55,37 @@ test("los avisos: letra de la carcasa y «Deshacer» visible", async ({ page }) 
   await page.goto("/");
   await page.getByRole("button", { name: /^(He jugado hoy|Retomar)$/ }).click();
   const toast = page.locator("[data-sonner-toast]").first();
-  await expect(toast.getByRole("button", { name: "Deshacer" })).toBeVisible();
+  const undo = toast.getByRole("button", { name: "Deshacer" });
+  await expect(undo).toBeVisible();
   const [family] = await font(toast);
   expect(family).toMatch(/VT323/i);
+  // Con el teclado, «Deshacer» enseña el foco.
+  await undo.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(undo).toBeFocused();
+  expect(await undo.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+});
+
+/** Contraste entre dos colores `rgb(...)` según WCAG. */
+function contrast(a: string, b: string) {
+  const lum = (c: string) => {
+    const [r, g, bl] = c.match(/\d+/g)!.slice(0, 3).map((v) => {
+      const s = Number(v) / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test("en Mis listas, el número de juegos de la lista elegida se lee", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/listas");
+  const current = page.locator('button[aria-current="true"]').first();
+  const colors = await current.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el.querySelector("small")!).color]);
+  expect(contrast(colors[0], colors[1])).toBeGreaterThanOrEqual(4.5);
 });
 
 test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", async ({ page }) => {
