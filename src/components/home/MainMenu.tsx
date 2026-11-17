@@ -63,22 +63,34 @@ function Backdrop({ art }: { art: Art }) {
   );
 }
 
+type Direction = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
+const DIRECTIONS = new Set<string>(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+
 /**
- * La opción más cercana por encima o por debajo, como en el menú de una consola:
- * en una columna es la siguiente; en una rejilla, la que queda justo debajo.
+ * La opción más cercana en esa dirección, como en el menú de una consola: en una
+ * columna es la siguiente; en una rejilla, la de al lado o la de justo debajo.
+ * A los lados solo cuenta lo que está en la misma fila.
  */
-function nearestVertical(panel: HTMLElement, from: HTMLElement, dir: 1 | -1): HTMLElement | null {
+function nearest(panel: HTMLElement, from: HTMLElement, dir: Direction): HTMLElement | null {
   const r = from.getBoundingClientRect();
+  const vertical = dir === "ArrowUp" || dir === "ArrowDown";
   let best: HTMLElement | null = null;
   let bestScore = Infinity;
   for (const el of panel.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)")) {
     if (el === from || el.tabIndex < 0) continue;
     const c = el.getBoundingClientRect();
     if (!c.width || !c.height) continue;
-    const dy = dir === 1 ? c.top - r.bottom : r.top - c.bottom;
-    if (dy < -4) continue; // en la misma fila o en la dirección contraria
-    const dx = Math.max(0, c.left - r.right, r.left - c.right);
-    const score = dy + dx * 3;
+    const gapX = Math.max(0, c.left - r.right, r.left - c.right);
+    const gapY = Math.max(0, c.top - r.bottom, r.top - c.bottom);
+    const ahead = {
+      ArrowDown: c.top - r.bottom,
+      ArrowUp: r.top - c.bottom,
+      ArrowRight: c.left - r.right,
+      ArrowLeft: r.left - c.right,
+    }[dir];
+    if (ahead < -4) continue; // en la dirección contraria o encima del de partida
+    if (!vertical && gapY > 0) continue; // otra fila
+    const score = vertical ? ahead + gapX * 3 : ahead;
     if (score < bestScore) {
       best = el;
       bestScore = score;
@@ -328,7 +340,10 @@ export function MainMenu({
               step(e.key === "ArrowDown" ? 1 : -1);
             } else if (e.key === "ArrowRight") {
               const panel = panelRef.current;
-              const target = panel?.querySelector<HTMLElement>('[tabindex="0"]') ?? panel?.querySelector<HTMLElement>("a, button");
+              // Se entra en el contenido (la partida elegida, la primera carátula), no en «Ver todo».
+              const options = panel ? [...panel.querySelectorAll<HTMLElement>("a[href], button")] : [];
+              const target =
+                panel?.querySelector<HTMLElement>('[tabindex="0"]') ?? options.find((el) => !el.closest(`.${CSS.escape(styles.panelHead)}`)) ?? options[0];
               if (target) {
                 e.preventDefault();
                 target.focus();
@@ -363,15 +378,15 @@ export function MainMenu({
           className={styles.panel}
           onPointerLeave={() => setPreview(null)}
           onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") {
+            if (!DIRECTIONS.has(e.key) || !panelRef.current) return;
+            const next = nearest(panelRef.current, e.target as HTMLElement, e.key as Direction);
+            if (next) {
+              e.preventDefault();
+              next.focus();
+            } else if (e.key === "ArrowLeft") {
+              // Nada más a la izquierda: de vuelta al menú.
               e.preventDefault();
               focusItem(item);
-            } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && panelRef.current) {
-              const next = nearestVertical(panelRef.current, e.target as HTMLElement, e.key === "ArrowDown" ? 1 : -1);
-              if (next) {
-                e.preventDefault();
-                next.focus();
-              }
             }
           }}
         >
