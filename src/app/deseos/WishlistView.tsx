@@ -57,8 +57,8 @@ export function WishlistView() {
   return (
     <div className={styles.page}>
       <header className={styles.head}>
-        <h1>Lista de deseos</h1>
-        <p className="muted num">
+        <h1 className="screen-title">Lista de deseos</h1>
+        <p className={`${styles.count} num`}>
           {library.wishlist.length} {library.wishlist.length === 1 ? "juego" : "juegos"}
         </p>
         <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
@@ -81,7 +81,7 @@ export function WishlistView() {
             <label className={styles.search}>
               <Search aria-hidden />
               <span className="sr-only">Buscar en la lista de deseos</span>
-              <input type="search" placeholder="Buscar por título" value={q} onChange={(e) => setQ(e.target.value)} />
+              <input className="input" type="search" placeholder="Buscar por título" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
             <div className={styles.chips} role="group" aria-label="Prioridad">
               {PRIORITIES.map((p) => (
@@ -140,6 +140,7 @@ export function WishlistView() {
               <p>Prueba con otro título o quita algún filtro.</p>
             </div>
           ) : (
+            <section className="window" aria-label="Deseos">
             <ul className={styles.list}>
               {visible.map((w) => {
                 const p = latestPrice(w);
@@ -187,17 +188,20 @@ export function WishlistView() {
                         <Tag aria-hidden />
                         Precio
                       </button>
-                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
+                      <button type="button" className="btn btn-sm" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
                         <Pencil aria-hidden />
+                        Editar
                       </button>
                       <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
                         <Trash2 aria-hidden />
+                        Quitar
                       </button>
                     </div>
                   </li>
                 );
               })}
             </ul>
+            </section>
           )}
         </>
       )}

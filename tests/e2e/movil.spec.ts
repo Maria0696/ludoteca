@@ -1,5 +1,22 @@
 import { expect, test } from "@playwright/test";
-import { cards, choosePlatform, loadDemo } from "./helpers";
+import { cards, choosePlatform, expectCarcasaText, loadDemo } from "./helpers";
+
+const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
+
+test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
+  await loadDemo(page);
+  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+
+  await page.goto("/deseos");
+  await page.getByRole("button", { name: "Añadir deseo" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Título").fill(LONG_TITLE);
+  await dialog.getByRole("button", { name: "Añadir deseo" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: LONG_TITLE })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+});
 
 test("en el móvil se navega con la barra inferior y se añade desde la hoja", async ({ page }) => {
   await loadDemo(page);

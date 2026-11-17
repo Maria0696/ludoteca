@@ -121,9 +121,34 @@ test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la
 });
 
 test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async ({ page }) => {
-  await openApp(page, "/deseos");
-  // Deseos aún no está migrada: su título usa Bricolage.
+  await openApp(page, "/estadisticas");
+  // Estadísticas aún no está migrada (paso 3): su título usa Bricolage.
   await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Bricolage|Albert/);
+});
+
+test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/deseos");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Lista de deseos" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  const win = page.getByRole("region", { name: "Deseos" });
+  expect(await win.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  const rowFrames = await win.getByRole("listitem").evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow));
+  for (const shadow of rowFrames) expect(shadow).toBe("none");
+  await expectCarcasaText(page.locator("main"));
+  // Editar y quitar dicen lo que hacen.
+  await expect(page.getByRole("button", { name: "Editar Hollow Knight: Silksong" })).toHaveText("Editar");
+  await expect(page.getByRole("button", { name: "Quitar Hollow Knight: Silksong de la lista" })).toHaveText("Quitar");
+});
+
+test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura", async ({ page }) => {
+  await openApp(page, "/deseos");
+  await page.getByRole("button", { name: "Añadir el primer deseo" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Título").fill("Un juego con un título larguísimo que no tiene carátula todavía");
+  await dialog.getByRole("button", { name: "Añadir deseo" }).click();
+  await expect(dialog).toBeHidden();
+  await expectCarcasaText(page.locator("main"));
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
