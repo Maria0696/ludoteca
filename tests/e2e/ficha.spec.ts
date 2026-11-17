@@ -135,6 +135,39 @@ test("la nota de Metacritic se apunta a mano, junto a la tuya, y se conserva", a
   await expect(records.getByRole("button", { name: "Nota de Metacritic: añadir" })).toBeVisible();
 });
 
+test("una fecha mal escrita avisa en vez de borrar o cambiar la que había", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Celeste", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Celeste/ }).click();
+  const quests = page.getByRole("region", { name: "Misiones" });
+  const finished = quests.getByLabel("Terminado", { exact: true });
+  const saved = quests.getByRole("button", { name: "Terminado: 10 oct 2025. Editar" });
+
+  // Día y mes iguales: el orden del campo depende del idioma de Chrome (en Linux, mes/día).
+  await quests.getByRole("button", { name: "Terminado: añadir" }).click();
+  await finished.pressSequentially("10102025");
+  await finished.press("Enter");
+  await expect(saved).toBeVisible();
+
+  // Una fecha a medias llega vacía: antes se guardaba como «sin fecha».
+  await saved.click();
+  await finished.press("Backspace");
+  await finished.press("Enter");
+  await expect(quests.getByText("Fecha incompleta o imposible", { exact: false })).toBeVisible();
+  await finished.press("Escape");
+  await expect(saved).toBeVisible();
+
+  // Con el año en dos cifras se guardaba el año 25.
+  await saved.click();
+  await finished.pressSequentially("101025");
+  await finished.blur();
+  await expect(quests.getByText("Escribe el año con cuatro cifras", { exact: false })).toBeVisible();
+  await finished.press("Escape");
+
+  await page.reload();
+  await expect(saved).toBeVisible();
+});
+
 test("la nota de la crítica llega con las sugerencias y se puede traer después", async ({ page }) => {
   const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });

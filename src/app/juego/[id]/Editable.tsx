@@ -44,7 +44,14 @@ export function Editable(props: Props) {
     setEditing(false);
   };
 
-  const commit = (raw: string, refocus: boolean) => {
+  const commit = (field: HTMLInputElement | HTMLTextAreaElement, refocus: boolean) => {
+    const raw = field.value;
+    if (props.kind === "date") {
+      // Una fecha a medias (o el 31 de febrero) llega vacía: no es «sin fecha».
+      if (field.validity.badInput) return setError("Fecha incompleta o imposible. Escríbela así: 03/10/2025.");
+      // Chrome toma «25» como el año 25, no 2025.
+      if (raw && Number(raw.slice(0, 4)) < 1950) return setError("Escribe el año con cuatro cifras, por ejemplo 2025.");
+    }
     if (props.kind === "number") {
       const n = parseDecimal(raw);
       if (n === null) {
@@ -98,7 +105,7 @@ export function Editable(props: Props) {
     className: styles.edit,
     onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => e.target.select(),
     onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (!cancelled.current) commit(e.target.value, false);
+      if (!cancelled.current) commit(e.target, false);
     },
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       if (e.key === "Escape") {
@@ -106,7 +113,7 @@ export function Editable(props: Props) {
         close(true);
       } else if (e.key === "Enter" && props.kind !== "multiline") {
         e.preventDefault();
-        commit(e.currentTarget.value, true);
+        commit(e.currentTarget, true);
       }
     },
   };
