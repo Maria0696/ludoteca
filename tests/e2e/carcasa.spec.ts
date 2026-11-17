@@ -93,8 +93,7 @@ test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", 
   await page.goto("/que-juego");
   // Cada propuesta es un <li> con el enlace «Ficha de …».
   const proposal = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) }).first();
-  await expect(proposal).toContainText("EN PARTIDA");
-  await expect(proposal).toContainText("Jugando");
+  await expect(proposal).toContainText(/EN PARTIDA ·\s*Jugando/);
   await page.goto("/listas");
   await expect(page.getByText("PRESS START").first()).toBeVisible();
   // En una tarjeta estrecha, el nombre baja de línea antes que cortarse.

@@ -313,7 +313,7 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     height: var(--bottombar);
-    padding: 6px 2px env(safe-area-inset-bottom);
+    padding: 6px 0 env(safe-area-inset-bottom);
     background: var(--window);
     box-shadow: 0 -4px 0 var(--paper);
   }
