@@ -3,7 +3,7 @@ import { Cover } from "@/components/ui/Cover";
 import type { LibraryEntry } from "@/lib/filters";
 import { formatNumber, relativeDay } from "@/lib/format";
 import { formatHours } from "@/lib/recommend";
-import { ARCADE_STATUS } from "./arcade";
+import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { copyDetail } from "./Cabinet";
 import styles from "./library.module.css";
 
@@ -52,7 +52,7 @@ export function HiScore({ entries }: { entries: LibraryEntry[] }) {
   if (top.length === 0) return null;
   return (
     <section className={styles.box} aria-label="Récords de horas">
-      <h2 className={styles.boxHead}>Hi-score · horas</h2>
+      <h2 className={styles.boxHead}>Récords · horas</h2>
       <ol className={styles.hiscore}>
         {top.map(({ game }, i) => (
           <li key={game.id}>

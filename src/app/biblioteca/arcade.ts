@@ -1,13 +1,6 @@
-import { type GameStatus, PLATFORM_FAMILIES } from "@/lib/model";
+import { PLATFORM_FAMILIES } from "@/lib/model";
 
-/** Cada estado, dicho como en una máquina recreativa, con su color de neón. */
-export const ARCADE_STATUS: Record<GameStatus, { label: string; color: string }> = {
-  pendiente: { label: "PRESS START", color: "#ffe94d" },
-  jugando: { label: "EN PARTIDA", color: "#5dff8b" },
-  pausado: { label: "PAUSA", color: "#ffb13d" },
-  completado: { label: "CLEAR!", color: "#3ff2ff" },
-  abandonado: { label: "GAME OVER", color: "#ff4d6d" },
-};
+// El estado en idioma arcade es de toda la app: vive en @/components/ui/StatusMark.
 
 const FAMILY_COLOR: Record<string, string> = {
   PlayStation: "#4d7dff",
