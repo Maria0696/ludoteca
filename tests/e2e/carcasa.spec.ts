@@ -125,6 +125,17 @@ test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async (
   await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Albert[\s\S]*VT323 14px/);
 });
 
+test("Estadísticas en la carcasa: título en píxeles, una ventana por sección y todo legible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/estadisticas");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Estadísticas" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["En cifras", "Copias por plataforma", "Títulos por estado", "Formato de las copias", "Horas y gasto registrados"]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await expectCarcasaText(page.locator("main"));
+});
+
 test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");

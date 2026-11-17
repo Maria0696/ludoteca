@@ -21,7 +21,7 @@ export function StatsView() {
   if (s.titles === 0) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.title}>Estadísticas</h1>
+        <h1 className={`screen-title ${styles.title}`}>Estadísticas</h1>
         <div className="empty">
           <h2>Sin datos todavía</h2>
           <p>Las estadísticas se calculan con tu biblioteca. Añade juegos y aparecerán aquí.</p>
@@ -36,13 +36,15 @@ export function StatsView() {
   return (
     <div className={styles.page}>
       <header>
-        <h1 className={styles.title}>Estadísticas</h1>
-        <p className="muted">
+        <h1 className={`screen-title ${styles.title}`}>Estadísticas</h1>
+        <p className={styles.intro}>
           Calculadas con lo que has registrado{hasDemo ? ", incluidos los datos de demostración" : ""}. Un título es un juego; una copia, cada
           ejemplar que tienes de él.
         </p>
       </header>
 
+      <section className="window" aria-labelledby="h-cifras">
+        <h2 id="h-cifras">En cifras</h2>
       <dl className={styles.kpis}>
         <Kpi label="Títulos" value={s.titles} note="Juegos distintos" />
         <Kpi label="Copias" value={s.copies} note={s.copies > s.titles ? `${s.copies - s.titles} títulos repetidos en otra copia` : "Una por título"} />
@@ -55,9 +57,10 @@ export function StatsView() {
           note={s.completedWithoutDate ? `${s.completedWithoutDate} completados sin fecha no cuentan` : "Con fecha de fin este año"}
         />
       </dl>
+      </section>
 
       <div className={styles.grid}>
-        <section className={styles.panel} aria-labelledby="h-plataformas">
+        <section className={`window ${styles.panel}`} aria-labelledby="h-plataformas">
           <h2 id="h-plataformas">Copias por plataforma</h2>
           <ul className={styles.bars}>
             {s.copiesByPlatform.map((p) => (
@@ -77,7 +80,7 @@ export function StatsView() {
           </ul>
         </section>
 
-        <section className={styles.panel} aria-labelledby="h-estado">
+        <section className={`window ${styles.panel}`} aria-labelledby="h-estado">
           <h2 id="h-estado">Títulos por estado</h2>
           <ul className={styles.bars}>
             {GAME_STATUSES.map((st) => (
@@ -94,7 +97,7 @@ export function StatsView() {
           </ul>
         </section>
 
-        <section className={styles.panel} aria-labelledby="h-formato">
+        <section className={`window ${styles.panel}`} aria-labelledby="h-formato">
           <h2 id="h-formato">Formato de las copias</h2>
           <div className={styles.stack} role="img" aria-label={`${s.copiesByFormat.fisico} físicas y ${s.copiesByFormat.digital} digitales`}>
             <span style={{ flexGrow: s.copiesByFormat.fisico || 0.0001 }} className={styles.stackA} />
@@ -121,7 +124,7 @@ export function StatsView() {
           <p className={styles.footnote}>Una copia digital con caja decorativa cuenta como digital.</p>
         </section>
 
-        <section className={styles.panel} aria-labelledby="h-registro">
+        <section className={`window ${styles.panel}`} aria-labelledby="h-registro">
           <h2 id="h-registro">Horas y gasto registrados</h2>
           <dl className={styles.pair}>
             <div>
