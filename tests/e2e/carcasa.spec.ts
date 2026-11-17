@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { openApp } from "./helpers";
+import { loadDemo, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -36,6 +36,28 @@ test("las piezas comunes: diálogo, botones y campos en la carcasa", async ({ pa
   await expect(submit).toBeFocused();
   const outline = await submit.evaluate((el) => [getComputedStyle(el).outlineStyle, getComputedStyle(el).outlineColor]);
   expect(outline).toEqual(["solid", "rgb(255, 255, 255)"]);
+});
+
+test("la barra superior: Ludoteca en píxeles y el destino actual en dorado", async ({ page }) => {
+  await openApp(page, "/deseos");
+  const nav = page.getByRole("navigation", { name: "Principal" }).first();
+  const current = nav.getByRole("link", { name: "Deseos" });
+  const [family, size] = await font(current);
+  expect(family).toMatch(/VT323/i);
+  expect(size).toBeGreaterThanOrEqual(18);
+  expect(await current.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgb(255, 215, 106)");
+  const [brand] = await font(page.getByRole("link", { name: "Ludoteca, inicio" }));
+  expect(brand).toMatch(/Press.Start.2P/i);
+});
+
+test("los avisos: letra de la carcasa y «Deshacer» visible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: /^(He jugado hoy|Retomar)$/ }).click();
+  const toast = page.locator("[data-sonner-toast]").first();
+  await expect(toast.getByRole("button", { name: "Deshacer" })).toBeVisible();
+  const [family] = await font(toast);
+  expect(family).toMatch(/VT323/i);
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {

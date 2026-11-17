@@ -35,6 +35,16 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   const heights = await nav.getByRole("link").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
   for (const h of heights) expect(h).toBeGreaterThanOrEqual(44);
 
+  // En un móvil estrecho, la barra inferior cabe y su letra se lee.
+  await page.setViewportSize({ width: 360, height: 780 });
+  const sizes = await nav.getByRole("link").evaluateAll((els) => els.map((e) => [parseFloat(getComputedStyle(e).fontSize), getComputedStyle(e).fontFamily] as const));
+  for (const [size, family] of sizes) {
+    expect(size).toBeGreaterThanOrEqual(18);
+    expect(family).toMatch(/VT323/i);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await page.setViewportSize({ width: 412, height: 915 });
+
   // El menú del inicio cabe en el móvil y cambia de apartado al tocarlo.
   await nav.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByRole("heading", { name: "Partidas guardadas" })).toBeVisible();
