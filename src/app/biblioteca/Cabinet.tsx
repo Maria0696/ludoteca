@@ -44,12 +44,13 @@ export const Cabinet = memo(function Cabinet({
         <Link
           href={`/juego/${game.id}`}
           className={styles.cabLink}
+          title={game.title}
           onFocus={() => onChoose(game.id)}
           // Solo si el ratón se mueve de verdad: al reordenarse la rejilla, una cabina puede quedar bajo el ratón quieto.
           onPointerMove={(e) => e.pointerType === "mouse" && onChoose(game.id)}
         >
           <span className={styles.marquee} data-card-title>
-            {game.title}
+            <span className={styles.marqueeText}>{game.title}</span>
             {game.favorite && <Star aria-label="Favorito" className={styles.fav} />}
           </span>
           <span className={styles.screen}>

@@ -176,6 +176,20 @@ test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las fle
   await expect(hiscore.first()).toContainText("132 h");
 });
 
+test("un título largo cabe en el rótulo de la cabina sin cortarse a media línea", async ({ page }) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await openApp(page, "/biblioteca");
+    if (width === 1440) await addGame(page, { title: "The Legend of Zelda: Ocarina of Time", platform: "Switch 2" });
+    const card = cards(page).filter({ hasText: "Ocarina of Time" });
+    const marquee = card.locator("[data-card-title]");
+    // Nada del rótulo queda escondido por debajo: o cabe entero, o termina en «…».
+    const hidden = await marquee.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(hidden).toBeLessThanOrEqual(0);
+    await expect(card.getByRole("link")).toHaveAttribute("title", "The Legend of Zelda: Ocarina of Time");
+  }
+});
+
 test("cambiar el estado desde la lista compacta y conservarlo tras recargar", async ({ page }) => {
   await loadDemo(page);
   await page.getByRole("button", { name: "Tabla" }).click();
