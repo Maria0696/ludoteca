@@ -6,6 +6,7 @@ import { progressPercent } from "@/app/juego/[id]/progress";
 import type { LibraryEntry } from "@/lib/filters";
 import { relativeDay } from "@/lib/format";
 import { formatHours } from "@/lib/recommend";
+import { isDirection, nearest } from "@/lib/spatial-nav";
 import { useLibrary } from "@/lib/store";
 import { markTitleScreenSeen, titleScreenDue } from "@/lib/title-screen";
 import { Embers } from "./Embers";
@@ -63,41 +64,6 @@ function Backdrop({ art }: { art: Art }) {
   );
 }
 
-type Direction = "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight";
-const DIRECTIONS = new Set<string>(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
-
-/**
- * La opción más cercana en esa dirección, como en el menú de una consola: en una
- * columna es la siguiente; en una rejilla, la de al lado o la de justo debajo.
- * A los lados solo cuenta lo que está en la misma fila.
- */
-function nearest(panel: HTMLElement, from: HTMLElement, dir: Direction): HTMLElement | null {
-  const r = from.getBoundingClientRect();
-  const vertical = dir === "ArrowUp" || dir === "ArrowDown";
-  let best: HTMLElement | null = null;
-  let bestScore = Infinity;
-  for (const el of panel.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)")) {
-    if (el === from || el.tabIndex < 0) continue;
-    const c = el.getBoundingClientRect();
-    if (!c.width || !c.height) continue;
-    const gapX = Math.max(0, c.left - r.right, r.left - c.right);
-    const gapY = Math.max(0, c.top - r.bottom, r.top - c.bottom);
-    const ahead = {
-      ArrowDown: c.top - r.bottom,
-      ArrowUp: r.top - c.bottom,
-      ArrowRight: c.left - r.right,
-      ArrowLeft: r.left - c.right,
-    }[dir];
-    if (ahead < -4) continue; // en la dirección contraria o encima del de partida
-    if (!vertical && gapY > 0) continue; // otra fila
-    const score = vertical ? ahead + gapX * 3 : ahead;
-    if (score < bestScore) {
-      best = el;
-      bestScore = score;
-    }
-  }
-  return best;
-}
 
 function Cover({ entry, isNew, onPreview }: { entry: LibraryEntry; isNew?: boolean; onPreview: (art: Art) => void }) {
   const { game } = entry;
@@ -378,8 +344,8 @@ export function MainMenu({
           className={styles.panel}
           onPointerLeave={() => setPreview(null)}
           onKeyDown={(e) => {
-            if (!DIRECTIONS.has(e.key) || !panelRef.current) return;
-            const next = nearest(panelRef.current, e.target as HTMLElement, e.key as Direction);
+            if (!isDirection(e.key) || !panelRef.current) return;
+            const next = nearest(panelRef.current, e.target as HTMLElement, e.key);
             if (next) {
               e.preventDefault();
               next.focus();

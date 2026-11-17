@@ -134,9 +134,51 @@ test("buscar, filtrar por plataforma, formato y estado, y ordenar", async ({ pag
   await expect(cards(page).first()).toContainText("The Legend of Zelda");
 });
 
+test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las flechas lo mueven", async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole("combobox").filter({ hasText: "Por plataforma" }).selectOption("ninguno");
+  await page.getByRole("combobox").filter({ hasText: "Añadidos recientemente" }).selectOption("titulo");
+
+  // El estado se dice en idioma arcade, sin perder el nombre de siempre para los lectores de pantalla.
+  const shortHike = cards(page).first();
+  await expect(shortHike).toContainText("PRESS START");
+  await expect(shortHike).toContainText("Pendiente");
+  await expect(cards(page).filter({ hasText: "Disco Elysium" })).toContainText("GAME OVER");
+
+  // Pasar por encima o llegar con el teclado muestra el juego en «Elegido».
+  const chosen = page.getByRole("region", { name: "Elegido" });
+  const celeste = cards(page).filter({ hasText: "Celeste" }).getByRole("link");
+  const box = (await celeste.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(chosen).toContainText("Celeste");
+
+  // Con el ratón quieto, una cabina que queda debajo (al reordenar o al cargar) no pasa a ser la elegida.
+  const hike = cards(page).filter({ hasText: "A Short Hike" }).getByRole("link");
+  await hike.dispatchEvent("pointerover", { pointerType: "mouse", bubbles: true });
+  await hike.dispatchEvent("pointerenter", { pointerType: "mouse" });
+  await page.waitForTimeout(200);
+  await expect(chosen).toContainText("Celeste");
+  await cards(page).filter({ hasText: "Celeste" }).getByRole("link").hover();
+  await expect(chosen).toContainText("Celeste");
+  await expect(chosen).toContainText("CLEAR!");
+
+  await cards(page).first().getByRole("link").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(cards(page).nth(1).getByRole("link")).toBeFocused();
+  await expect(chosen).toContainText((await cards(page).nth(1).locator("[data-card-title]").textContent())!);
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/juego\//);
+  await page.goBack();
+
+  // La tabla de récords ordena por horas de toda la colección.
+  const hiscore = page.getByRole("region", { name: "Récords de horas" }).getByRole("listitem");
+  await expect(hiscore.first()).toContainText("The Legend of Zelda");
+  await expect(hiscore.first()).toContainText("132 h");
+});
+
 test("cambiar el estado desde la lista compacta y conservarlo tras recargar", async ({ page }) => {
   await loadDemo(page);
-  await page.getByRole("button", { name: "Lista" }).click();
+  await page.getByRole("button", { name: "Tabla" }).click();
   const select = page.getByLabel("Estado de Outer Wilds");
   await select.selectOption("jugando");
   await expect(page.getByText("«Outer Wilds» pasa a Jugando")).toBeVisible();
