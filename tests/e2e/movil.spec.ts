@@ -16,6 +16,18 @@ test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: LONG_TITLE })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
+
+  // Mis listas con nombres largos: la fila de listas se desplaza sin desbordar la página.
+  await page.goto("/listas");
+  for (const name of ["Para jugar con mi pareja los domingos por la tarde", "Pendientes de terminar antes del verano", "Regalos que me gustaría recibir"]) {
+    await page.getByLabel("Nombre de la nueva lista").fill(name);
+    await page.getByRole("button", { name: "Crear" }).click();
+  }
+  const lists = page.getByRole("list", { name: "Listas" });
+  await expect(lists.getByRole("button")).toHaveCount(6);
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  expect(await lists.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await expectCarcasaText(page.locator("main"));
 });
 
 test("en el móvil se navega con la barra inferior y se añade desde la hoja", async ({ page }) => {

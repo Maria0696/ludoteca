@@ -151,6 +151,24 @@ test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura",
   await expectCarcasaText(page.locator("main"));
 });
 
+test("Mis listas en la carcasa: dos ventanas, tarjetas legibles y foco visible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/listas");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Mis listas" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["Tus listas", /^Lista /]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await expectCarcasaText(page.locator("main"));
+  // Con el teclado, el foco se ve también en la lista elegida (papel).
+  const current = page.locator('button[aria-current="true"]').first();
+  await current.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(current).toBeFocused();
+  expect(await current.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+});
+
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
   await openApp(page, "/no-existe");
   const heading = page.getByRole("heading", { name: "Esta página no está en tu ludoteca" });

@@ -34,14 +34,15 @@ export function ListsView() {
 
   return (
     <div className={styles.page}>
-      <Link href="/biblioteca" className={styles.back}>
+      <Link href="/biblioteca" className="back-link">
         <ArrowLeft aria-hidden />
         Biblioteca
       </Link>
-      <h1 className={styles.title}>Mis listas</h1>
+      <h1 className={`screen-title ${styles.title}`}>Mis listas</h1>
 
       <div className={styles.layout}>
-        <aside className={styles.aside}>
+        <section className={`window ${styles.aside}`} aria-label="Tus listas">
+          <h2>Tus listas</h2>
           <form
             className={styles.newList}
             onSubmit={(e) => {
@@ -88,9 +89,9 @@ export function ListsView() {
               ))}
             </ul>
           )}
-        </aside>
+        </section>
 
-        <section className={styles.main} aria-label={selected ? `Lista ${selected.name}` : "Lista"}>
+        <section className={`window ${styles.main}`} aria-label={selected ? `Lista ${selected.name}` : "Lista"}>
           {!selected ? (
             <div className="empty">
               <h2>Sin listas todavía</h2>
@@ -182,7 +183,7 @@ function GamePicker({
       <label className={styles.pickerSearch}>
         <Search aria-hidden />
         <span className="sr-only">Buscar juegos</span>
-        <input id="picker-search" type="search" placeholder="Buscar por título" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input id="picker-search" className="input" type="search" placeholder="Buscar por título" value={q} onChange={(e) => setQ(e.target.value)} />
       </label>
       <ul className={styles.pickerList}>
         {games.map((g) => (
