@@ -120,9 +120,16 @@ test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la
 });
 
 test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async ({ page }) => {
-  await openApp(page, "/estadisticas");
-  // Estadísticas aún no está migrada (paso 3): su título usa Bricolage.
-  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Bricolage|Albert/);
+  // Contenido fijo: la prueba no depende de que quede alguna pantalla sin migrar.
+  await page.setContent(`<main><p style="font-family: 'Albert Sans'">antigua</p><p style="font-family: VT323; font-size: 14px">pequeña</p></main>`);
+  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Albert[\s\S]*VT323 14px/);
+});
+
+test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expectCarcasaText(page.getByRole("dialog"));
 });
 
 test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", async ({ page }) => {
