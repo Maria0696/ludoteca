@@ -4,12 +4,10 @@ import { LayoutGrid, List, Search, SlidersHorizontal, Star } from "lucide-react"
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { arcade, terminal } from "@/app/entrar/fonts";
 import { useAddGame } from "@/components/game/AddGameProvider";
-import { GameCard, GroupHeading } from "@/components/game/GameCard";
 import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
-import { StatusIcon } from "@/components/ui/StatusMark";
-import gameStyles from "@/components/game/game.module.css";
 import {
   type LibraryEntry,
   type LibraryFilters,
@@ -24,14 +22,21 @@ import {
 } from "@/lib/filters";
 import { copiesSummary, formatNumber, relativeDay } from "@/lib/format";
 import { type Format, type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { formatHours } from "@/lib/recommend";
+import { isDirection, nearest } from "@/lib/spatial-nav";
 import { useLibrary } from "@/lib/store";
+import { ARCADE_STATUS, platformColor } from "./arcade";
+import { Cabinet } from "./Cabinet";
 import styles from "./library.module.css";
+import { Chosen, HiScore } from "./Scoreboard";
 
 type Group = "plataforma" | "estado" | "ninguno";
 
 function readList(params: URLSearchParams, key: string): string[] {
   return params.get(key)?.split(",").filter(Boolean) ?? [];
 }
+
+const led = (color: string) => ({ "--k": color }) as React.CSSProperties;
 
 export function LibraryView() {
   const router = useRouter();
@@ -40,6 +45,7 @@ export function LibraryView() {
   const { library, actions } = useLibrary();
   const { open: openAdd } = useAddGame();
   const [sheet, setSheet] = useState(false);
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const urlQ = params.get("q") ?? "";
   const [qInput, setQInput] = useState(urlQ);
   // Si la búsqueda cambia desde fuera (Restablecer, búsqueda rápida), el campo la sigue.
@@ -94,9 +100,10 @@ export function LibraryView() {
   const facets = useMemo(() => facetValues(entries), [entries]);
   const visible = useMemo(() => sortEntries(filterEntries(entries, filters), sort), [entries, filters, sort]);
   const activeCount = activeFilterCount({ ...filters, platforms: [] }) + (filters.q ? 1 : 0);
+  const chosen = visible.find((e) => e.game.id === chosenId) ?? visible[0];
 
   const groups = useMemo(() => {
-    // Cada póster entra un instante después del anterior, también entre grupos.
+    // Cada cabina entra un instante después de la anterior, también entre grupos.
     const list = groupEntries(visible, group, tab);
     const starts = list.reduce<number[]>((acc, g, i) => [...acc, i === 0 ? 0 : acc[i - 1] + list[i - 1].entries.length], []);
     return list.map((g, i) => ({ ...g, offset: starts[i] }));
@@ -108,19 +115,19 @@ export function LibraryView() {
     <>
       <div className={styles.filterGroup} role="group" aria-label="Estado">
         {GAME_STATUSES.map((s) => (
-          <button key={s} type="button" className="chip" aria-pressed={filters.statuses.includes(s)} onClick={() => toggleIn("estado", s)}>
-            <StatusIcon status={s} />
+          <button key={s} type="button" className={styles.chip} aria-pressed={filters.statuses.includes(s)} onClick={() => toggleIn("estado", s)}>
+            <i className={styles.led} style={led(ARCADE_STATUS[s].color)} aria-hidden />
             {STATUS_LABEL[s]}
           </button>
         ))}
       </div>
       <div className={styles.filterGroup} role="group" aria-label="Formato">
         {(["fisico", "digital"] as const).map((f) => (
-          <button key={f} type="button" className="chip" aria-pressed={filters.formats.includes(f)} onClick={() => toggleIn("formato", f)}>
+          <button key={f} type="button" className={styles.chip} aria-pressed={filters.formats.includes(f)} onClick={() => toggleIn("formato", f)}>
             {f === "fisico" ? "Físico" : "Digital"}
           </button>
         ))}
-        <button type="button" className="chip" aria-pressed={filters.favorites} onClick={() => setParams({ favoritos: filters.favorites ? null : "1" })}>
+        <button type="button" className={styles.chip} aria-pressed={filters.favorites} onClick={() => setParams({ favoritos: filters.favorites ? null : "1" })}>
           <Star aria-hidden />
           Favoritos
         </button>
@@ -173,25 +180,31 @@ export function LibraryView() {
   );
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${arcade.variable} ${terminal.variable}`}>
       <header className={styles.head}>
-        <h1>Biblioteca</h1>
-        <p className="muted num">
-          {library.games.length} {library.games.length === 1 ? "título" : "títulos"} · {library.copies.length}{" "}
-          {library.copies.length === 1 ? "copia" : "copias"}
+        <h1>
+          <span aria-hidden>Select game</span>
+          <span className="sr-only">Biblioteca</span>
+        </h1>
+        <p className={styles.credits}>
+          <span aria-hidden>Créditos </span>
+          <span>
+            {library.games.length} {library.games.length === 1 ? "título" : "títulos"} · {library.copies.length}{" "}
+            {library.copies.length === 1 ? "copia" : "copias"}
+          </span>
         </p>
         <div className={styles.headActions}>
-          <Link href="/importar" className="btn btn-sm">
+          <Link href="/importar" className={styles.chip}>
             Importar de Steam
           </Link>
           <div className={styles.viewToggle} role="group" aria-label="Vista">
-            <button type="button" className="btn btn-sm" aria-pressed={view === "caratulas"} onClick={() => setParams({ vista: null })}>
+            <button type="button" className={styles.chip} aria-pressed={view === "caratulas"} onClick={() => setParams({ vista: null })}>
               <LayoutGrid aria-hidden />
-              <span>Carátulas</span>
+              <span>Cabinas</span>
             </button>
-            <button type="button" className="btn btn-sm" aria-pressed={view === "lista"} onClick={() => setParams({ vista: "lista" })}>
+            <button type="button" className={styles.chip} aria-pressed={view === "lista"} onClick={() => setParams({ vista: "lista" })}>
               <List aria-hidden />
-              <span>Lista</span>
+              <span>Tabla</span>
             </button>
           </div>
         </div>
@@ -213,24 +226,35 @@ export function LibraryView() {
           />
         </label>
         <div className={styles.orderControls}>{orderControls}</div>
-        <button type="button" className={`btn ${styles.filterBtn}`} aria-pressed={activeCount > 0} onClick={() => setSheet(true)}>
+        <button type="button" className={`${styles.chip} ${styles.filterBtn}`} aria-pressed={activeCount > 0} onClick={() => setSheet(true)}>
           <SlidersHorizontal aria-hidden />
           Filtros{activeCount > 0 ? ` · ${activeCount}` : ""}
         </button>
       </div>
 
-      <div className="tabs">
+      <div className={styles.plats}>
         <div role="tablist" aria-label="Plataforma" style={{ display: "contents" }}>
-          <button type="button" role="tab" className="tab" aria-selected={!tab} onClick={() => setParams({ plataforma: null })}>
+          <button type="button" role="tab" className={styles.plat} style={led("#ffffff")} aria-selected={!tab} onClick={() => setParams({ plataforma: null })}>
+            <i aria-hidden />
             Todas <small>{entries.length}</small>
           </button>
           {facets.platforms.map((p) => (
-            <button key={p.value} type="button" role="tab" className="tab" aria-selected={tab === p.value} onClick={() => setParams({ plataforma: p.value })}>
+            <button
+              key={p.value}
+              type="button"
+              role="tab"
+              className={styles.plat}
+              style={led(platformColor(p.value))}
+              aria-selected={tab === p.value}
+              onClick={() => setParams({ plataforma: p.value })}
+            >
+              <i aria-hidden />
               {p.value} <small>{p.count}</small>
             </button>
           ))}
         </div>
-        <Link href="/listas" className="tab">
+        <Link href="/listas" className={styles.plat} style={led("#ffe94d")}>
+          <i aria-hidden />
           Mis listas <small>{library.lists.length}</small>
         </Link>
       </div>
@@ -238,97 +262,136 @@ export function LibraryView() {
       <div className={styles.filters}>
         <div className={styles.filtersInline}>{filterControls}</div>
         {filters.genres.map((g) => (
-          <button key={g} type="button" className="chip is-on" onClick={() => toggleIn("genero", g)} aria-label={`Quitar el filtro de género ${g}`}>
+          <button key={g} type="button" className={`${styles.chip} is-on`} aria-pressed onClick={() => toggleIn("genero", g)} aria-label={`Quitar el filtro de género ${g}`}>
             {g} ×
           </button>
         ))}
         {activeCount > 0 && (
-          <button type="button" className="link-btn" onClick={resetFilters}>
+          <button type="button" className={styles.reset} onClick={resetFilters}>
             Restablecer
           </button>
         )}
-        <span className={`${styles.count} muted num`} aria-live="polite">
+        <span className={styles.count} aria-live="polite">
           {visible.length === entries.length ? `${visible.length} títulos` : `${visible.length} de ${entries.length} títulos`}
         </span>
       </div>
 
-      {visible.length === 0 ? (
-        <div className={styles.body}>
-          <div className="empty">
-            <h2>Ningún juego coincide</h2>
-            <p>
-              {filters.q ? `No hay nada con «${filters.q}»` : "No hay juegos"}
-              {activeCount > (filters.q ? 1 : 0) || tab ? " con estos filtros." : "."}
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-ink" onClick={() => setParams({ formato: null, genero: null, estado: null, favoritos: null, q: null, plataforma: null })}>
-                Restablecer filtros
-              </button>
-              {filters.q && (
-                <button type="button" className="btn" onClick={() => openAdd({ title: filters.q })}>
-                  Añadir «{filters.q}»
+      <div className={styles.arena}>
+        <div className={styles.main}>
+          {visible.length === 0 ? (
+            <div className={styles.gameOver}>
+              <p className={styles.gameOverTitle} aria-hidden>
+                Game over
+              </p>
+              <h2>Ningún juego coincide</h2>
+              <p>
+                {filters.q ? `No hay nada con «${filters.q}»` : "No hay juegos"}
+                {activeCount > (filters.q ? 1 : 0) || tab ? " con estos filtros." : "."}
+              </p>
+              <div className={styles.gameOverActions}>
+                <button type="button" className={`${styles.chip} ${styles.chipStrong}`} onClick={() => setParams({ formato: null, genero: null, estado: null, favoritos: null, q: null, plataforma: null })}>
+                  Restablecer filtros
                 </button>
-              )}
+                {filters.q && (
+                  <button type="button" className={styles.chip} onClick={() => openAdd({ title: filters.q })}>
+                    Añadir «{filters.q}»
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : view === "caratulas" ? (
-        <ul className={`${gameStyles.grid} ${styles.body}`} aria-label="Juegos">
-          {groups.map((g, gi) => (
-            <Fragment key={g.key}>
-              {g.label && <GroupHeading title={g.title} detail={g.detail} />}
-              {g.entries.map((e, i) => (
-                <GameCard key={`${g.key}-${e.game.id}`} entry={e} priority={gi === 0 && i < 6} index={g.offset + i} />
-              ))}
-            </Fragment>
-          ))}
-        </ul>
-      ) : (
-        <div className={`${gameStyles.list} ${styles.body}`} role="table" aria-label="Juegos">
-          <div className={gameStyles.rowHead} role="row">
-            <span role="columnheader" />
-            <span role="columnheader">Título</span>
-            <span role="columnheader" className={gameStyles.hideNarrow}>Copias</span>
-            <span role="columnheader">Estado</span>
-            <span role="columnheader" className={`${gameStyles.hideNarrow} ${gameStyles.rowNum}`}>Valoración</span>
-            <span role="columnheader" className={`${gameStyles.hideNarrow} ${gameStyles.rowNum}`}>Última partida</span>
-          </div>
-          {visible.map(({ game, copies }) => (
-            <div key={game.id} className={gameStyles.row} role="row">
-              <span role="cell">
-                <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
-              </span>
-              <span role="cell" className={gameStyles.rowTitle}>
-                <Link href={`/juego/${game.id}`}>{game.title}</Link>
-                <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
-              </span>
-              <span role="cell" className={`${gameStyles.rowCell} ${gameStyles.hideNarrow}`}>
-                {copiesSummary(copies)}
-              </span>
-              <span role="cell">
-                <select
-                  className={`select ${gameStyles.statusSelect}`}
-                  aria-label={`Estado de ${game.title}`}
-                  value={game.status}
-                  onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
-                >
-                  {GAME_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABEL[s]}
-                    </option>
+          ) : view === "caratulas" ? (
+            <ul
+              className={styles.grid}
+              aria-label="Juegos"
+              onKeyDown={(e) => {
+                // Como en la recreativa: las flechas mueven el cursor entre cabinas.
+                if (!isDirection(e.key)) return;
+                const next = nearest(e.currentTarget, e.target as HTMLElement, e.key);
+                if (next) {
+                  e.preventDefault();
+                  next.focus();
+                }
+              }}
+            >
+              {groups.map((g, gi) => (
+                <Fragment key={g.key}>
+                  {g.label && (
+                    <li className={styles.groupHeading} aria-hidden style={g.color ? led(g.color) : undefined}>
+                      <strong>{g.title}</strong>
+                      <span>{g.detail}</span>
+                    </li>
+                  )}
+                  {g.entries.map((e, i) => (
+                    <Cabinet key={`${g.key}-${e.game.id}`} entry={e} priority={gi === 0 && i < 6} index={g.offset + i} onChoose={setChosenId} />
                   ))}
-                </select>
-              </span>
-              <span role="cell" className={`${gameStyles.rowCell} ${gameStyles.rowNum} ${gameStyles.hideNarrow}`}>
-                {game.rating != null ? formatNumber(game.rating) : "—"}
-              </span>
-              <span role="cell" className={`${gameStyles.rowCell} ${gameStyles.rowNum} ${gameStyles.hideNarrow}`}>
-                {relativeDay(game.lastPlayedAt)}
-              </span>
+                </Fragment>
+              ))}
+            </ul>
+          ) : (
+            <div className={styles.table} role="table" aria-label="Juegos">
+              <div className={styles.rowHead} role="row">
+                <span role="columnheader" />
+                <span role="columnheader">Título</span>
+                <span role="columnheader" className={styles.hideNarrow}>
+                  Copias
+                </span>
+                <span role="columnheader">Estado</span>
+                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                  Horas
+                </span>
+                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                  Nota
+                </span>
+                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                  Última partida
+                </span>
+              </div>
+              {visible.map(({ game, copies }) => (
+                <div key={game.id} className={styles.row} role="row" style={led(ARCADE_STATUS[game.status].color)}>
+                  <span role="cell">
+                    <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
+                  </span>
+                  <span role="cell" className={styles.rowTitle}>
+                    <Link href={`/juego/${game.id}`}>{game.title}</Link>
+                    <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
+                  </span>
+                  <span role="cell" className={styles.hideNarrow}>
+                    {copiesSummary(copies)}
+                  </span>
+                  <span role="cell">
+                    <select
+                      className={`select ${styles.statusSelect}`}
+                      aria-label={`Estado de ${game.title}`}
+                      value={game.status}
+                      onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
+                    >
+                      {GAME_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {STATUS_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                    {game.hoursPlayed ? formatHours(game.hoursPlayed) : "—"}
+                  </span>
+                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                    {game.rating != null ? formatNumber(game.rating) : "—"}
+                  </span>
+                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                    {relativeDay(game.lastPlayedAt)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+
+        <aside className={styles.side}>
+          <Chosen entry={chosen} />
+          <HiScore entries={entries} />
+        </aside>
+      </div>
 
       <Dialog
         open={sheet}
@@ -359,6 +422,8 @@ interface EntryGroup {
   label: string;
   title: string;
   detail: string;
+  /** Color de neón del rótulo del grupo. */
+  color?: string;
   entries: LibraryEntry[];
 }
 
@@ -384,6 +449,7 @@ function groupEntries(entries: LibraryEntry[], group: Group, tab: string): Entry
         label: STATUS_LABEL[s as GameStatus],
         title: STATUS_LABEL[s as GameStatus],
         detail: `${list.length} ${list.length === 1 ? "juego" : "juegos"}`,
+        color: ARCADE_STATUS[s as GameStatus].color,
         entries: list,
       }));
   }
@@ -400,6 +466,7 @@ function groupEntries(entries: LibraryEntry[], group: Group, tab: string): Entry
         label: p,
         title: PLATFORM_LONG[p] ?? p,
         detail: `${list.length} ${list.length === 1 ? "juego" : "juegos"}${playing ? ` · ${playing} jugando` : ""}`,
+        color: p === "Sin copia" ? undefined : platformColor(p),
         entries: list,
       };
     });
@@ -410,41 +477,42 @@ function FirstRun() {
   const { actions, mode } = useLibrary();
   const [loading, setLoading] = useState(false);
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${arcade.variable} ${terminal.variable}`}>
       <header className={styles.head}>
-        <h1>Biblioteca</h1>
+        <h1>
+          <span aria-hidden>Insert coin</span>
+          <span className="sr-only">Biblioteca</span>
+        </h1>
       </header>
-      <div className={styles.body}>
-        <div className="empty">
-          <h2>Tu biblioteca está vacía</h2>
-          <p>
-            Añade tu primer juego: basta con el título, la plataforma y si es físico o digital. Lo demás puede esperar.
-            {mode === "local" && " Estás en modo local: se guardará solo en este navegador."}
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" className="btn btn-sticker" onClick={() => open()}>
-              Añadir el primer juego
+      <div className={styles.firstRun}>
+        <h2>Tu biblioteca está vacía</h2>
+        <p>
+          Añade tu primer juego: basta con el título, la plataforma y si es físico o digital. Lo demás puede esperar.
+          {mode === "local" && " Estás en modo local: se guardará solo en este navegador."}
+        </p>
+        <div className={styles.gameOverActions}>
+          <button type="button" className={`${styles.chip} ${styles.chipStrong}`} onClick={() => open()}>
+            Añadir el primer juego
+          </button>
+          <Link href="/importar" className={styles.chip}>
+            Importar de Steam
+          </Link>
+          {mode === "local" && (
+            <button
+              type="button"
+              className={styles.chip}
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                await actions.loadDemo();
+                setLoading(false);
+              }}
+            >
+              {loading ? "Cargando…" : "Probar con datos de demostración"}
             </button>
-            <Link href="/importar" className="btn">
-              Importar de Steam
-            </Link>
-            {mode === "local" && (
-              <button
-                type="button"
-                className="btn"
-                disabled={loading}
-                onClick={async () => {
-                  setLoading(true);
-                  await actions.loadDemo();
-                  setLoading(false);
-                }}
-              >
-                {loading ? "Cargando…" : "Probar con datos de demostración"}
-              </button>
-            )}
-          </div>
-          {mode === "local" && <p style={{ fontSize: 12 }}>Los datos de demostración se retiran de una vez desde Ajustes.</p>}
+          )}
         </div>
+        {mode === "local" && <p className={styles.small}>Los datos de demostración se retiran de una vez desde Ajustes.</p>}
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ test("navegar, volver atrás y recargar no cambia ningún estado", async ({ page
   await page.reload();
   await at(page, "/");
   await page.goto("/biblioteca?vista=lista&orden=valoracion");
-  await page.getByRole("link", { name: "Hades" }).click();
+  await page.getByRole("table", { name: "Juegos" }).getByRole("link", { name: "Hades" }).click();
   await at(page, /^\/juego\//);
   await page.goBack();
   await at(page, "/biblioteca");
