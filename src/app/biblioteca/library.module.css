@@ -361,19 +361,21 @@
   transition: box-shadow 160ms ease, transform 160ms ease;
 }
 /* Rótulo: hasta tres líneas enteras; si el título no cabe, acaba en «…» y el completo sale al pasar el ratón. */
+/* El nombre va en la letra de terminal, que se lee a primera vista; la de píxeles queda para lo decorativo. */
 .marquee {
-  --marquee-line: 12.5px;
+  --marquee-line: 17px;
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  height: calc(3 * var(--marquee-line) + 12px);
-  padding: 6px 7px;
+  height: calc(3 * var(--marquee-line) + 10px);
+  padding: 5px 8px;
   overflow: hidden;
   background: linear-gradient(#2a1150, #160828);
-  color: #ffd6f0;
-  font-family: var(--arcade);
-  font-size: 8px;
+  color: #ffe3f4;
+  font-family: var(--term);
+  font-size: 19px;
   line-height: var(--marquee-line);
+  letter-spacing: 0.01em;
 }
 .marqueeText {
   display: -webkit-box;
@@ -386,8 +388,9 @@
 }
 .fav {
   flex: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
   margin-left: auto;
   color: #ffe94d;
   fill: #ffe94d;
@@ -423,13 +426,14 @@
   bottom: 8px;
   transform: translateX(-50%);
   max-width: calc(100% - 12px);
-  padding: 3px 7px;
+  padding: 0 7px;
   border: 2px solid var(--sc);
-  background: #000c;
+  background: #000d;
   color: var(--sc);
-  font-family: var(--arcade);
-  font-size: 8px;
-  line-height: 1.3;
+  font-family: var(--term);
+  font-size: 18px;
+  line-height: 20px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   text-shadow: 0 0 6px var(--sc);
   pointer-events: none;
@@ -456,7 +460,7 @@
 .boxHead {
   margin: 0 0 12px;
   font-family: var(--arcade);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   color: var(--cyan);
   text-transform: uppercase;
@@ -476,6 +480,14 @@
   border-radius: 0 !important;
   box-shadow: 0 0 0 2px var(--frame);
 }
+/* Sin carátula, la miniatura es demasiado pequeña para el título: basta con el cartón. */
+.chosenCover :global(.cover-fallback) {
+  padding: 6px;
+}
+.chosenCover :global(.cover-fallback strong),
+.chosenCover :global(.cover-fallback span) {
+  display: none;
+}
 .chosenTitle {
   margin-bottom: 4px !important;
   color: #fff !important;
@@ -485,8 +497,8 @@
 .chosenStatus {
   margin-top: 6px !important;
   color: var(--sc) !important;
-  font-family: var(--arcade);
-  font-size: 9px;
+  font-size: 22px;
+  letter-spacing: 0.06em;
   text-shadow: 0 0 6px var(--sc);
 }
 .stats {
@@ -506,7 +518,7 @@
   display: block;
   color: #ffe94d;
   font-family: var(--arcade);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
   text-transform: uppercase;
   text-decoration: none;
@@ -738,6 +750,16 @@
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
     gap: 18px 12px;
+  }
+  .marquee {
+    --marquee-line: 15px;
+    padding-inline: 6px;
+    font-size: 17px;
+  }
+  .badge {
+    padding-inline: 5px;
+    font-size: 16px;
+    letter-spacing: 0.03em;
   }
   .rowHead,
   .row {
