@@ -294,18 +294,7 @@ export function MainMenu({
       <div className={styles.hudBar} inert={hidden}>
         {/* eslint-disable-next-line @next/next/no-img-element -- dibujo propio en SVG */}
         <img src={KEEPER_URL} alt="" />
-        <span className={styles.who}>Jugadora 1</span>
         <span className={styles.clock}>{now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
-        <button
-          type="button"
-          className={styles.tiny}
-          onClick={() => {
-            setAnimateIn(false);
-            setTitle("on");
-          }}
-        >
-          Pantalla de título
-        </button>
       </div>
 
       <div className={styles.notices} inert={hidden} style={{ visibility: hidden ? "hidden" : undefined }}>

@@ -71,30 +71,9 @@
   width: 30px;
   display: block;
 }
-.who {
-  font-family: var(--heavy);
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
 .clock {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
-}
-.tiny {
-  height: 34px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 4px;
-  background: #ffffff1f;
-  color: #fff;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.tiny:hover {
-  background: #ffffff3a;
 }
 .notices:empty {
   display: none;
