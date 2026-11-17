@@ -360,18 +360,29 @@
   box-shadow: 0 0 0 2px var(--frame);
   transition: box-shadow 160ms ease, transform 160ms ease;
 }
+/* Rótulo: hasta tres líneas enteras; si el título no cabe, acaba en «…» y el completo sale al pasar el ratón. */
 .marquee {
+  --marquee-line: 12.5px;
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  height: 36px;
+  height: calc(3 * var(--marquee-line) + 12px);
   padding: 6px 7px;
   overflow: hidden;
   background: linear-gradient(#2a1150, #160828);
   color: #ffd6f0;
   font-family: var(--arcade);
   font-size: 8px;
-  line-height: 1.55;
+  line-height: var(--marquee-line);
+}
+.marqueeText {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow-wrap: anywhere;
 }
 .fav {
   flex: none;
