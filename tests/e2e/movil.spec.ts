@@ -23,6 +23,8 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   // Alta rápida con el botón de la barra superior.
   await page.getByRole("button", { name: "Añadir juego" }).click();
   const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  // A menos de 16 px el iPhone hace zoom al tocar el campo.
+  expect(await dialog.getByLabel("Título").evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
   await dialog.getByLabel("Título").fill("Tetris Effect");
   await choosePlatform(dialog, "PS5");
   await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
