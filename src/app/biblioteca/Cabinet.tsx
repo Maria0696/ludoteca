@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Cover } from "@/components/ui/Cover";
 import type { LibraryEntry } from "@/lib/filters";
 import { FORMAT_LABEL, STATUS_LABEL } from "@/lib/model";
-import { ARCADE_STATUS } from "./arcade";
+import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import styles from "./library.module.css";
 
 /** Lo que dice la cabina debajo de la carátula: cuántas copias o de qué tipo es la única. */

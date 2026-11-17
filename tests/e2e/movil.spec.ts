@@ -48,7 +48,7 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   // El menú del inicio cabe en el móvil y cambia de apartado al tocarlo.
   await nav.getByRole("link", { name: "Inicio" }).click();
   await expect(page.getByRole("heading", { name: "Partidas guardadas" })).toBeVisible();
-  await page.getByRole("group", { name: "Menú principal" }).getByRole("button", { name: "Récords" }).click();
+  await page.getByRole("group", { name: "Menú principal" }).getByRole("button", { name: "Estadísticas" }).click();
   await expect(page.getByRole("heading", { name: "Tu colección" })).toBeVisible();
   const overflowInicio = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflowInicio).toBeLessThanOrEqual(0);

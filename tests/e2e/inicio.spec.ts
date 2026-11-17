@@ -57,7 +57,7 @@ test("el menú lleva a cada parte de la biblioteca", async ({ page }) => {
   await expect(page).toHaveURL(/\/biblioteca\?agrupar=ninguno/);
 
   await page.goBack();
-  await item(page, "Récords").click();
+  await item(page, "Estadísticas").click();
   const records = page.locator("dl").filter({ hasText: "Títulos" });
   await expect(records).toContainText("22");
   await expect(page.getByRole("link", { name: "Ver estadísticas" })).toHaveAttribute("href", "/estadisticas");

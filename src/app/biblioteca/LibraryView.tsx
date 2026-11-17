@@ -25,7 +25,8 @@ import { type Format, type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib
 import { formatHours } from "@/lib/recommend";
 import { isDirection, nearest } from "@/lib/spatial-nav";
 import { useLibrary } from "@/lib/store";
-import { ARCADE_STATUS, platformColor } from "./arcade";
+import { ARCADE_STATUS } from "@/components/ui/StatusMark";
+import { platformColor } from "./arcade";
 import { Cabinet } from "./Cabinet";
 import styles from "./library.module.css";
 import { Chosen, HiScore } from "./Scoreboard";

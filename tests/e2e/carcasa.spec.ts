@@ -60,6 +60,27 @@ test("los avisos: letra de la carcasa y «Deshacer» visible", async ({ page }) 
   expect(family).toMatch(/VT323/i);
 });
 
+test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/que-juego");
+  // Cada propuesta es un <li> con el enlace «Ficha de …».
+  const proposal = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) }).first();
+  await expect(proposal).toContainText("EN PARTIDA");
+  await expect(proposal).toContainText("Jugando");
+  await page.goto("/listas");
+  await expect(page.getByText("PRESS START").first()).toBeVisible();
+});
+
+test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la biblioteca", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/");
+  const menu = page.getByRole("group", { name: "Menú principal" });
+  await expect(menu.getByRole("button", { name: "Estadísticas", exact: true })).toBeVisible();
+  await expect(menu.getByRole("button", { name: "Récords", exact: true })).toHaveCount(0);
+  await page.goto("/biblioteca");
+  await expect(page.getByRole("region", { name: "Récords de horas" }).getByRole("heading")).toHaveText("Récords · horas");
+});
+
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
   await openApp(page, "/no-existe");
   const heading = page.getByRole("heading", { name: "Esta página no está en tu ludoteca" });

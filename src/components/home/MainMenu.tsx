@@ -26,7 +26,7 @@ const ITEMS = [
   { id: "nueva", label: "Nueva partida" },
   { id: "elegir", label: "Elegir modo" },
   { id: "novedades", label: "Novedades" },
-  { id: "records", label: "Récords" },
+  { id: "records", label: "Estadísticas" },
 ] as const;
 
 type ItemId = (typeof ITEMS)[number]["id"];

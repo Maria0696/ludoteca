@@ -558,27 +558,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Estado: punto de color + palabra ------------------------------------ */
 
+/* Estado común: rombo de color, etiqueta arcade en su color y nombre normal. */
 .state {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-weight: 600;
-  color: var(--text);
+  font-family: var(--font-term);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--muted);
   white-space: nowrap;
 }
 .state::before {
   content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
   background: var(--dot, var(--st-pendiente));
   flex: none;
 }
+.state b {
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--dot, var(--st-pendiente));
+}
 .state[data-status="jugando"] {
   --dot: var(--st-jugando);
-}
-.state[data-status="jugando"]::before {
-  box-shadow: 0 0 0 4px #4ade8026;
 }
 .state[data-status="pausado"] {
   --dot: var(--st-pausado);
@@ -588,17 +594,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .state[data-status="abandonado"] {
   --dot: var(--st-abandonado);
-  color: var(--muted);
 }
 .state.stamp::before {
   animation: pulse 520ms var(--ease-out);
 }
 @keyframes pulse {
   0% {
-    transform: scale(0.4);
+    transform: rotate(45deg) scale(0.4);
   }
   60% {
-    transform: scale(1.5);
+    transform: rotate(45deg) scale(1.5);
   }
 }
 .tag {
