@@ -131,6 +131,12 @@
   display: grid;
   gap: 16px;
 }
+.note {
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: 18px;
+  line-height: 1.15;
+}
 .cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

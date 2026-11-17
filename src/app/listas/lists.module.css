@@ -132,7 +132,9 @@
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding: 2px;
+    padding: 2px 2px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--frame-soft) transparent;
   }
   .lists li {
     flex: none;

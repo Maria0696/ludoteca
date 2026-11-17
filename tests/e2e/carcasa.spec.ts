@@ -139,6 +139,15 @@ test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", as
   // Editar y quitar dicen lo que hacen.
   await expect(page.getByRole("button", { name: "Editar Hollow Knight: Silksong" })).toHaveText("Editar");
   await expect(page.getByRole("button", { name: "Quitar Hollow Knight: Silksong de la lista" })).toHaveText("Quitar");
+  // Sus diálogos también están en la carcasa.
+  for (const open of [/^Precio$/, "Ya lo tengo", "Editar Hollow Knight: Silksong"]) {
+    await page.getByRole("button", { name: open }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expectCarcasaText(dialog);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  }
 });
 
 test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura", async ({ page }) => {
@@ -167,6 +176,9 @@ test("Mis listas en la carcasa: dos ventanas, tarjetas legibles y foco visible",
   await page.keyboard.press("Tab");
   await expect(current).toBeFocused();
   expect(await current.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+  // El diálogo de añadir juegos a la lista, también.
+  await page.getByRole("button", { name: "Añadir juegos" }).click();
+  await expectCarcasaText(page.getByRole("dialog"));
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
