@@ -20,6 +20,11 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
+.newList :global(.error) {
+  color: var(--danger);
+  font-family: var(--font-term);
+  font-size: 19px;
+}
 .lists {
   display: grid;
   gap: 6px;
@@ -31,7 +36,7 @@
   gap: 12px;
   align-items: center;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 6px 12px;
   border: 0;
   border-radius: 0;
   background: var(--raised);
@@ -128,6 +133,14 @@
     grid-template-columns: 1fr;
     gap: 24px;
   }
+  /* Dentro de la ventana caben dos tarjetas por fila, como en el resto de rejillas del móvil. */
+  .main {
+    padding: 14px;
+  }
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
+  }
   .lists {
     display: flex;
     gap: 8px;
@@ -139,7 +152,11 @@
   .lists li {
     flex: none;
   }
+  /* Un nombre largo se parte en líneas en vez de estirar el botón. */
   .lists button {
-    white-space: nowrap;
+    max-width: min(70vw, 260px);
+  }
+  .lists button span {
+    overflow-wrap: anywhere;
   }
 }

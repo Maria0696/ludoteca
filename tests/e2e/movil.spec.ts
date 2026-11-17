@@ -11,14 +11,23 @@ test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
   await page.getByRole("button", { name: "Añadir deseo" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Título").fill(LONG_TITLE);
+  // Una nota con una dirección larga, sin espacios, no puede salirse de la ventana.
+  await dialog.getByLabel("Notas").fill("https://www.ejemplo-de-tienda.es/ofertas/videojuegos/un-juego-con-un-titulo-larguisimo");
   await dialog.getByRole("button", { name: "Añadir deseo" }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: LONG_TITLE })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
+  // Las acciones de cada deseo se tocan con el pulgar: 44 px de alto.
+  const actionHeights = await page.getByRole("region", { name: "Deseos" }).getByRole("button").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+  for (const h of actionHeights) expect(h).toBeGreaterThanOrEqual(44);
 
-  // Mis listas con nombres largos: la fila de listas se desplaza sin desbordar la página.
+  // Mis listas: dos tarjetas por fila, como en el resto de rejillas del móvil.
   await page.goto("/listas");
+  const tops = await page.locator("main li").filter({ has: page.getByRole("link") }).evaluateAll((els) => els.slice(0, 2).map((e) => Math.round(e.getBoundingClientRect().top)));
+  expect(tops[0]).toBe(tops[1]);
+
+  // Nombres largos: la fila de listas se desplaza sin desbordar la página y cada nombre se parte en líneas.
   for (const name of ["Para jugar con mi pareja los domingos por la tarde", "Pendientes de terminar antes del verano", "Regalos que me gustaría recibir"]) {
     await page.getByLabel("Nombre de la nueva lista").fill(name);
     await page.getByRole("button", { name: "Crear" }).click();
@@ -27,6 +36,9 @@ test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
   await expect(lists.getByRole("button")).toHaveCount(6);
   expect(await overflow()).toBeLessThanOrEqual(0);
   expect(await lists.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  const longest = lists.getByRole("button", { name: /domingos por la tarde/ });
+  expect(await longest.evaluate((el) => el.getBoundingClientRect().width)).toBeLessThanOrEqual(270);
+  expect(await longest.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
 });
 

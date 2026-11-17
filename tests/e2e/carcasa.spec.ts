@@ -139,6 +139,10 @@ test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", as
   // Editar y quitar dicen lo que hacen.
   await expect(page.getByRole("button", { name: "Editar Hollow Knight: Silksong" })).toHaveText("Editar");
   await expect(page.getByRole("button", { name: "Quitar Hollow Knight: Silksong de la lista" })).toHaveText("Quitar");
+  // En el diálogo de editar, quitar un precio también dice lo que hace.
+  await page.getByRole("button", { name: "Editar Hollow Knight: Silksong" }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^Quitar el precio de/ }).first()).toHaveText("Quitar");
+  await page.keyboard.press("Escape");
   // Sus diálogos también están en la carcasa.
   for (const open of [/^Precio$/, "Ya lo tengo", "Editar Hollow Knight: Silksong"]) {
     await page.getByRole("button", { name: open }).first().click();
@@ -176,9 +180,25 @@ test("Mis listas en la carcasa: dos ventanas, tarjetas legibles y foco visible",
   await page.keyboard.press("Tab");
   await expect(current).toBeFocused();
   expect(await current.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
+  // La tarjeta no recorta su marco ni el contorno del foco.
+  expect(await page.locator("main li").filter({ has: page.getByRole("link") }).first().evaluate((el) => getComputedStyle(el).contentVisibility)).not.toBe("auto");
   // El diálogo de añadir juegos a la lista, también.
   await page.getByRole("button", { name: "Añadir juegos" }).click();
   await expectCarcasaText(page.getByRole("dialog"));
+  await page.keyboard.press("Escape");
+
+  // El error al crear una lista sin nombre, en la carcasa y en rojo.
+  await page.getByRole("button", { name: "Crear" }).click();
+  const error = page.getByText("Ponle un nombre a la lista.");
+  await expect(error).toBeVisible();
+  expect(await error.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 107, 107)");
+  await expectCarcasaText(page.locator("main"));
+
+  // Una lista vacía: su aviso no lleva un segundo marco dentro de la ventana.
+  await page.getByLabel("Nombre de la nueva lista").fill("Vacía");
+  await page.getByRole("button", { name: "Crear" }).click();
+  const empty = page.getByRole("heading", { name: "Lista vacía" }).locator("..");
+  expect(await empty.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
 });
 
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {

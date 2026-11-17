@@ -145,6 +145,7 @@ export function WishEditor({ wish, onClose }: { wish?: WishItem; onClose: () => 
                       onClick={() => setPrices((list) => list.filter((x) => x.id !== p.id))}
                     >
                       <Trash2 aria-hidden />
+                      Quitar
                     </button>
                   </li>
                 ))}

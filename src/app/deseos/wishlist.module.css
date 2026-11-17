@@ -197,6 +197,10 @@
   .actions {
     grid-column: 1 / -1;
   }
+  /* Se tocan con el pulgar: 44 px de alto. */
+  .actions :global(.btn) {
+    height: 44px;
+  }
   .cols {
     grid-template-columns: 1fr;
   }

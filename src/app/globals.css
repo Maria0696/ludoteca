@@ -806,6 +806,13 @@ dialog.sheet:not([open]) {
   background: var(--window);
   box-shadow: var(--pixel-frame);
 }
+/* Un aviso de vacío dentro de una ventana no lleva un segundo marco. */
+.window .empty {
+  margin: 0;
+  padding: 4px 0;
+  background: none;
+  box-shadow: none;
+}
 .window > h2 {
   margin-bottom: 14px;
   font-family: var(--font-pixel);

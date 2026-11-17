@@ -18,10 +18,9 @@
   }
 }
 
+/* Sin content-visibility: recortaba el marco al pasar por encima y el contorno del foco. */
 .card {
   min-width: 0;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
 }
 .cardLink {
   display: block;

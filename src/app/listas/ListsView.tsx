@@ -125,7 +125,7 @@ export function ListsView() {
                   <p>Añade juegos desde aquí o desde la ficha de cada juego.</p>
                 </div>
               ) : (
-                <ul className={gameStyles.grid}>
+                <ul className={`${gameStyles.grid} ${styles.cards}`}>
                   {listEntries.map((e) => (
                     <GameCard key={e.game.id} entry={e} />
                   ))}
