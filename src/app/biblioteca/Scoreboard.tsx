@@ -37,7 +37,7 @@ export function Chosen({ entry }: { entry?: LibraryEntry }) {
         <dd>{game.lastPlayedAt ? relativeDay(game.lastPlayedAt) : "---"}</dd>
       </dl>
       <Link href={`/juego/${game.id}`} className={styles.start}>
-        Pulsa start ▶ ficha
+        Ver ficha ▶
       </Link>
     </section>
   );

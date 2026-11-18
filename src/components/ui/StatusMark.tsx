@@ -10,15 +10,16 @@ const ICONS = {
 } satisfies Record<GameStatus, unknown>;
 
 /**
- * Cada estado, dicho como en una máquina recreativa, con su color: el mismo en toda la app.
+ * Cada estado, dicho como en una máquina recreativa (en español), con su color: el mismo en toda la app.
+ * «Nueva partida» es lo mismo que la opción del inicio que enseña los pendientes.
  * Los colores viven una sola vez, en las variables `--st-*` de globals.css.
  */
 export const ARCADE_STATUS: Record<GameStatus, { label: string; color: string }> = {
-  pendiente: { label: "PRESS START", color: "var(--st-pendiente)" },
+  pendiente: { label: "NUEVA PARTIDA", color: "var(--st-pendiente)" },
   jugando: { label: "EN PARTIDA", color: "var(--st-jugando)" },
   pausado: { label: "PAUSA", color: "var(--st-pausado)" },
-  completado: { label: "CLEAR!", color: "var(--st-completado)" },
-  abandonado: { label: "GAME OVER", color: "var(--st-abandonado)" },
+  completado: { label: "¡SUPERADO!", color: "var(--st-completado)" },
+  abandonado: { label: "FIN DEL JUEGO", color: "var(--st-abandonado)" },
 };
 
 /** Icono del estado, para los selectores donde se elige. */
@@ -29,7 +30,7 @@ export function StatusIcon({ status, size = 15 }: { status: GameStatus; size?: n
 
 /**
  * Marca de estado de la carcasa: rombo de color, etiqueta arcade y nombre normal
- * (`◆ PRESS START · Pendiente`). Los lectores de pantalla oyen solo el nombre normal.
+ * (`◆ NUEVA PARTIDA · Pendiente`). Los lectores de pantalla oyen solo el nombre normal.
  */
 export function StatusMark({ status, stampKey }: { status: GameStatus; stampKey?: string }) {
   return (
