@@ -12,6 +12,7 @@ import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { PISTAS, type PistaId, marcarPista, pistasVistas } from "@/lib/pistas";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
@@ -60,6 +61,15 @@ export function GameDetail({ id }: { id: string }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [hopSignal, setHopSignal] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
+  // La pista de esta visita: el mapa la primera vez, los datos la siguiente; luego, ninguna.
+  const [pista, setPista] = useState<PistaId | null>(() => {
+    if (typeof window === "undefined") return null;
+    const vistas = pistasVistas();
+    return !vistas.has("mapa") ? "mapa" : !vistas.has("datos") ? "datos" : null;
+  });
+  useEffect(() => {
+    if (pista) marcarPista(pista);
+  }, [pista]);
   const columnsRef = useRef<HTMLDivElement>(null);
 
   const game = library.games.find((g) => g.id === id);
@@ -108,7 +118,14 @@ export function GameDetail({ id }: { id: string }) {
 
   return (
     <div className={`${styles.page} ${arcade.variable} ${terminal.variable}`} data-trofeo={game.completed100 || undefined}>
-      <AdventureMap reached={reached} selected={selected} onSelect={selectStage} line={keeperLine(game)} hopSignal={hopSignal} />
+      <AdventureMap
+        reached={reached}
+        selected={selected}
+        onSelect={selectStage}
+        line={pista ? PISTAS[pista] : keeperLine(game)}
+        help={pista !== null}
+        hopSignal={hopSignal}
+      />
 
       <div className={styles.body}>
         <header className={styles.head}>
@@ -152,6 +169,7 @@ export function GameDetail({ id }: { id: string }) {
               className={styles.coin}
               onClick={(e) => {
                 actions.markPlayedToday(game.id);
+                if (!pistasVistas().has("moneda")) setPista("moneda");
                 setHopSignal((n) => n + 1);
                 const coin = e.currentTarget;
                 coin.classList.remove(styles.coinHit);

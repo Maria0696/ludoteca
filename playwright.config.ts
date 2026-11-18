@@ -22,13 +22,17 @@ const sinServicios = {
   STEAM_API_KEY: "",
 };
 
-/** La pantalla de título ya vista hoy: cada prueba llega directa al menú. */
+/** La pantalla de título ya vista hoy y las pistas ya leídas: cada prueba llega directa a lo suyo. */
 const tituloVisto = {
   cookies: [],
   origins: [
     {
       origin: "http://localhost:3100",
-      localStorage: [{ name: "ludoteca:titulo-visto", value: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()) }],
+      localStorage: [
+        { name: "ludoteca:titulo-visto", value: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()) },
+        // Las pistas de la guardiana, ya vistas: cada prueba que las quiera las borra.
+        { name: "ludoteca:pistas-vistas", value: JSON.stringify(["mapa", "moneda", "datos"]) },
+      ],
     },
   ],
 };

@@ -87,12 +87,15 @@ export function AdventureMap({
   selected,
   onSelect,
   line,
+  help = false,
   hopSignal,
 }: {
   reached: boolean[];
   selected: number | null;
   onSelect: (stage: number) => void;
   line: string;
+  /** La frase es una pista: lleva el enlace a «Cómo funciona». */
+  help?: boolean;
   /** Cambia cada vez que la guardiana debe dar un salto. */
   hopSignal: number;
 }) {
@@ -171,9 +174,17 @@ export function AdventureMap({
       ))}
       {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio */}
       <img ref={keeperRef} className={styles.keeper} style={spotStyle(stop)} src={KEEPER_URL} alt="" />
-      <div className={`${styles.window} ${styles.talk}`}>
-        <span className={styles.talkName}>Guardiana</span>
+      {/* «status»: lo que cuenta la guardiana se anuncia al cambiar (por ejemplo, tras la moneda). */}
+      <div className={`${styles.window} ${styles.talk}`} role="status" aria-label="Guardiana">
+        <span className={styles.talkName} aria-hidden>
+          Guardiana
+        </span>
         <p>{line}</p>
+        {help && (
+          <Link href="/ajustes#como-funciona" className={styles.talkHelp}>
+            Cómo funciona
+          </Link>
+        )}
       </div>
     </div>
   );

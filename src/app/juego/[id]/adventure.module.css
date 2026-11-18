@@ -150,6 +150,13 @@
   font-size: 26px;
   line-height: 1.08;
 }
+.talkHelp {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--gold);
+  font-size: 20px;
+  text-underline-offset: 4px;
+}
 .talkName {
   position: absolute;
   left: 12px;

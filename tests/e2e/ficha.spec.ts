@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { STAGES, currentStage, keeperLine, progressPercent, reachedStages } from "../../src/app/juego/[id]/progress";
 import { isoToDmy, parseDmy } from "../../src/lib/format";
 import type { Copy, Game } from "../../src/lib/model";
-import { addGame, cards, openApp } from "./helpers";
+import { addGame, cards, loadDemo, openApp } from "./helpers";
 
 const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, lastPlayedAt: null } as unknown as Game;
 const withData = (patch: Partial<Game>) => ({ ...base, ...patch }) as Game;
@@ -359,4 +359,60 @@ test("un dato mal escrito avisa y no se guarda", async ({ page }) => {
   await page.getByLabel("Horas jugadas").fill("3,5");
   await page.getByLabel("Horas jugadas").press("Enter");
   await expect(page.getByRole("button", { name: /^Horas jugadas: 3,5 h/ })).toBeVisible();
+});
+
+const PISTAS = "ludoteca:pistas-vistas";
+const openFicha = async (page: Page, title: RegExp) => {
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: title }).first().click();
+  return page.getByRole("status", { name: "Guardiana" });
+};
+
+test("la primera ficha, la guardiana explica el mapa una sola vez", async ({ page }) => {
+  await page.addInitScript((key) => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem(key);
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  }, PISTAS);
+  await loadDemo(page);
+  let keeper = await openFicha(page, /Hades/);
+  await expect(keeper).toContainText("Cada casilla es un nivel");
+  await expect(keeper.getByRole("link", { name: "Cómo funciona" })).toHaveAttribute("href", "/ajustes#como-funciona");
+  keeper = await openFicha(page, /Celeste/);
+  await expect(keeper).toContainText("se cambia tocándolo");
+  keeper = await openFicha(page, /Hollow Knight/);
+  await expect(keeper).not.toContainText("Cada casilla");
+  await expect(keeper).not.toContainText("se cambia tocándolo");
+  await expect(keeper.getByRole("link", { name: "Cómo funciona" })).toHaveCount(0);
+});
+
+test("la primera moneda, la guardiana cuenta qué apunta", async ({ page }) => {
+  await page.addInitScript((key) => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.setItem(key, JSON.stringify(["mapa", "datos"]));
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  }, PISTAS);
+  await loadDemo(page);
+  const keeper = await openFicha(page, /Hades/);
+  await page.getByRole("button", { name: /Inserta moneda/ }).click();
+  await expect(keeper).toContainText("¡Moneda echada!");
+  await page.getByRole("button", { name: /Inserta moneda/ }).click();
+  await page.reload();
+  await expect(page.getByRole("status", { name: "Guardiana" })).toContainText("¡Hoy has jugado!");
+});
+
+test("sin almacenamiento, la ficha abre sin pistas", async ({ page }) => {
+  await loadDemo(page);
+  await page.addInitScript(() => {
+    const original = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      if (key === "ludoteca:pistas-vistas") throw new Error("almacenamiento bloqueado");
+      return original.call(this, key);
+    };
+  });
+  const keeper = await openFicha(page, /Hades/);
+  await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
+  await expect(keeper).not.toContainText("Cada casilla");
 });
