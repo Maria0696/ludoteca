@@ -236,3 +236,16 @@ test("tras añadir, los botones de la escena del cofre caben en el móvil", asyn
     expect(h, `${name}: cabe a lo alto`).toBeLessThanOrEqual(0);
   }
 });
+
+test("en un móvil estrecho, «Añadir a la biblioteca» va en una sola línea", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const go = page.getByRole("dialog").getByRole("button", { name: "Añadir a la biblioteca" });
+  const lines = await go.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
+});

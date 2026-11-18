@@ -415,8 +415,9 @@
   .familyName {
     line-height: 1.4;
   }
+  /* 16 px a cada lado: «Añadir a la biblioteca» cabe en una línea a 360 px (y puede partirse a 320). */
   .go {
-    padding: 0 22px;
+    padding: 0 16px;
     font-size: 13px;
   }
 }

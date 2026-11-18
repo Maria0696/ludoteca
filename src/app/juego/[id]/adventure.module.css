@@ -263,6 +263,10 @@
   background: #fff;
   color: var(--ink);
 }
+/* Los neones no se ven sobre blanco: el punto del estado elegido lleva un aro oscuro, como en el alta. */
+.status[aria-checked="true"] .dot {
+  box-shadow: 0 0 0 2px var(--ink);
+}
 .dot {
   width: 8px;
   height: 8px;

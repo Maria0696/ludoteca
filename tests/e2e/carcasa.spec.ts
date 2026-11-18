@@ -423,3 +423,13 @@ test("el formulario del cofre va en las letras de la carcasa", async ({ page }) 
   await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
   await expect(dialog.getByRole("heading", { name: "¡Has conseguido Celeste!" })).toBeVisible();
 });
+
+test("en la ficha, el punto del estado elegido se ve sobre el blanco", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  const chosen = page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { checked: true });
+  // Los neones sobre blanco no llegan a 2:1: el punto lleva un aro oscuro, como en el alta.
+  const ring = await chosen.evaluate((el) => getComputedStyle(el.firstElementChild!).boxShadow);
+  expect(ring).toContain("rgb(18, 16, 31)");
+});
