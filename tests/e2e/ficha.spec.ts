@@ -427,6 +427,8 @@ test("en el ordenador, el enlace «Cómo funciona» de la guardiana se puede pul
   await loadDemo(page);
   const keeper = await openFicha(page, /Hades/);
   // La cabecera de la ficha sube sobre el mapa: su hueco no puede tapar el enlace.
-  await keeper.getByRole("link", { name: "Cómo funciona" }).click({ timeout: 5000 });
+  const link = keeper.getByRole("link", { name: "Cómo funciona" });
+  await expect(link).toBeVisible();
+  await link.click({ timeout: 5000 });
   await expect(page.getByRole("region", { name: "Cómo funciona" })).toBeInViewport();
 });
