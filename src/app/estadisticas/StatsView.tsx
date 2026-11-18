@@ -45,18 +45,18 @@ export function StatsView() {
 
       <section className="window" aria-labelledby="h-cifras">
         <h2 id="h-cifras">En cifras</h2>
-      <dl className={styles.kpis}>
-        <Kpi label="Títulos" value={s.titles} note="Juegos distintos" />
-        <Kpi label="Copias" value={s.copies} note={s.copies > s.titles ? `${s.copies - s.titles} títulos repetidos en otra copia` : "Una por título"} />
-        <Kpi label="Jugando" value={s.byStatus.jugando} note="Marcados como «Jugando»" />
-        <Kpi label="Pendientes" value={s.byStatus.pendiente} note="Sin empezar" />
-        <Kpi label="Completados" value={s.byStatus.completado} note={`${s.completed100} al 100 %`} />
-        <Kpi
-          label={`Terminados en ${year}`}
-          value={s.finishedThisYear}
-          note={s.completedWithoutDate ? `${s.completedWithoutDate} completados sin fecha no cuentan` : "Con fecha de fin este año"}
-        />
-      </dl>
+        <dl className={styles.kpis}>
+          <Kpi label="Títulos" value={s.titles} note="Juegos distintos" />
+          <Kpi label="Copias" value={s.copies} note={s.copies > s.titles ? `${s.copies - s.titles} títulos repetidos en otra copia` : "Una por título"} />
+          <Kpi label="Jugando" value={s.byStatus.jugando} note="Marcados como «Jugando»" />
+          <Kpi label="Pendientes" value={s.byStatus.pendiente} note="Sin empezar" />
+          <Kpi label="Completados" value={s.byStatus.completado} note={`${s.completed100} al 100 %`} />
+          <Kpi
+            label={`Terminados en ${year}`}
+            value={s.finishedThisYear}
+            note={s.completedWithoutDate ? `${s.completedWithoutDate} completados sin fecha no cuentan` : "Con fecha de fin este año"}
+          />
+        </dl>
       </section>
 
       <div className={styles.grid}>

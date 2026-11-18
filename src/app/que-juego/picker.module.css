@@ -97,8 +97,10 @@
 .pickCover {
   display: block;
 }
+/* El marco va por encima de la imagen: una sombra interior quedaría tapada por ella. */
 .pickCover :global(.cover) {
-  box-shadow: var(--pixel-frame-soft);
+  outline: 2px solid var(--frame-soft);
+  outline-offset: -2px;
 }
 .pickBody {
   display: grid;
@@ -126,9 +128,6 @@
   align-items: center;
   flex-wrap: wrap;
   font-size: 19px;
-}
-.pickMeta > :global(.muted) {
-  color: var(--muted);
 }
 .reasons {
   display: grid;

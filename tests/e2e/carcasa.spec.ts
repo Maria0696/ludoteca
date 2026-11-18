@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -136,6 +136,38 @@ test("Estadísticas en la carcasa: título en píxeles, una ventana por sección
   await expectCarcasaText(page.locator("main"));
 });
 
+test("Estadísticas: las cifras grandes no se parten ni se salen a ningún ancho", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Juego carísimo", platform: "PC", format: "Físico" });
+  await cards(page).getByRole("link", { name: /Juego carísimo/ }).click();
+  await page.getByRole("button", { name: /^Horas jugadas/ }).click();
+  await page.getByLabel("Horas jugadas").fill("12345");
+  await page.getByLabel("Horas jugadas").press("Enter");
+  await page.getByRole("button", { name: /^Precio/ }).click();
+  await page.getByLabel("Precio").fill("12345,67");
+  await page.getByLabel("Precio").press("Enter");
+  await expect(page.getByText("12.345,67 €").first()).toBeVisible();
+
+  await page.goto("/estadisticas");
+  const registro = page.getByRole("region", { name: "Horas y gasto registrados" });
+  await expect(registro.getByText("12.345,67 €")).toBeVisible();
+  for (const width of [390, 920, 1000, 1100, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    // Cada cifra en una sola línea y dentro de su celda.
+    const cells = await page.locator("main dd").evaluateAll((els) =>
+      els.map((e) => ({
+        text: e.textContent,
+        spill: e.scrollWidth - e.clientWidth,
+        lines: Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)),
+      })),
+    );
+    for (const c of cells) {
+      expect(c.spill, `«${c.text}» se sale a ${width}px`).toBeLessThanOrEqual(0);
+      expect(c.lines, `«${c.text}» se parte a ${width}px`).toBe(1);
+    }
+  }
+});
+
 test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el arte detrás", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/que-juego");
@@ -167,6 +199,14 @@ test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async
   await expectCarcasaText(dialog);
   await dialog.getByRole("button", { name: "Sí, continuar" }).click();
   await expectCarcasaText(dialog);
+  await dialog.getByText("Entiendo que mis juegos se borrarán para siempre").click();
+  await dialog.getByRole("button", { name: "Continuar" }).click();
+  await expect(dialog.getByRole("textbox")).toBeVisible();
+  await expectCarcasaText(dialog);
+  // En el móvil el último aviso es una hoja a lo ancho: nada se sale de ella.
+  await page.setViewportSize({ width: 360, height: 780 });
+  expect(await dialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  for (const s of await dialog.getByRole("button").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth))) expect(s).toBeLessThanOrEqual(0);
 });
 
 test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {

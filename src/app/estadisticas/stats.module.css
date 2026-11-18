@@ -55,7 +55,6 @@
   color: #fff;
   font-size: 56px;
   line-height: 1;
-  overflow-wrap: anywhere;
 }
 .kpis p {
   color: var(--muted);
@@ -73,6 +72,10 @@
   display: grid;
   gap: 18px;
   font-family: var(--font-term);
+}
+/* El hueco bajo el título ya lo pone el gap de la ventana. */
+.panel > h2 {
+  margin-bottom: 0;
 }
 .bars {
   display: grid;
@@ -126,8 +129,9 @@
 .stackA {
   background: var(--paper);
 }
+/* Digital: un tono que no es de ningún estado, para no confundirlo con «Completado». */
 .stackB {
-  background: var(--st-completado);
+  background: var(--muted);
 }
 .legend {
   display: flex;
@@ -157,9 +161,10 @@
   font-size: 18px;
   line-height: 1.15;
 }
+/* Si una celda se queda por debajo de 240 px, horas y gasto se apilan en vez de partir la cifra. */
 .pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 22px;
 }
 .pair dt {
@@ -171,7 +176,12 @@
   color: #fff;
   font-size: 48px;
   line-height: 1;
-  overflow-wrap: anywhere;
+}
+/* Una cifra nunca se parte: «12.345,6 / 7 €» se leería como otro número. */
+.kpis dd,
+.legend dd,
+.pair dd {
+  white-space: nowrap;
 }
 
 @media (max-width: 1200px) {
@@ -203,9 +213,6 @@
     font-size: 40px;
   }
   .grid {
-    grid-template-columns: 1fr;
-  }
-  .pair {
     grid-template-columns: 1fr;
   }
 }

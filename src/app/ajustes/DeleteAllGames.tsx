@@ -74,7 +74,7 @@ function Warnings({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const titles = { 1: `¿Eliminar tus ${games}?`, 2: "Esto no se puede deshacer", 3: "Último aviso" };
+  const titles = { 1: library.games.length === 1 ? "¿Eliminar tu único juego?" : `¿Eliminar tus ${games}?`, 2: "Esto no se puede deshacer", 3: "Último aviso" };
 
   return (
     <Dialog
