@@ -397,3 +397,29 @@ test("los estados tienen el mismo color en la biblioteca, la ficha y el alta", a
   await page.getByRole("button", { name: "Añadir juego" }).first().click();
   expect(await dots(page.getByRole("dialog").getByRole("radiogroup", { name: "Estado" }))).toEqual(expected);
 });
+
+test("el formulario del cofre va en las letras de la carcasa", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog");
+  const [titleFont] = await font(dialog.getByRole("heading", { name: "¿Qué has encontrado?" }));
+  expect(titleFont).toMatch(/Press.Start.2P/i);
+  const parts: [string, Locator][] = [
+    ["la etiqueta «Título»", dialog.getByText("Título", { exact: true })],
+    ["la plataforma «PS5»", dialog.getByRole("radio", { name: "PS5", exact: true })],
+    ["el formato «Físico»", dialog.getByRole("radio", { name: "Físico", exact: true })],
+    ["el estado «Pendiente»", dialog.getByRole("radio", { name: "Pendiente", exact: true })],
+    ["el botón de añadir", dialog.getByRole("button", { name: "Añadir a la biblioteca" })],
+    ["la pista", dialog.getByText(/^Precio, edición, horas/)],
+  ];
+  for (const [what, el] of parts) {
+    const [family, size] = await font(el);
+    expect(family, what).toMatch(/VT323|Press.Start.2P/i);
+    if (/VT323/i.test(family)) expect(size, what).toBeGreaterThanOrEqual(18);
+  }
+  // La escena del cofre se conserva.
+  await dialog.getByLabel("Título").fill("Celeste");
+  await dialog.getByRole("radio", { name: "Switch", exact: true }).click();
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  await expect(dialog.getByRole("heading", { name: "¡Has conseguido Celeste!" })).toBeVisible();
+});

@@ -168,12 +168,25 @@
 .winActions .go {
   height: 48px;
   padding: 0 18px;
-  font-size: 21px;
+  /* Letra de píxeles: más pequeña que la antigua para que cada acción quepa en una línea. */
+  font-size: 14px;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .winActions .go {
+    padding: 0 14px;
+    font-size: 12px;
+  }
 }
 
 .form {
   position: relative;
   z-index: 2;
+  /* El formulario habla con las letras de la carcasa; la escena del cofre conserva las suyas. */
+  font-family: var(--font-term);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.15;
   display: grid;
   align-content: center;
   gap: 14px;
@@ -188,14 +201,13 @@
   gap: 12px;
 }
 .head h2 {
-  font-family: var(--heavy);
-  font-size: clamp(34px, min(4.4vw, 7.2vh), 62px);
+  font-family: var(--font-pixel);
+  font-size: clamp(18px, 2vw, 26px);
   font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: 0.015em;
-  text-transform: uppercase;
+  line-height: 1.4;
   overflow-wrap: anywhere;
   color: var(--gold);
+  text-shadow: 3px 3px 0 #000;
 }
 .head {
   padding-right: 48px;
@@ -226,7 +238,6 @@
   gap: 6px;
 }
 .label {
-  font-weight: 700;
   color: var(--paper);
 }
 .titleField :global(.input) {
@@ -238,9 +249,8 @@
   background: #ffffff14;
   box-shadow: inset 0 0 0 2px #ffd76a80;
   color: #fff;
-  font-family: var(--hud);
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-term);
+  font-size: 24px;
 }
 .titleField :global(.input):focus {
   outline: 0;
@@ -251,8 +261,7 @@
 }
 .error {
   color: #ff8a7e;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 19px;
 }
 .tiles {
   display: flex;
@@ -270,8 +279,7 @@
   box-shadow: inset 0 0 0 2px #ffffff30;
   color: #fff;
   font: inherit;
-  font-size: 15.5px;
-  font-weight: 700;
+  font-size: 20px;
   cursor: pointer;
   transition: transform 140ms var(--snap);
 }
@@ -291,15 +299,14 @@
   align-items: start;
 }
 .familyName {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 19px;
   line-height: var(--tile);
   color: #c4c3d2;
 }
 .family .tile {
   min-height: var(--tile);
   padding: 0 10px;
-  font-size: 15px;
+  font-size: 20px;
 }
 .tile:hover {
   transform: translateY(-2px);
@@ -348,10 +355,9 @@
   border: 0;
   background: var(--yellow);
   color: var(--ink);
-  font-family: var(--heavy);
-  font-size: 27px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  line-height: 1.4;
   cursor: pointer;
   transform: skewX(-9deg);
   transition: transform 160ms var(--snap), filter 100ms ease;
@@ -368,8 +374,8 @@
   color: #fff;
 }
 .hint {
-  font-size: 14px;
-  color: #c4c3d2;
+  font-size: 19px;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
@@ -411,7 +417,7 @@
   }
   .go {
     padding: 0 22px;
-    font-size: 24px;
+    font-size: 13px;
   }
 }
 /* En un portátil bajo el formulario entero cabe sin desplazarse. */
@@ -426,7 +432,7 @@
   .form .tile {
     min-height: 38px;
     padding: 0 10px;
-    font-size: 15px;
+    font-size: 19px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
