@@ -339,13 +339,13 @@ test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un 
   await expect(panel.getByRole("button", { name: /^Duración total.*12,5 h/ })).toBeVisible();
 });
 
-test("un juego escrito a mano no tiene nota de la crítica que buscar", async ({ page }) => {
+test("un juego escrito a mano no enseña la fila de la crítica: no hay nota que buscar", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "PC" });
   await cards(page).getByRole("link", { name: /Celeste/ }).click();
-  const record = page.getByRole("region", { name: "Tus récords" }).getByRole("listitem").filter({ hasText: "Crítica IGDB" });
-  await expect(record).toContainText("---");
-  await expect(record.getByRole("button")).toHaveCount(0);
+  const records = page.getByRole("region", { name: "Tus récords" });
+  await expect(records).toContainText("Tu nota");
+  await expect(records).not.toContainText("Crítica IGDB");
 });
 
 test("un dato mal escrito avisa y no se guarda", async ({ page }) => {
