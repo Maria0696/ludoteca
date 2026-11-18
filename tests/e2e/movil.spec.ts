@@ -208,3 +208,44 @@ test("en el móvil, lo frecuente queda al alcance del pulgar sin bajar", async (
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   }
 });
+
+test("el cofre cabe en el móvil con una plataforma de nombre largo", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("radio", { name: /^Otra/ }).click();
+  await dialog.getByRole("textbox").last().fill("Plataforma de recreativa de los noventa");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  expect(await dialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  await expectCarcasaText(dialog);
+});
+
+test("tras añadir, los botones de la escena del cofre caben en el móvil", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Título").fill("Un juego con un título larguísimo para ver la escena");
+  await choosePlatform(dialog, "Switch");
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  for (const name of ["Apuntar detalles", "Añadir otro"]) {
+    const button = dialog.getByRole("button", { name });
+    await expect(button).toBeVisible();
+    const [w, h] = await button.evaluate((el) => [el.scrollWidth - el.clientWidth, el.scrollHeight - el.clientHeight]);
+    expect(w, `${name}: cabe a lo ancho`).toBeLessThanOrEqual(0);
+    expect(h, `${name}: cabe a lo alto`).toBeLessThanOrEqual(0);
+  }
+});
+
+test("en un móvil estrecho, «Añadir a la biblioteca» va en una sola línea", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const go = page.getByRole("dialog").getByRole("button", { name: "Añadir a la biblioteca" });
+  const lines = await go.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
+});

@@ -10,6 +10,7 @@ import { useAddGame } from "@/components/game/AddGameProvider";
 import { TROPHY_URL } from "@/components/pixel/sprites";
 import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
+import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
@@ -17,7 +18,7 @@ import { AdventureMap } from "./AdventureMap";
 import { Celebration } from "./Celebration";
 import { CoverDialog } from "./CoverDialog";
 import { Inventory } from "./Inventory";
-import { MorePanel, PlayOptions, Quests, Records, STATUS_COLOR, TechSheet } from "./panels";
+import { MorePanel, PlayOptions, Quests, Records, TechSheet } from "./panels";
 import { STAGES, TROPHY_STAGE, keeperLine, reachedStages } from "./progress";
 
 /** El nombre va en una sola línea: si no cabe, la letra se reduce hasta que quepa. */
@@ -130,7 +131,7 @@ export function GameDetail({ id }: { id: string }) {
                   className={styles.status}
                   onClick={() => actions.setStatus(game.id, s)}
                 >
-                  <span className={styles.dot} style={{ background: STATUS_COLOR[s] }} />
+                  <span className={styles.dot} style={{ background: ARCADE_STATUS[s].color }} />
                   {STATUS_LABEL[s]}
                 </button>
               ))}

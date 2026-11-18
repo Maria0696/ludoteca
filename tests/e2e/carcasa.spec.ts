@@ -377,3 +377,59 @@ test("la app habla español: sin rótulos en inglés ni jerga técnica", async (
   await page.goto("/ajustes");
   await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
 });
+
+test("los estados tienen el mismo color en la biblioteca, la ficha y el alta", async ({ page }) => {
+  // Los colores de --st-* en globals.css: los mismos que en las cabinas de la biblioteca.
+  const expected = { Pendiente: "rgb(255, 233, 77)", Completado: "rgb(63, 242, 255)", Abandonado: "rgb(255, 77, 109)" };
+  const dots = (group: Locator) =>
+    Promise.all(
+      Object.keys(expected).map(async (name) => [
+        name,
+        await group.getByRole("radio", { name }).evaluate((el) => getComputedStyle(el.firstElementChild!).backgroundColor),
+      ]),
+    ).then(Object.fromEntries);
+
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  expect(await dots(page.getByRole("radiogroup", { name: "Estado" }))).toEqual(expected);
+
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  expect(await dots(page.getByRole("dialog").getByRole("radiogroup", { name: "Estado" }))).toEqual(expected);
+});
+
+test("el formulario del cofre va en las letras de la carcasa", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog");
+  const [titleFont] = await font(dialog.getByRole("heading", { name: "¿Qué has encontrado?" }));
+  expect(titleFont).toMatch(/Press.Start.2P/i);
+  const parts: [string, Locator][] = [
+    ["la etiqueta «Título»", dialog.getByText("Título", { exact: true })],
+    ["la plataforma «PS5»", dialog.getByRole("radio", { name: "PS5", exact: true })],
+    ["el formato «Físico»", dialog.getByRole("radio", { name: "Físico", exact: true })],
+    ["el estado «Pendiente»", dialog.getByRole("radio", { name: "Pendiente", exact: true })],
+    ["el botón de añadir", dialog.getByRole("button", { name: "Añadir a la biblioteca" })],
+    ["la pista", dialog.getByText(/^Precio, edición, horas/)],
+  ];
+  for (const [what, el] of parts) {
+    const [family, size] = await font(el);
+    expect(family, what).toMatch(/VT323|Press.Start.2P/i);
+    if (/VT323/i.test(family)) expect(size, what).toBeGreaterThanOrEqual(18);
+  }
+  // La escena del cofre se conserva.
+  await dialog.getByLabel("Título").fill("Celeste");
+  await dialog.getByRole("radio", { name: "Switch", exact: true }).click();
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  await expect(dialog.getByRole("heading", { name: "¡Has conseguido Celeste!" })).toBeVisible();
+});
+
+test("en la ficha, el punto del estado elegido se ve sobre el blanco", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  const chosen = page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { checked: true });
+  // Los neones sobre blanco no llegan a 2:1: el punto lleva un aro oscuro, como en el alta.
+  const ring = await chosen.evaluate((el) => getComputedStyle(el.firstElementChild!).boxShadow);
+  expect(ring).toContain("rgb(18, 16, 31)");
+});

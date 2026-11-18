@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { heavy, hud } from "@/components/home/fonts";
 import { CHEST_CLOSED_URL, CHEST_OPEN_URL } from "@/components/pixel/sprites";
+import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import type { CatalogGame } from "@/lib/catalog";
 import { findSameTitle } from "@/lib/filters";
 import { copiesSummary } from "@/lib/format";
@@ -22,14 +23,6 @@ type Won = { id: string; copyId: string | null; title: string; coverUrl?: string
 
 const SHAKE_MS = 680;
 const LONG_TITLE = 28;
-
-const STATUS_COLOR: Record<GameStatus, string> = {
-  pendiente: "#a1a1aa",
-  jugando: "#4ade80",
-  pausado: "#fbbf24",
-  completado: "#60a5fa",
-  abandonado: "#71717a",
-};
 
 const formatName = (format: Format) => (format === "fisico" ? "Físico" : "Digital");
 
@@ -304,7 +297,7 @@ export function AddGameDialog({
               <div className={styles.tiles} role="radiogroup" aria-labelledby="add-status-label">
                 {GAME_STATUSES.map((s) => (
                   <button key={s} type="button" className={styles.tile} role="radio" aria-checked={status === s} onClick={() => setStatus(s)}>
-                    <i className={styles.dot} style={{ background: STATUS_COLOR[s] }} />
+                    <i className={styles.dot} style={{ background: ARCADE_STATUS[s].color }} />
                     {STATUS_LABEL[s]}
                   </button>
                 ))}
