@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Info, Play, RotateCcw, X } from "lucide-react";
+import { Check, Info, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import { Dialog } from "@/components/ui/Dialog";
 import { Cover } from "@/components/ui/Cover";
 import { StatusMark } from "@/components/ui/StatusMark";
 import { copiesSummary } from "@/lib/format";
@@ -42,11 +43,25 @@ function initialInput(params: URLSearchParams): RecommendInput {
   };
 }
 
+/** La sesión en una línea: «1 h · Cualquier plataforma · Sola», y lo que no esté en «da igual». */
+function sessionSummary(input: RecommendInput): string {
+  return [
+    TIMES.find((t) => t.value === input.minutes)?.label ?? `${input.minutes} min`,
+    input.platform ?? "Cualquier plataforma",
+    COMPANY.find((c) => c.value === input.company)?.label,
+    input.intent !== "cualquiera" && INTENTS.find((i) => i.value === input.intent)?.label,
+    input.mood && MOOD_LABEL[input.mood],
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function PickerView() {
   const params = useSearchParams();
   const { library, actions } = useLibrary();
   const [input, setInput] = useState<RecommendInput>(() => initialInput(params));
   const [discarded, setDiscarded] = useState<Set<string>>(new Set());
+  const [sheet, setSheet] = useState(false);
   const set = <K extends keyof RecommendInput>(k: K, v: RecommendInput[K]) => {
     setInput((i) => ({ ...i, [k]: v }));
     setDiscarded(new Set());
@@ -66,47 +81,7 @@ export function PickerView() {
       <div className={styles.layout}>
         <form className={`window ${styles.form}`} onSubmit={(e) => e.preventDefault()} aria-labelledby="h-sesion">
           <h2 id="h-sesion">Tu sesión</h2>
-          <Choice label="Tiempo para esta sesión">
-            {TIMES.map((t) => (
-              <button key={t.label} type="button" role="radio" aria-checked={input.minutes === t.value} onClick={() => set("minutes", t.value)}>
-                {t.label}
-              </button>
-            ))}
-          </Choice>
-          <Choice label="Plataforma">
-            <button type="button" role="radio" aria-checked={input.platform === null} onClick={() => set("platform", null)}>
-              Cualquiera
-            </button>
-            {platforms.map((p) => (
-              <button key={p} type="button" role="radio" aria-checked={input.platform === p} onClick={() => set("platform", p)}>
-                {p}
-              </button>
-            ))}
-          </Choice>
-          <Choice label="Partida">
-            {INTENTS.map((i) => (
-              <button key={i.value} type="button" role="radio" aria-checked={input.intent === i.value} onClick={() => set("intent", i.value)}>
-                {i.label}
-              </button>
-            ))}
-          </Choice>
-          <Choice label="Compañía">
-            {COMPANY.map((c) => (
-              <button key={c.value} type="button" role="radio" aria-checked={input.company === c.value} onClick={() => set("company", c.value)}>
-                {c.label}
-              </button>
-            ))}
-          </Choice>
-          <Choice label="Experiencia">
-            <button type="button" role="radio" aria-checked={input.mood === null} onClick={() => set("mood", null)}>
-              Cualquiera
-            </button>
-            {MOODS.map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={input.mood === m} onClick={() => set("mood", m)}>
-                {MOOD_LABEL[m]}
-              </button>
-            ))}
-          </Choice>
+          <SessionChoices input={input} platforms={platforms} set={set} />
         </form>
 
         <section className={`window ${styles.results}`} aria-labelledby="h-propuestas" aria-live="polite">
@@ -128,6 +103,15 @@ export function PickerView() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* En el móvil la respuesta va primero y la sesión, resumida, se ajusta en una hoja. */}
+          <div className={styles.summary}>
+            <p>{sessionSummary(input)}</p>
+            <button type="button" className="btn btn-sm" aria-label="Ajustar la sesión" onClick={() => setSheet(true)}>
+              <SlidersHorizontal aria-hidden />
+              Ajustar
+            </button>
           </div>
 
           {result.limitations.length > 0 && (
@@ -200,12 +184,85 @@ export function PickerView() {
           )}
         </section>
       </div>
+
+      <Dialog
+        open={sheet}
+        onClose={() => setSheet(false)}
+        title="Tu sesión"
+        footer={
+          <button type="button" className="btn btn-ink" onClick={() => setSheet(false)}>
+            {result.picks.length === 0 ? "Ver por qué no hay propuestas" : `Ver ${result.picks.length} ${result.picks.length === 1 ? "propuesta" : "propuestas"}`}
+          </button>
+        }
+      >
+        <div className={styles.sheetChoices}>
+          <SessionChoices input={input} platforms={platforms} set={set} />
+        </div>
+      </Dialog>
     </div>
   );
 }
 
+/** Las preguntas de la sesión: en el panel del ordenador y en la hoja del móvil. */
+function SessionChoices({
+  input,
+  platforms,
+  set,
+}: {
+  input: RecommendInput;
+  platforms: string[];
+  set: <K extends keyof RecommendInput>(k: K, v: RecommendInput[K]) => void;
+}) {
+  return (
+    <>
+      <Choice label="Tiempo para esta sesión">
+        {TIMES.map((t) => (
+          <button key={t.label} type="button" role="radio" aria-checked={input.minutes === t.value} onClick={() => set("minutes", t.value)}>
+            {t.label}
+          </button>
+        ))}
+      </Choice>
+      <Choice label="Plataforma">
+        <button type="button" role="radio" aria-checked={input.platform === null} onClick={() => set("platform", null)}>
+          Cualquiera
+        </button>
+        {platforms.map((p) => (
+          <button key={p} type="button" role="radio" aria-checked={input.platform === p} onClick={() => set("platform", p)}>
+            {p}
+          </button>
+        ))}
+      </Choice>
+      <Choice label="Partida">
+        {INTENTS.map((i) => (
+          <button key={i.value} type="button" role="radio" aria-checked={input.intent === i.value} onClick={() => set("intent", i.value)}>
+            {i.label}
+          </button>
+        ))}
+      </Choice>
+      <Choice label="Compañía">
+        {COMPANY.map((c) => (
+          <button key={c.value} type="button" role="radio" aria-checked={input.company === c.value} onClick={() => set("company", c.value)}>
+            {c.label}
+          </button>
+        ))}
+      </Choice>
+      <Choice label="Experiencia">
+        <button type="button" role="radio" aria-checked={input.mood === null} onClick={() => set("mood", null)}>
+          Cualquiera
+        </button>
+        {MOODS.map((m) => (
+          <button key={m} type="button" role="radio" aria-checked={input.mood === m} onClick={() => set("mood", m)}>
+            {MOOD_LABEL[m]}
+          </button>
+        ))}
+      </Choice>
+    </>
+  );
+}
+
 function Choice({ label, children }: { label: string; children: React.ReactNode }) {
-  const id = `choice-${label.replace(/\W+/g, "-").toLowerCase()}`;
+  // Un id por grupo: la misma pregunta vive en el panel y en la hoja.
+  const id = useId();
   return (
     <div className="field">
       <span className="label" id={id}>

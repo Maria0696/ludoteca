@@ -53,6 +53,21 @@
   font-family: var(--font-term);
   font-size: 20px;
 }
+/* Resumen de la sesión: solo en el móvil, donde el panel de la sesión pasa a una hoja. */
+.summary {
+  display: none;
+}
+.summary p {
+  font-family: var(--font-term);
+  font-size: 21px;
+  line-height: 1.2;
+  color: #fff;
+  min-width: 0;
+}
+.sheetChoices {
+  display: grid;
+  gap: 22px;
+}
 .resultsActions {
   display: flex;
   gap: 6px;
@@ -174,7 +189,19 @@
     padding-top: 22px;
   }
   .form {
-    padding: 16px;
+    display: none;
+  }
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0 14px;
+    border-bottom: 2px solid var(--line);
+  }
+  .summary :global(.btn) {
+    flex: none;
+    min-height: 44px;
   }
   .pick {
     grid-template-columns: 96px minmax(0, 1fr);
