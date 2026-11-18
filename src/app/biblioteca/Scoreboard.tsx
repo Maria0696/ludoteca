@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { Cover } from "@/components/ui/Cover";
 import type { LibraryEntry } from "@/lib/filters";
@@ -15,6 +16,13 @@ export function Chosen({ entry }: { entry?: LibraryEntry }) {
   const { game, copies } = entry;
   const status = ARCADE_STATUS[game.status];
   const platforms = [...new Set(copies.map((c) => c.platform))].join(" + ");
+  // Solo los datos que hay: un juego sin empezar no enseña filas de «---».
+  const rows: [string, string | null][] = [
+    ["Horas", game.hoursPlayed ? formatHours(game.hoursPlayed) : null],
+    ["Tu nota", game.rating != null ? formatNumber(game.rating) : null],
+    ["Última partida", game.lastPlayedAt ? relativeDay(game.lastPlayedAt) : null],
+  ];
+  const stats = rows.filter((row): row is [string, string] => row[1] !== null);
   return (
     <section className={styles.box} aria-label="Elegido">
       <h2 className={styles.boxHead}>Elegido</h2>
@@ -28,14 +36,18 @@ export function Chosen({ entry }: { entry?: LibraryEntry }) {
           </p>
         </div>
       </div>
-      <dl className={styles.stats}>
-        <dt>Horas</dt>
-        <dd>{game.hoursPlayed ? formatHours(game.hoursPlayed) : "---"}</dd>
-        <dt>Tu nota</dt>
-        <dd>{game.rating != null ? formatNumber(game.rating) : "---"}</dd>
-        <dt>Última partida</dt>
-        <dd>{game.lastPlayedAt ? relativeDay(game.lastPlayedAt) : "---"}</dd>
-      </dl>
+      {stats.length > 0 ? (
+        <dl className={styles.stats}>
+          {stats.map(([label, value]) => (
+            <Fragment key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      ) : (
+        <p className={styles.noStats}>Sin partidas todavía</p>
+      )}
       <Link href={`/juego/${game.id}`} className={styles.start}>
         Ver ficha ▶
       </Link>

@@ -1,5 +1,5 @@
 import { type Page, expect, test } from "@playwright/test";
-import { choosePlatform, openApp } from "./helpers";
+import { choosePlatform, loadDemo, openApp } from "./helpers";
 
 async function openDialog(page: Page) {
   await openApp(page, "/biblioteca");
@@ -86,7 +86,23 @@ test("las consolas están por familias y la que escribes a mano se queda", async
   await dialog.getByLabel("Nombre de la plataforma").fill("Neo Geo");
   await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
   await dialog.getByRole("button", { name: "Añadir otro" }).click();
-  await expect(platforms.getByRole("group", { name: "Otras" }).getByRole("radio", { name: "Neo Geo", exact: true })).toBeVisible();
+  // Ya es una de las tuyas: sale entre las primeras, sin abrir «Más plataformas».
+  await expect(platforms.getByRole("radio", { name: "Neo Geo", exact: true })).toBeVisible();
+});
+
+test("con juegos en la biblioteca, primero tus plataformas y el resto tras «Más plataformas»", async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  const platforms = dialog.getByRole("radiogroup", { name: "Plataforma" });
+  // Las de tus copias, de más a menos usada (Switch 10, PC 6, PS5 6, PS4 2), y «Otra…».
+  await expect(platforms.getByRole("radio")).toHaveText(["Switch", "PC", "PS5", "PS4", "Otra…"]);
+  const more = dialog.getByRole("button", { name: "Más plataformas" });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await more.click();
+  await expect(platforms.getByRole("group", { name: "Xbox" }).getByRole("radio", { name: "Xbox Series", exact: true })).toBeVisible();
+  await expect(platforms.getByRole("radio", { name: "PS Vita", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Más plataformas" })).toHaveCount(0);
 });
 
 test("un juego repetido se añade como otra copia", async ({ page }) => {

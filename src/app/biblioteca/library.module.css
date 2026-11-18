@@ -514,6 +514,10 @@
   margin: 0;
   text-align: right;
 }
+.noStats {
+  margin: 0 0 12px;
+  color: var(--soft);
+}
 .start {
   display: block;
   color: #ffe94d;
@@ -701,11 +705,24 @@
   .page {
     padding-top: 20px;
   }
+  /* Dos filas: el título con las vistas a la derecha, y el recuento debajo. */
   .head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
     padding-bottom: 14px;
+  }
+  .credits {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 21px;
   }
   .headActions {
     margin-left: 0;
+  }
+  /* Importar de Steam sigue en Ajustes: en el móvil no ocupa una fila de la cabecera. */
+  .headActions > .chip {
+    display: none;
   }
   .viewToggle span {
     position: absolute;

@@ -245,7 +245,8 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
         />
       ),
     },
-    { name: "Crítica IGDB", value: <CriticRating game={game} update={update} /> },
+    // Sin nota ni catálogo de donde traerla, la fila solo diría «---».
+    ...(game.criticRating != null || game.igdbId ? [{ name: "Crítica IGDB", value: <CriticRating game={game} update={update} /> }] : []),
     ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
     { name: "En tu ludoteca", value: firstOwned ? formatDate(firstOwned) : "---", stage: 0 },
   ];

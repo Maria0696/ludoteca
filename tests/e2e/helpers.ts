@@ -13,7 +13,11 @@ export async function loadDemo(page: Page) {
 
 /** Elige plataforma en la ventana de añadir juego. */
 export async function choosePlatform(dialog: Locator, platform: string) {
-  await dialog.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: platform, exact: true }).click();
+  const tile = dialog.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: platform, exact: true });
+  // Con juegos en la biblioteca, las demás plataformas esperan tras «Más plataformas».
+  const more = dialog.getByRole("button", { name: "Más plataformas" });
+  if (!(await tile.isVisible()) && (await more.isVisible())) await more.click();
+  await tile.click();
 }
 
 export async function addGame(

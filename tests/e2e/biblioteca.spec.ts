@@ -231,3 +231,18 @@ test("listas personales", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("button", { name: /Para el verano\s*1/ })).toBeVisible();
 });
+
+test("«Elegido» enseña solo los datos que hay, sin filas de «---»", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  const chosen = page.getByRole("region", { name: "Elegido" });
+  // A Short Hike, el primero, aún no se ha jugado.
+  await expect(chosen).toContainText("A Short Hike");
+  await expect(chosen).not.toContainText("---");
+  await expect(chosen).toContainText("Sin partidas todavía");
+  // Hades tiene horas y nota: se ven, sin el aviso.
+  await cards(page).filter({ hasText: "Hades" }).getByRole("link").hover();
+  await expect(chosen).toContainText("Hades");
+  await expect(chosen).toContainText("41 h");
+  await expect(chosen).not.toContainText("Sin partidas todavía");
+});

@@ -249,3 +249,23 @@ test("en un móvil estrecho, «Añadir a la biblioteca» va en una sola línea",
   });
   expect(lines).toBe(1);
 });
+
+test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan antes", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  const head = page.locator("main header").first();
+  await expect(head.getByRole("heading", { level: 1, name: "Biblioteca" })).toBeVisible();
+  // Dos filas: título con las vistas, y el recuento en una sola línea.
+  expect((await head.boundingBox())!.height).toBeLessThanOrEqual(110);
+  const credits = head.getByText(/^22 títulos · 24 copias$/);
+  const lines = await credits.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
+  // Importar de Steam sale de la cabecera en el móvil; sigue en Ajustes.
+  await expect(head.getByRole("link", { name: "Importar de Steam" })).toBeHidden();
+  await page.goto("/ajustes");
+  await expect(page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" })).toBeVisible();
+});
