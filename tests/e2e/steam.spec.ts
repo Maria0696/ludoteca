@@ -3,7 +3,7 @@ import type { CatalogGame } from "../../src/lib/catalog";
 import { emptyLibrary, createCopy, createGame } from "../../src/lib/model";
 import { parseSteamProfile, type SteamGame } from "../../src/lib/steam";
 import { planSteamImport } from "../../src/lib/steam-import";
-import { addGame, openApp } from "./helpers";
+import { addGame, contrastRatio, expectCarcasaText, openApp } from "./helpers";
 
 const GAMES: SteamGame[] = [
   { appId: 10, name: "Faro sin Mar", minutes: 600, icon: null },
@@ -144,4 +144,46 @@ test("sin clave de Steam, el servidor lo dice sin fallar", async ({ page, reques
   await openApp(page, "/importar");
   await searchProfile(page);
   await expect(page.getByRole("alert").filter({ hasText: "STEAM_API_KEY" })).toBeVisible();
+});
+
+test("la copia de datos va en las letras de la carcasa y se lee", async ({ page }) => {
+  await mockSteam(page);
+  await openApp(page, "/importar");
+  const family = (el: import("@playwright/test").Locator) => el.evaluate((e) => getComputedStyle(e).fontFamily);
+  expect(await family(page.getByRole("heading", { level: 1, name: "Copiar desde Steam" }))).toMatch(/Press.Start.2P/i);
+  await expectCarcasaText(page.locator("main"));
+  // La etiqueta del perfil, sobre el tono más claro del degradado azul (#2750ac).
+  const label = await page.getByText("Tu perfil de Steam", { exact: true }).evaluate((e) => getComputedStyle(e).color);
+  expect(contrastRatio(label, "rgb(39, 80, 172)")).toBeGreaterThanOrEqual(4.5);
+
+  await searchProfile(page);
+  await expect(page.getByText("3 juegos para copiar")).toBeVisible();
+  await expectCarcasaText(page.locator("main"));
+  const oldFonts = await page.locator("main").evaluate((root) =>
+    [root, ...root.querySelectorAll("*")].filter((el) => /Oxanium|Share Tech/i.test(getComputedStyle(el).fontFamily)).length,
+  );
+  expect(oldFonts).toBe(0);
+
+  // Con la cola vacía, el botón desactivado se lee: no es un dorado apagado.
+  for (const name of [/Faro sin Mar/, /Cocina Galáctica/, /Reino Pendiente/]) await page.getByRole("button", { name }).click();
+  const go = page.getByRole("button", { name: "Copiar a la ludoteca" });
+  await expect(go).toBeDisabled();
+  const [opacity, color, background] = await go.evaluate((e) => {
+    const s = getComputedStyle(e);
+    return [s.opacity, s.color, s.backgroundColor];
+  });
+  expect(opacity).toBe("1");
+  expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(4.5);
+});
+
+test("un nombre largo de Steam no desborda la lista en el móvil", async ({ page }) => {
+  const long = "The Elder Scrolls V: Skyrim Special Edition Anniversary Upgrade Pack";
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockSteam(page, [{ appId: 40, name: long, minutes: 6000, icon: null }], {});
+  await openApp(page, "/importar");
+  await searchProfile(page);
+  const row = page.getByRole("button", { name: new RegExp(long.slice(0, 20)) });
+  await expect(row).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  expect(await row.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
 });
