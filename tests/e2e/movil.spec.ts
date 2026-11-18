@@ -169,3 +169,42 @@ test("¿A qué juego? en el móvil: las propuestas primero y la sesión en una h
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
 });
+
+/** Que se vea entero y que la barra inferior no lo tape. */
+async function expectReachable(page: import("@playwright/test").Page, target: import("@playwright/test").Locator, what: string) {
+  await expect(target, `${what}: a la vista`).toBeInViewport({ ratio: 1 });
+  const nav = (await page.getByRole("navigation", { name: "Principal" }).last().boundingBox())!;
+  const box = (await target.boundingBox())!;
+  expect(box.y + box.height, `${what}: por encima de la barra inferior`).toBeLessThanOrEqual(nav.y);
+}
+
+test("en el móvil, lo frecuente queda al alcance del pulgar sin bajar", async ({ page }) => {
+  await loadDemo(page);
+  // Un texto que no cabe en su botón se parte o se corta: ni lo uno ni lo otro.
+  const fits = async (target: import("@playwright/test").Locator, what: string) => {
+    const [w, h] = await target.evaluate((el) => [el.scrollWidth - el.clientWidth, el.scrollHeight - el.clientHeight]);
+    expect(w, `${what}: el texto cabe a lo ancho`).toBeLessThanOrEqual(0);
+    expect(h, `${what}: el texto cabe a lo alto`).toBeLessThanOrEqual(0);
+  };
+  for (const [width, height] of [[390, 844], [360, 740]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    const played = page.getByRole("button", { name: "He jugado hoy" });
+    await expectReachable(page, played, `Inicio a ${width}px, «He jugado hoy»`);
+    await fits(played, `Inicio a ${width}px, «He jugado hoy»`);
+    await fits(page.getByRole("link", { name: "Ver ficha" }), `Inicio a ${width}px, «Ver ficha»`);
+    // Al recorrer las partidas, las acciones siguen a mano.
+    await page.getByRole("group", { name: "Partidas guardadas" }).getByRole("button").last().click();
+    await expectReachable(page, page.getByRole("button", { name: /^(He jugado hoy|Retomar)$/ }), `Inicio a ${width}px, acción de la partida elegida`);
+
+    await page.goto("/biblioteca");
+    await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+    // Los cinco estados a la vista, sin desplazar la fila, y del tamaño de un dedo.
+    for (const radio of await page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio").all()) {
+      await expectReachable(page, radio, `Ficha a ${width}px, estado «${await radio.textContent()}»`);
+      expect((await radio.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    await expectReachable(page, page.getByRole("button", { name: /Inserta moneda/ }), `Ficha a ${width}px, «Inserta moneda»`);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  }
+});

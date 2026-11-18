@@ -9,7 +9,8 @@
   --snap: cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  /* «clip» y no «hidden»: recorta igual sin impedir que las acciones se peguen al pulgar en el móvil. */
+  overflow: clip;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: calc(100dvh - var(--bottombar));
@@ -605,6 +606,25 @@
   }
   .slotText b {
     font-size: 22px;
+  }
+  /* Las acciones de la partida elegida, siempre a mano: pegadas justo encima de la barra inferior. */
+  .panelActions {
+    position: sticky;
+    bottom: calc(var(--bottombar) + 10px);
+    z-index: 2;
+    margin: 0 -16px -16px;
+    padding: 12px 16px 16px;
+    background: linear-gradient(#05060e00, #05060ef2 28%);
+  }
+  .panelActions {
+    flex-wrap: nowrap;
+  }
+  .panelActions .act {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 16px;
+    font-size: 20px;
+    white-space: nowrap;
   }
   .covers {
     grid-template-columns: repeat(3, minmax(0, 1fr));
