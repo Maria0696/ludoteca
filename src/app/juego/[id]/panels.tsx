@@ -9,7 +9,6 @@ import {
   type Copy,
   type Game,
   type GameList,
-  type GameStatus,
   FORMAT_LABEL,
   MODE_LABEL,
   MOOD_LABEL,
@@ -20,14 +19,6 @@ import { Row } from "./Inventory";
 import { progressPercent } from "./progress";
 
 type Update = (patch: Partial<Game>) => void;
-
-export const STATUS_COLOR: Record<GameStatus, string> = {
-  pendiente: "#a1a1aa",
-  jugando: "#4ade80",
-  pausado: "#fbbf24",
-  completado: "#60a5fa",
-  abandonado: "#71717a",
-};
 
 const RECORD_COLORS = ["#ff6b6b", "#ffb13d", "#ffe45c", "#5dff8b", "#57e6ff", "#a79bff", "#ff7ad9", "#f4f4f5"];
 

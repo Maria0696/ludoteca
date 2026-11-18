@@ -1,16 +1,15 @@
 /* La ficha como aventura: mapa, misiones y récords en ventanas de píxeles. */
 .page {
+  /* Los nombres de la ficha, apuntando a los tokens comunes de la carcasa (globals.css). */
   --accent: #e0705a;
-  --paper: #f3ead2;
-  --gold: #ffd76a;
-  --ink: #12101f;
-  --navy: #1f2140;
-  --soft: #c9cdf0;
-  --arcade: var(--font-arcade), "Courier New", monospace;
-  --term: var(--font-terminal), "Courier New", monospace;
+  --ink: var(--window);
+  --navy: var(--raised);
+  --soft: var(--muted);
+  --arcade: var(--font-pixel);
+  --term: var(--font-term);
   margin-bottom: calc(-1 * (var(--bottombar) + 64px));
   padding-bottom: calc(var(--bottombar) + 56px);
-  background: #1a1526;
+  background: var(--bg);
   color: var(--paper);
   font-family: var(--term);
   font-size: 23px;

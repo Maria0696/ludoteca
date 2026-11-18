@@ -377,3 +377,23 @@ test("la app habla español: sin rótulos en inglés ni jerga técnica", async (
   await page.goto("/ajustes");
   await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
 });
+
+test("los estados tienen el mismo color en la biblioteca, la ficha y el alta", async ({ page }) => {
+  // Los colores de --st-* en globals.css: los mismos que en las cabinas de la biblioteca.
+  const expected = { Pendiente: "rgb(255, 233, 77)", Completado: "rgb(63, 242, 255)", Abandonado: "rgb(255, 77, 109)" };
+  const dots = (group: Locator) =>
+    Promise.all(
+      Object.keys(expected).map(async (name) => [
+        name,
+        await group.getByRole("radio", { name }).evaluate((el) => getComputedStyle(el.firstElementChild!).backgroundColor),
+      ]),
+    ).then(Object.fromEntries);
+
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  expect(await dots(page.getByRole("radiogroup", { name: "Estado" }))).toEqual(expected);
+
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  expect(await dots(page.getByRole("dialog").getByRole("radiogroup", { name: "Estado" }))).toEqual(expected);
+});
