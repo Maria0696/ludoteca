@@ -12,6 +12,7 @@ import { describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
 import { DEMO_ART } from "@/lib/demo-art";
 import { useLibrary } from "@/lib/store";
 import { DeleteAllGames } from "./DeleteAllGames";
+import { HowItWorks } from "./HowItWorks";
 import styles from "./settings.module.css";
 
 export function SettingsView() {
@@ -55,6 +56,8 @@ export function SettingsView() {
   return (
     <div className={styles.page}>
       <h1 className={`screen-title ${styles.title}`}>Ajustes</h1>
+
+      <HowItWorks />
 
       <section className={`window ${styles.row}`} aria-labelledby="h-datos">
         <div className={styles.label}>

@@ -416,3 +416,17 @@ test("sin almacenamiento, la ficha abre sin pistas", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
   await expect(keeper).not.toContainText("Cada casilla");
 });
+
+test("en el ordenador, el enlace «Cómo funciona» de la guardiana se puede pulsar", async ({ page }) => {
+  await page.addInitScript((key) => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem(key);
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  }, PISTAS);
+  await loadDemo(page);
+  const keeper = await openFicha(page, /Hades/);
+  // La cabecera de la ficha sube sobre el mapa: su hueco no puede tapar el enlace.
+  await keeper.getByRole("link", { name: "Cómo funciona" }).click({ timeout: 5000 });
+  await expect(page.getByRole("region", { name: "Cómo funciona" })).toBeInViewport();
+});

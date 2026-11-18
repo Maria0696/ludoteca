@@ -433,3 +433,21 @@ test("en la ficha, el punto del estado elegido se ve sobre el blanco", async ({ 
   const ring = await chosen.evaluate((el) => getComputedStyle(el.firstElementChild!).boxShadow);
   expect(ring).toContain("rgb(18, 16, 31)");
 });
+
+test("Ajustes explica cómo funciona la ludoteca y deja volver a ver las pistas", async ({ page }) => {
+  await openApp(page, "/ajustes");
+  const help = page.getByRole("region", { name: "Cómo funciona" });
+  // La primera ventana de Ajustes, con su marco de papel.
+  expect(await page.locator("main section.window").first().getAttribute("id")).toBe("como-funciona");
+  expect(await help.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  for (const text of [
+    "Llegó a tu ludoteca", "Tu copia", "Primera partida", "En marcha", "Tu nota", "Terminado", "Al 100 %",
+    "NUEVA PARTIDA", "EN PARTIDA", "PAUSA", "¡SUPERADO!", "FIN DEL JUEGO", "Inserta moneda",
+  ]) {
+    await expect(help).toContainText(text);
+  }
+  await expectCarcasaText(help);
+  await help.getByRole("button", { name: "Volver a ver las pistas de la guardiana" }).click();
+  await expect(page.getByText("Las pistas volverán a salir en las fichas")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("ludoteca:pistas-vistas"))).toBeNull();
+});

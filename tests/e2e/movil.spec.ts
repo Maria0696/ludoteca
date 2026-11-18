@@ -269,3 +269,27 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
   await page.goto("/ajustes");
   await expect(page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" })).toBeVisible();
 });
+
+test("el enlace «Cómo funciona» de la guardiana lleva a la ventana a la vista", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem("ludoteca:pistas-vistas");
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  });
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  await page.getByRole("status", { name: "Guardiana" }).getByRole("link", { name: "Cómo funciona" }).click();
+  const help = page.getByRole("region", { name: "Cómo funciona" });
+  await expect(help).toBeInViewport();
+  const bar = (await page.locator("header").first().boundingBox())!;
+  expect((await help.boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+  // Nada de la ventana se sale de su marco.
+  const spill = await help.evaluate((el) => {
+    const right = el.getBoundingClientRect().right;
+    return Math.max(...[...el.querySelectorAll("*")].map((c) => c.getBoundingClientRect().right - right));
+  });
+  expect(spill, "algo se sale de «Cómo funciona»").toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});

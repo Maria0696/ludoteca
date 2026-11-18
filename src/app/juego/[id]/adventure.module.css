@@ -185,6 +185,12 @@
   gap: clamp(16px, 2.6vw, 32px);
   align-items: end;
   margin-top: clamp(-96px, -7vw, -44px);
+  /* La cabecera sube sobre el mapa: su hueco no tapa el cuadro de la guardiana; solo lo que se ve recibe clics. */
+  pointer-events: none;
+}
+.coverWrap,
+.identity > * {
+  pointer-events: auto;
 }
 .coverWrap {
   position: relative;
