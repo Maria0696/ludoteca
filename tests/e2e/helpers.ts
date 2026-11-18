@@ -63,3 +63,16 @@ export async function expectCarcasaText(root: Locator): Promise<void> {
 export function cards(page: Page) {
   return page.getByRole("list", { name: "Juegos" }).getByRole("listitem").filter({ has: page.getByRole("link") });
 }
+
+/** Contraste WCAG entre dos colores `rgb()`/`rgba()` tal como los da getComputedStyle (se ignora la transparencia). */
+export function contrastRatio(fg: string, bg: string): number {
+  const luminance = (color: string) => {
+    const [r, g, b] = (color.match(/[\d.]+/g) ?? []).slice(0, 3).map((v) => {
+      const c = Number(v) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}
