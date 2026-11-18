@@ -50,6 +50,45 @@ test("la barra superior: Ludoteca en píxeles y el destino actual en dorado", as
   expect(brand).toMatch(/Press.Start.2P/i);
 });
 
+test("la barra superior cabe en cualquier ancho de ordenador sin aplastar sus botones", async ({ page }) => {
+  // Con la demostración el chip de modo es el más largo: «Modo local · Demostración».
+  await loadDemo(page);
+  await page.goto("/deseos");
+  const header = page.locator("header").first();
+  for (let width = 900; width <= 1440; width += 20) {
+    await page.setViewportSize({ width, height: 800 });
+    const m = await header.evaluate((el) => ({
+      page: document.documentElement.scrollWidth - window.innerWidth,
+      bar: el.scrollWidth - el.clientWidth,
+      right: Math.max(...[...el.children].map((c) => c.getBoundingClientRect().right)) - el.getBoundingClientRect().right,
+      buttons: [...el.querySelectorAll(".btn")]
+        .filter((b) => b.getBoundingClientRect().width > 0)
+        .map((b) => Math.round(b.getBoundingClientRect().width)),
+    }));
+    expect(m.page, `la página se desplaza a los lados a ${width}px`).toBeLessThanOrEqual(0);
+    expect(m.bar, `la barra desborda a ${width}px`).toBeLessThanOrEqual(0);
+    expect(m.right, `algo se sale de la barra a ${width}px`).toBeLessThanOrEqual(0);
+    for (const w of m.buttons) expect(w, `un botón de la barra se aplasta a ${width}px`).toBeGreaterThanOrEqual(36);
+    // Si se ve el buscador, su texto de ayuda cabe entero.
+    const search = header.getByRole("combobox", { name: "Buscar en tu biblioteca" });
+    if (await search.isVisible()) {
+      const room = await search.evaluate((el) => {
+        const s = getComputedStyle(el);
+        const ctx = document.createElement("canvas").getContext("2d")!;
+        ctx.font = `${s.fontSize} ${s.fontFamily}`;
+        const box = el.getBoundingClientRect().width;
+        const free = box - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - parseFloat(s.borderLeftWidth) - parseFloat(s.borderRightWidth);
+        return free - ctx.measureText((el as HTMLInputElement).placeholder).width;
+      });
+      expect(room, `el texto del buscador se corta a ${width}px`).toBeGreaterThanOrEqual(0);
+    }
+  }
+  // Compacta, la barra sigue diciendo qué es cada cosa.
+  await page.setViewportSize({ width: 960, height: 800 });
+  await expect(header.getByRole("link", { name: /Modo local · Demostración/ })).toBeVisible();
+  await expect(header.getByRole("button", { name: "Añadir juego" })).toBeVisible();
+});
+
 test("los avisos: letra de la carcasa y «Deshacer» visible", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/");
