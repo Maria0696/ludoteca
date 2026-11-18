@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import { addGame, cards, loadDemo, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 test("pasar un deseo a la biblioteca conservando sus datos", async ({ page }) => {
   await openApp(page, "/deseos");
@@ -100,6 +100,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const dialog = other.getByRole("dialog");
   await expect(dialog.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
   await expect(dialog.getByText(/mismo título que «Celeste»/)).toBeVisible();
+  await expectCarcasaText(dialog); // la lista de duplicados, en la carcasa
   // Por defecto se mantiene lo propio; aquí elegimos conservar los dos.
   await expect(dialog.getByRole("radio", { name: "Mantener el mío" })).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("radio", { name: "Conservar los dos" }).click();
@@ -119,14 +120,25 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await import("node:fs/promises").then((fs) => fs.writeFile(bad, JSON.stringify({ hola: "mundo" })));
   await other.getByTestId("importar-archivo").setInputFiles(bad);
   await expect(other.getByRole("alert").filter({ hasText: "No se ha importado nada" })).toBeVisible();
+  await expectCarcasaText(other.locator("main")); // el aviso de error, también
   await context.close();
 });
 
 test("datos de demostración separados y retirables", async ({ page }) => {
   await loadDemo(page);
+  // Sin juegos propios no se habla de «0 juegos tuyos».
+  await page.goto("/ajustes");
+  await expect(page.getByText(/^Ahora hay \d+ elementos de demostración y ningún juego tuyo\.$/)).toBeVisible();
+  await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expect(page.getByRole("dialog").getByText("No tienes juegos tuyos todavía: solo se va lo de demostración.")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
   await addGame(page, { title: "Mi juego real", platform: "PC", format: "Digital" });
   await page.goto("/ajustes");
+  await expect(page.getByText(/^Ahora hay \d+ elementos de demostración junto a 1 juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expect(page.getByRole("dialog").getByText(/Tu juego no se toca\.$/)).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: /Retirar \d+ elementos/ }).click();
   await expect(page.getByText("No hay datos de demostración cargados.")).toBeVisible();
   await page.goto("/biblioteca");

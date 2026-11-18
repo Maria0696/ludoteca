@@ -1,57 +1,52 @@
+/* Ajustes en la carcasa: cada ajuste es una ventana, con su explicación a la izquierda. */
 .page {
   padding: 36px var(--gutter) 0;
   max-width: 1180px;
 }
 .title {
-  font-family: var(--font-display);
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 .row {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 32px;
-  padding: 32px 0;
-  border-top: 1px solid var(--line);
-}
-.row:first-of-type {
-  border-top: 0;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 28px;
+  margin-bottom: 28px;
 }
 .label {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   align-content: start;
 }
+/* Mismo estilo que el título de una ventana. */
 .label h2 {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gold);
 }
 .label p {
-  font-size: 14px;
   color: var(--muted);
+  font-family: var(--font-term);
+  font-size: 20px;
+  line-height: 1.2;
   max-width: 44ch;
 }
+/* El contenido de la ventana: sin marco propio. */
 .panel {
   display: grid;
   gap: 14px;
   align-content: start;
-  padding: 18px 20px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-panel);
-  font-size: 14px;
+  font-family: var(--font-term);
+  font-size: 21px;
+  line-height: 1.2;
   max-width: 68ch;
 }
 .modeLine {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 21px;
 }
 .modeLine svg {
   width: 18px;
@@ -63,12 +58,18 @@
   flex-wrap: wrap;
 }
 .lastBackup {
-  font-size: 15px;
+  font-size: 21px;
+}
+.note {
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: 18px;
 }
 .errors {
   list-style: disc;
   padding-left: 18px;
   margin-top: 6px;
+  font-size: 20px;
 }
 .conflicts {
   display: grid;
@@ -79,42 +80,38 @@
   gap: 8px;
 }
 .conflictsHead h3 {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
 }
 .conflict {
   display: grid;
   gap: 8px;
   padding: 12px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
+}
+.summary {
+  cursor: pointer;
+  font-size: 21px;
+}
+.credits {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.15;
+}
+.credits a {
+  color: var(--text);
 }
 
 @media (max-width: 899px) {
   .page {
     padding-top: 18px;
   }
-  .title {
-    font-size: 40px;
-  }
   .row {
     grid-template-columns: 1fr;
     gap: 14px;
-    padding: 24px 0;
   }
-}
-
-.summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-.credits {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.credits a {
-  color: var(--text);
-  font-weight: 600;
 }

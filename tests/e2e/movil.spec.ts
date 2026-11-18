@@ -3,6 +3,29 @@ import { cards, choosePlatform, expectCarcasaText, loadDemo } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
 
+test("Estadísticas, ¿A qué juego? y Ajustes caben en el móvil", async ({ page }) => {
+  await loadDemo(page);
+  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+
+  await page.goto("/estadisticas");
+  await expect(page.getByRole("region", { name: "En cifras" })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  // Las cifras grandes caben en su celda.
+  const spill = await page.getByRole("region", { name: "En cifras" }).locator("dd").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+  for (const s of spill) expect(s).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+
+  await page.goto("/que-juego");
+  await expect(page.getByRole("heading", { name: /^Mis propuestas/ })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+
+  await page.goto("/ajustes");
+  await expect(page.getByRole("heading", { level: 1, name: "Ajustes" })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+});
+
 test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
   await loadDemo(page);
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

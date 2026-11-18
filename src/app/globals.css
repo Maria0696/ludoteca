@@ -42,7 +42,7 @@
   /* next/font define en <html> --font-arcade, --font-terminal, --font-display y --font-text. */
   --font-pixel: var(--font-arcade), "Courier New", monospace;
   --font-term: var(--font-terminal), "Courier New", monospace;
-  /* Texto de las pantallas aún sin pasar a la carcasa (pasos 2 y 3). */
+  /* Texto de las pantallas aún sin pasar a la carcasa (paso 4: catálogo, Importar Steam, alta y ficha). */
   --font: var(--font-text), system-ui, sans-serif;
   --radius-control: 0;
   --radius-field: 0;
@@ -676,10 +676,14 @@ dialog.sheet:not([open]) {
   color: var(--gold);
   flex: 1;
 }
+/* El texto suelto de los diálogos, en la letra de terminal de la carcasa. */
 .sheet-body {
   padding: 22px;
   display: grid;
   gap: 20px;
+  font-family: var(--font-term);
+  font-size: 21px;
+  line-height: 1.2;
 }
 .sheet-foot {
   position: sticky;

@@ -59,12 +59,13 @@ export function PickerView() {
   return (
     <div className={styles.page}>
       <header className={styles.head}>
-        <h1>¿A qué juego?</h1>
-        <p className="muted">Solo con juegos de tu biblioteca que tienes disponibles. Las reglas se explican en cada propuesta.</p>
+        <h1 className="screen-title">¿A qué juego?</h1>
+        <p>Solo con juegos de tu biblioteca que tienes disponibles. Las reglas se explican en cada propuesta.</p>
       </header>
 
       <div className={styles.layout}>
-        <form className={styles.form} onSubmit={(e) => e.preventDefault()} aria-label="Preferencias de esta sesión">
+        <form className={`window ${styles.form}`} onSubmit={(e) => e.preventDefault()} aria-labelledby="h-sesion">
+          <h2 id="h-sesion">Tu sesión</h2>
           <Choice label="Tiempo para esta sesión">
             {TIMES.map((t) => (
               <button key={t.label} type="button" role="radio" aria-checked={input.minutes === t.value} onClick={() => set("minutes", t.value)}>
@@ -108,11 +109,11 @@ export function PickerView() {
           </Choice>
         </form>
 
-        <section className={styles.results} aria-labelledby="h-propuestas" aria-live="polite">
+        <section className={`window ${styles.results}`} aria-labelledby="h-propuestas" aria-live="polite">
           <div className={styles.resultsHead}>
             <h2 id="h-propuestas">
               {result.picks.length ? "Mis propuestas" : "Sin propuestas"}
-              <span className="muted num"> · {result.eligible} {result.eligible === 1 ? "candidato" : "candidatos"}</span>
+              <span className="num"> · {result.eligible} {result.eligible === 1 ? "candidato" : "candidatos"}</span>
             </h2>
             <div className={styles.resultsActions}>
               {result.picks.length > 0 && result.eligible > result.picks.length && (

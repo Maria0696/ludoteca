@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -120,9 +120,100 @@ test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la
 });
 
 test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async ({ page }) => {
-  await openApp(page, "/estadisticas");
-  // Estadísticas aún no está migrada (paso 3): su título usa Bricolage.
-  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Bricolage|Albert/);
+  // Contenido fijo: la prueba no depende de que quede alguna pantalla sin migrar.
+  await page.setContent(`<main><p style="font-family: 'Albert Sans'">antigua</p><p style="font-family: VT323; font-size: 14px">pequeña</p></main>`);
+  await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Albert[\s\S]*VT323 14px/);
+});
+
+test("Estadísticas en la carcasa: título en píxeles, una ventana por sección y todo legible", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/estadisticas");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Estadísticas" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["En cifras", "Copias por plataforma", "Títulos por estado", "Formato de las copias", "Horas y gasto registrados"]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await expectCarcasaText(page.locator("main"));
+});
+
+test("Estadísticas: las cifras grandes no se parten ni se salen a ningún ancho", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Juego carísimo", platform: "PC", format: "Físico" });
+  await cards(page).getByRole("link", { name: /Juego carísimo/ }).click();
+  await page.getByRole("button", { name: /^Horas jugadas/ }).click();
+  await page.getByLabel("Horas jugadas").fill("12345");
+  await page.getByLabel("Horas jugadas").press("Enter");
+  await page.getByRole("button", { name: /^Precio/ }).click();
+  await page.getByLabel("Precio").fill("12345,67");
+  await page.getByLabel("Precio").press("Enter");
+  await expect(page.getByText("12.345,67 €").first()).toBeVisible();
+
+  await page.goto("/estadisticas");
+  const registro = page.getByRole("region", { name: "Horas y gasto registrados" });
+  await expect(registro.getByText("12.345,67 €")).toBeVisible();
+  for (const width of [390, 920, 1000, 1100, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    // Cada cifra en una sola línea y dentro de su celda.
+    const cells = await page.locator("main dd").evaluateAll((els) =>
+      els.map((e) => ({
+        text: e.textContent,
+        spill: e.scrollWidth - e.clientWidth,
+        lines: Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)),
+      })),
+    );
+    for (const c of cells) {
+      expect(c.spill, `«${c.text}» se sale a ${width}px`).toBeLessThanOrEqual(0);
+      expect(c.lines, `«${c.text}» se parte a ${width}px`).toBe(1);
+    }
+  }
+});
+
+test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el arte detrás", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/que-juego");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "¿A qué juego?" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  // Un form con nombre accesible tiene el rol «form»; la sección de resultados, «region».
+  for (const box of [page.getByRole("form", { name: "Tu sesión" }), page.getByRole("region", { name: /^Mis propuestas/ })]) {
+    expect(await box.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  const picks = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) });
+  for (const shadow of await picks.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(shadow).toBe("none");
+  await expect(picks.first().locator("img[aria-hidden]")).toHaveCount(1); // el arte difuminado se conserva
+  await expectCarcasaText(page.locator("main"));
+});
+
+test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Ajustes" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["Dónde se guardan tus datos", "Copia de seguridad", "Eliminar todos los juegos"]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await page.getByText(/Ver las \d+ obras/).click(); // créditos desplegados
+  await expectCarcasaText(page.locator("main"));
+  // Los avisos de eliminar todo, en la carcasa.
+  await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
+  const dialog = page.getByRole("dialog");
+  await expectCarcasaText(dialog);
+  await dialog.getByRole("button", { name: "Sí, continuar" }).click();
+  await expectCarcasaText(dialog);
+  await dialog.getByText("Entiendo que mis juegos se borrarán para siempre").click();
+  await dialog.getByRole("button", { name: "Continuar" }).click();
+  await expect(dialog.getByRole("textbox")).toBeVisible();
+  await expectCarcasaText(dialog);
+  // En el móvil el último aviso es una hoja a lo ancho: nada se sale de ella.
+  await page.setViewportSize({ width: 360, height: 780 });
+  expect(await dialog.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  for (const s of await dialog.getByRole("button").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth))) expect(s).toBeLessThanOrEqual(0);
+});
+
+test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expectCarcasaText(page.getByRole("dialog"));
 });
 
 test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", async ({ page }) => {
