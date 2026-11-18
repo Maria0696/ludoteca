@@ -432,3 +432,33 @@ test("en el ordenador, el enlace «Cómo funciona» de la guardiana se puede pul
   await link.click({ timeout: 5000 });
   await expect(page.getByRole("region", { name: "Cómo funciona" })).toBeInViewport();
 });
+
+test("con el almacenamiento lleno, la pista no se repite en cada visita", async ({ page }) => {
+  await loadDemo(page);
+  await page.addInitScript(() => {
+    localStorage.removeItem("ludoteca:pistas-vistas");
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === "ludoteca:pistas-vistas") throw new DOMException("cuota llena", "QuotaExceededError");
+      return original.call(this, key, value);
+    };
+  });
+  const keeper = await openFicha(page, /Hades/);
+  await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
+  // Si no puede recordarse, mejor no enseñarla que repetirla siempre.
+  await expect(keeper).not.toContainText("Cada casilla");
+});
+
+test("una ficha que no existe no gasta la pista del mapa", async ({ page }) => {
+  await page.addInitScript((key) => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem(key);
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  }, PISTAS);
+  await loadDemo(page);
+  await page.goto("/juego/no-existe");
+  await expect(page.getByRole("heading", { name: "Este juego no está en tu biblioteca" })).toBeVisible();
+  const keeper = await openFicha(page, /Hades/);
+  await expect(keeper).toContainText("Cada casilla");
+});

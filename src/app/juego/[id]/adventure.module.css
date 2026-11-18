@@ -1067,14 +1067,20 @@ button.slot:hover {
     height: clamp(200px, 30svh, 250px);
     min-height: 0;
     overflow: visible;
-    margin-bottom: 92px;
+    margin-bottom: 76px;
   }
+  /* Con una pista el cuadro es más alto: se deja su hueco debajo del mapa. */
+  .map:has(.talkHelp) {
+    margin-bottom: 160px;
+  }
+  /* El cuadro cuelga del borde del mapa y crece hacia abajo: nunca tapa las casillas. */
   .talk {
     left: 20px;
     right: 20px;
     width: auto;
     translate: 0 0;
-    bottom: -80px;
+    top: calc(100% - 8px);
+    bottom: auto;
     min-height: 64px;
     padding: 14px 14px 10px;
     font-size: 22px;

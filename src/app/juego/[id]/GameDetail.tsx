@@ -67,9 +67,11 @@ export function GameDetail({ id }: { id: string }) {
     const vistas = pistasVistas();
     return !vistas.has("mapa") ? "mapa" : !vistas.has("datos") ? "datos" : null;
   });
+  // Solo se gasta si la ficha existe: un enlace roto no se come la pista.
+  const hasGame = library.games.some((g) => g.id === id);
   useEffect(() => {
-    if (pista) marcarPista(pista);
-  }, [pista]);
+    if (pista && hasGame) marcarPista(pista);
+  }, [pista, hasGame]);
   const columnsRef = useRef<HTMLDivElement>(null);
 
   const game = library.games.find((g) => g.id === id);

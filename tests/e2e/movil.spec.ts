@@ -293,3 +293,33 @@ test("el enlace «Cómo funciona» de la guardiana lleva a la ventana a la vista
   expect(spill, "algo se sale de «Cómo funciona»").toBeLessThanOrEqual(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });
+
+test("en el móvil, la pista de la guardiana no tapa las casillas del mapa ni el título", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem("ludoteca:pistas-vistas");
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  });
+  await loadDemo(page);
+  for (const [width, height] of [[390, 844], [360, 740]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => localStorage.removeItem("ludoteca:pistas-vistas"));
+    await page.goto("/biblioteca");
+    await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+    const keeper = page.getByRole("status", { name: "Guardiana" });
+    await expect(keeper).toContainText("Toca una");
+    // «Toca una»: todas las casillas tienen que poder tocarse mientras lo dice.
+    for (const node of await page.getByRole("button", { name: /, (conseguido|pendiente)$/ }).all()) {
+      const covered = await node.evaluate((el) => {
+        const b = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        return !(hit && (hit === el || el.contains(hit)));
+      });
+      expect(covered, `${await node.getAttribute("aria-label")} tapada a ${width}px`).toBe(false);
+    }
+    const talk = (await keeper.boundingBox())!;
+    const title = (await page.getByRole("heading", { level: 1, name: "Hades" }).boundingBox())!;
+    expect(talk.y + talk.height, `el cuadro tapa el título a ${width}px`).toBeLessThanOrEqual(title.y);
+  }
+});

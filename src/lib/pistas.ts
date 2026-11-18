@@ -19,6 +19,8 @@ const TODAS = Object.keys(PISTAS) as PistaId[];
 export function pistasVistas(): Set<PistaId> {
   try {
     const raw = localStorage.getItem(PISTAS_KEY);
+    // Si no se puede escribir (cuota llena), la pista no se recordaría: mejor no enseñar ninguna.
+    localStorage.setItem(PISTAS_KEY, raw ?? "[]");
     const ids = raw ? (JSON.parse(raw) as unknown) : [];
     return new Set(Array.isArray(ids) ? ids.filter((id): id is PistaId => TODAS.includes(id as PistaId)) : []);
   } catch {
