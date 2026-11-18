@@ -451,3 +451,16 @@ test("Ajustes explica cómo funciona la ludoteca y deja volver a ver las pistas"
   await expect(page.getByText("Las pistas volverán a salir en las fichas")).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("ludoteca:pistas-vistas"))).toBeNull();
 });
+
+test("las ventanas de Ajustes ocupan todo el ancho de la pantalla", async ({ page }) => {
+  for (const width of [1920, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await openApp(page, "/ajustes");
+    const gutter = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")));
+    for (const box of await page.locator("main section.window").all()) {
+      const b = (await box.boundingBox())!;
+      // Hasta el margen derecho de la página (el marco de papel sobresale 4 px).
+      expect(Math.abs(width - gutter - (b.x + b.width)), `una ventana se corta a media pantalla a ${width}px`).toBeLessThanOrEqual(24);
+    }
+  }
+});

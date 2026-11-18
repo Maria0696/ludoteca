@@ -179,12 +179,18 @@ export function AdventureMap({
         <span className={styles.talkName} aria-hidden>
           Guardiana
         </span>
-        <p>{line}</p>
-        {help && (
-          <Link href="/ajustes#como-funciona" className={styles.talkHelp}>
-            Cómo funciona
-          </Link>
-        )}
+        <p>
+          {line}
+          {/* En la misma línea que la pista: el cuadro no crece y no tapa el mapa. */}
+          {help && (
+            <>
+              {" "}
+              <Link href="/ajustes#como-funciona" className={styles.talkHelp}>
+                Cómo funciona
+              </Link>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

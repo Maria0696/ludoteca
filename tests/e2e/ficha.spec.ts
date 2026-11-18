@@ -462,3 +462,29 @@ test("una ficha que no existe no gasta la pista del mapa", async ({ page }) => {
   const keeper = await openFicha(page, /Hades/);
   await expect(keeper).toContainText("Cada casilla");
 });
+
+test("en el ordenador, la pista de la guardiana no tapa ninguna casilla del mapa ni su nombre", async ({ page }) => {
+  await loadDemo(page);
+  for (const [width, height] of [[1920, 1000], [1920, 880], [1440, 900], [1366, 650], [1280, 800], [1024, 768]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => localStorage.removeItem("ludoteca:pistas-vistas"));
+    const keeper = await openFicha(page, /Hades/);
+    await expect(keeper).toContainText("Toca una");
+    const talk = (await keeper.boundingBox())!;
+    // Tampoco la carátula tapa el cuadro: empieza a su derecha.
+    const cover = (await page.locator('[class*="coverWrap"]').first().boundingBox())!;
+    expect(talk.x, `la carátula tapa el cuadro a ${width}px`).toBeGreaterThanOrEqual(cover.x + cover.width);
+    // Las casillas y sus nombres (los rótulos van tras cada botón).
+    const spots = await page.getByRole("button", { name: /, (conseguido|pendiente)$/ }).evaluateAll((els) =>
+      els.flatMap((el) => [el, el.nextElementSibling].filter(Boolean).map((e) => {
+        const b = (e as Element).getBoundingClientRect();
+        return { name: el.getAttribute("aria-label")!, x: b.x, y: b.y, w: b.width, h: b.height };
+      })),
+    );
+    for (const s of spots) {
+      if (!s.w) continue;
+      const overlap = s.x < talk.x + talk.width && s.x + s.w > talk.x && s.y < talk.y + talk.height && s.y + s.h > talk.y;
+      expect(overlap, `la pista tapa «${s.name}» a ${width}px`).toBe(false);
+    }
+  }
+});

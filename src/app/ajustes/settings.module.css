@@ -1,7 +1,6 @@
 /* Ajustes en la carcasa: cada ajuste es una ventana, con su explicación a la izquierda. */
 .page {
   padding: 36px var(--gutter) 0;
-  max-width: 1180px;
 }
 .title {
   margin-bottom: 24px;
@@ -40,7 +39,10 @@
   font-family: var(--font-term);
   font-size: 21px;
   line-height: 1.2;
-  max-width: 68ch;
+}
+/* Las ventanas ocupan todo el ancho; los párrafos, no tanto que cueste leerlos. */
+.panel p {
+  max-width: 75ch;
 }
 .modeLine {
   display: flex;
@@ -140,6 +142,24 @@
 .helpList dd {
   margin: 0;
   color: var(--muted);
+}
+/* En pantallas anchas, los apartados de «Cómo funciona» en columnas: llenan la ventana sin líneas eternas. */
+@media (min-width: 1200px) {
+  .help .panel {
+    max-width: none;
+  }
+  .helpList {
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px 40px;
+  }
+  .helpList > div,
+  .helpList > div:first-child,
+  .helpList > div:last-child {
+    align-content: start;
+    padding: 0 0 0 16px;
+    border-bottom: 0;
+    border-left: 2px solid var(--line);
+  }
 }
 .helpStates {
   display: flex;

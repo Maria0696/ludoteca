@@ -43,6 +43,12 @@
   overflow: hidden;
   background: #123a5a;
 }
+/* Con una pista el cuadro es algo más alto: en pantallas bajas, el mapa también, para que no tape casillas. */
+@media (min-width: 900px) {
+  .map:has(.talkHelp) {
+    min-height: 440px;
+  }
+}
 .mapCanvas {
   position: absolute;
   inset: 0;
@@ -142,18 +148,18 @@
 .talk {
   position: absolute;
   z-index: 4;
-  left: 50%;
-  translate: -50% 0;
+  /* Alineado con la columna del título, a la derecha de la carátula que sube sobre el mapa. */
+  left: calc(max(0px, (100% - 1240px) / 2) + 20px + clamp(130px, 15vw, 210px) + clamp(16px, 2.6vw, 32px));
   bottom: 18px;
-  width: min(620px, 62%);
+  /* Ancho y bajo: con una pista sigue en dos líneas y no sube sobre las casillas. */
+  width: min(820px, calc(100% - (max(0px, (100% - 1240px) / 2) + 20px + clamp(130px, 15vw, 210px) + clamp(16px, 2.6vw, 32px)) - 20px));
   padding: 16px 18px 12px;
   font-size: 26px;
   line-height: 1.08;
 }
 .talkHelp {
-  display: inline-block;
-  margin-top: 6px;
   color: var(--gold);
+  white-space: nowrap;
   font-size: 20px;
   text-underline-offset: 4px;
 }
