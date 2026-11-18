@@ -183,16 +183,10 @@ export function LibraryView() {
   return (
     <div className={`${styles.page} ${arcade.variable} ${terminal.variable}`}>
       <header className={styles.head}>
-        <h1>
-          <span aria-hidden>Select game</span>
-          <span className="sr-only">Biblioteca</span>
-        </h1>
+        <h1>Biblioteca</h1>
         <p className={styles.credits}>
-          <span aria-hidden>Créditos </span>
-          <span>
-            {library.games.length} {library.games.length === 1 ? "título" : "títulos"} · {library.copies.length}{" "}
-            {library.copies.length === 1 ? "copia" : "copias"}
-          </span>
+          {library.games.length} {library.games.length === 1 ? "título" : "títulos"} · {library.copies.length}{" "}
+          {library.copies.length === 1 ? "copia" : "copias"}
         </p>
         <div className={styles.headActions}>
           <Link href="/importar" className={styles.chip}>

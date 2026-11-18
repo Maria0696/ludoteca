@@ -139,11 +139,11 @@ test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las fle
   await page.getByRole("combobox").filter({ hasText: "Por plataforma" }).selectOption("ninguno");
   await page.getByRole("combobox").filter({ hasText: "Añadidos recientemente" }).selectOption("titulo");
 
-  // El estado se dice en idioma arcade, sin perder el nombre de siempre para los lectores de pantalla.
+  // El estado se dice como en una recreativa, en español, sin perder el nombre de siempre.
   const shortHike = cards(page).first();
-  await expect(shortHike).toContainText("PRESS START");
+  await expect(shortHike).toContainText("NUEVA PARTIDA");
   await expect(shortHike).toContainText("Pendiente");
-  await expect(cards(page).filter({ hasText: "Disco Elysium" })).toContainText("GAME OVER");
+  await expect(cards(page).filter({ hasText: "Disco Elysium" })).toContainText("FIN DEL JUEGO");
 
   // Pasar por encima o llegar con el teclado muestra el juego en «Elegido».
   const chosen = page.getByRole("region", { name: "Elegido" });
@@ -160,7 +160,7 @@ test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las fle
   await expect(chosen).toContainText("Celeste");
   await cards(page).filter({ hasText: "Celeste" }).getByRole("link").hover();
   await expect(chosen).toContainText("Celeste");
-  await expect(chosen).toContainText("CLEAR!");
+  await expect(chosen).toContainText("¡SUPERADO!");
 
   await cards(page).first().getByRole("link").focus();
   await page.keyboard.press("ArrowRight");

@@ -70,7 +70,7 @@ export function SettingsView() {
               </p>
               <p>
                 Tu biblioteca se guarda solo en este navegador. No se sincroniza con otros dispositivos y se pierde si borras los datos del
-                navegador. Exporta copias de seguridad con frecuencia o conecta Supabase siguiendo el README.
+                navegador. Exporta copias de seguridad con frecuencia; para usarla en varios dispositivos hay que activar la sincronización, como explican las instrucciones del proyecto.
               </p>
             </>
           ) : (
@@ -79,7 +79,7 @@ export function SettingsView() {
                 <Cloud aria-hidden />
                 <strong>Sincronizado con tu base de datos</strong>
               </p>
-              <p>Tu biblioteca vive en Supabase y solo tu cuenta puede leerla o modificarla.</p>
+              <p>Tu biblioteca se guarda en la nube y se sincroniza entre tus dispositivos. Solo tu cuenta puede leerla o modificarla.</p>
               <button
                 type="button"
                 className="btn"
@@ -203,7 +203,7 @@ export function SettingsView() {
               ? "Comprobando…"
               : catalog === "si"
                 ? "Conectado. Al escribir un título verás sugerencias del catálogo."
-                : "Sin configurar. Faltan IGDB_CLIENT_ID e IGDB_CLIENT_SECRET en el servidor; el README explica cómo obtenerlas gratis con una cuenta de Twitch."}
+                : "Sin activar: el catálogo todavía no está conectado en el servidor. Mientras tanto, la carátula, los géneros y la duración se escriben a mano; las instrucciones del proyecto explican cómo conectarlo gratis."}
           </p>
           <p className={styles.note}>
             Datos del catálogo proporcionados por IGDB.com, gratuito para uso no comercial.

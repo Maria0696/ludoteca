@@ -134,7 +134,7 @@ test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", 
   const proposal = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) }).first();
   await expect(proposal).toContainText(/EN PARTIDA ·\s*Jugando/);
   await page.goto("/listas");
-  await expect(page.getByText("PRESS START").first()).toBeVisible();
+  await expect(page.getByText("NUEVA PARTIDA").first()).toBeVisible();
   // En una tarjeta estrecha, el nombre baja de línea antes que cortarse.
   const state = page.locator(".state").first();
   const overflow = await state.evaluate((el) => {
@@ -358,4 +358,22 @@ test("la bienvenida de una biblioteca vacía es una ventana de la carcasa", asyn
   // La demostración tranquiliza: se puede retirar.
   await expect(welcome.getByText(/se retiran de una vez desde Ajustes/)).toBeVisible();
   await expect(welcome.getByRole("button", { name: "Añadir el primer juego" })).toBeVisible();
+});
+
+test("la app habla español: sin rótulos en inglés ni jerga técnica", async ({ page }) => {
+  await loadDemo(page);
+  const english = /select game|press start|clear!|game over|créditos|pulsa start/i;
+  await page.goto("/biblioteca");
+  // La pantalla dice lo que es.
+  await expect(page.getByRole("heading", { level: 1, name: "Biblioteca" })).toBeVisible();
+  await expect(page.getByText(/^22 títulos · 24 copias$/)).toBeVisible();
+  for (const url of ["/", "/biblioteca", "/listas", "/que-juego"]) {
+    await page.goto(url);
+    await expect(page.locator("main")).not.toHaveText(english);
+  }
+  await page.goto("/biblioteca");
+  await expect(page.getByRole("region", { name: "Elegido" }).getByRole("link", { name: /Ver ficha/ })).toBeVisible();
+  // Ajustes sin nombres de variables ni de servicios por dentro.
+  await page.goto("/ajustes");
+  await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
 });
