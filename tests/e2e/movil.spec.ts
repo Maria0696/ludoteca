@@ -145,3 +145,27 @@ test("en el móvil se navega con la barra inferior y se añade desde la hoja", a
   const overflowInicio = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflowInicio).toBeLessThanOrEqual(0);
 });
+
+test("¿A qué juego? en el móvil: las propuestas primero y la sesión en una hoja", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/que-juego");
+  const results = page.getByRole("region", { name: /^Mis propuestas/ });
+  // La primera propuesta se ve sin bajar: la respuesta va antes que las preguntas.
+  await expect(results.getByRole("heading", { level: 3 }).first()).toBeInViewport();
+  await expect(page.getByRole("form", { name: "Tu sesión" })).toBeHidden();
+  // La sesión, resumida en una línea, con «Ajustar».
+  const summary = results.getByText("1 h · Cualquier plataforma · Sola");
+  await expect(summary).toBeVisible();
+  await results.getByRole("button", { name: "Ajustar la sesión" }).click();
+  const sheet = page.getByRole("dialog", { name: "Tu sesión" });
+  await expect(sheet).toBeVisible();
+  await expectCarcasaText(sheet);
+  await sheet.getByRole("radio", { name: "Acompañada" }).click();
+  await sheet.getByRole("radio", { name: "2 h" }).click();
+  await sheet.getByRole("button", { name: /^Ver \d+ propuestas?$/ }).click();
+  await expect(sheet).toBeHidden();
+  await expect(results.getByText("2 h · Cualquier plataforma · Acompañada")).toBeVisible();
+  await expect(results.getByText("Se puede jugar acompañada.").first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+});
