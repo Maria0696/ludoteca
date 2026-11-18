@@ -126,9 +126,19 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
 
 test("datos de demostración separados y retirables", async ({ page }) => {
   await loadDemo(page);
+  // Sin juegos propios no se habla de «0 juegos tuyos».
+  await page.goto("/ajustes");
+  await expect(page.getByText(/^Ahora hay \d+ elementos de demostración y ningún juego tuyo\.$/)).toBeVisible();
+  await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expect(page.getByRole("dialog").getByText("No tienes juegos tuyos todavía: solo se va lo de demostración.")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
   await addGame(page, { title: "Mi juego real", platform: "PC", format: "Digital" });
   await page.goto("/ajustes");
+  await expect(page.getByText(/^Ahora hay \d+ elementos de demostración junto a 1 juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
+  await expect(page.getByRole("dialog").getByText(/Tu juego no se toca\.$/)).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: /Retirar \d+ elementos/ }).click();
   await expect(page.getByText("No hay datos de demostración cargados.")).toBeVisible();
   await page.goto("/biblioteca");

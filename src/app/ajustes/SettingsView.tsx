@@ -164,7 +164,7 @@ export function SettingsView() {
           <div className={styles.panel}>
             <p>
               {demoCount > 0
-                ? `Ahora hay ${demoCount} elementos de demostración junto a ${realCount} juegos tuyos.`
+                ? `Ahora hay ${demoCount} elementos de demostración ${ownGamesBeside(realCount)}.`
                 : "No hay datos de demostración cargados."}
             </p>
             <div className={styles.actions}>
@@ -272,7 +272,7 @@ export function SettingsView() {
           </>
         }
       >
-        <p>Se eliminan los juegos, copias, deseos y listas de demostración. Tus {realCount} juegos no se tocan.</p>
+        <p>Se eliminan los juegos, copias, deseos y listas de demostración. {ownGamesKept(realCount)}</p>
       </Dialog>
 
       <DeleteAllGames />
@@ -280,6 +280,17 @@ export function SettingsView() {
       {plan && <ImportDialog plan={plan} onClose={() => setPlan(null)} />}
     </div>
   );
+}
+
+/** «junto a 3 juegos tuyos», sin hablar de «0 juegos» ni de «1 juegos». */
+function ownGamesBeside(n: number) {
+  if (n === 0) return "y ningún juego tuyo";
+  return `junto a ${n} ${n === 1 ? "juego tuyo" : "juegos tuyos"}`;
+}
+
+function ownGamesKept(n: number) {
+  if (n === 0) return "No tienes juegos tuyos todavía: solo se va lo de demostración.";
+  return n === 1 ? "Tu juego no se toca." : `Tus ${n} juegos no se tocan.`;
 }
 
 const RESOLUTION_LABEL: Record<Resolution, string> = {
