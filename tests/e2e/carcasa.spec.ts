@@ -151,6 +151,24 @@ test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el ar
   await expectCarcasaText(page.locator("main"));
 });
 
+test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Ajustes" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  for (const name of ["Dónde se guardan tus datos", "Copia de seguridad", "Eliminar todos los juegos"]) {
+    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  }
+  await page.getByText(/Ver las \d+ obras/).click(); // créditos desplegados
+  await expectCarcasaText(page.locator("main"));
+  // Los avisos de eliminar todo, en la carcasa.
+  await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
+  const dialog = page.getByRole("dialog");
+  await expectCarcasaText(dialog);
+  await dialog.getByRole("button", { name: "Sí, continuar" }).click();
+  await expectCarcasaText(dialog);
+});
+
 test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");

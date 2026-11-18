@@ -19,7 +19,7 @@ export function DeleteAllGames() {
   const games = library.games.length;
 
   return (
-    <section className={styles.row} aria-labelledby="h-eliminar">
+    <section className={`window ${styles.row}`} aria-labelledby="h-eliminar">
       <div className={styles.label}>
         <h2 id="h-eliminar">Eliminar todos los juegos</h2>
         <p>Vacía la biblioteca de una vez. Tu lista de deseos no se toca.</p>

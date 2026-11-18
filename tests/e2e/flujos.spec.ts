@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import { addGame, cards, loadDemo, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 test("pasar un deseo a la biblioteca conservando sus datos", async ({ page }) => {
   await openApp(page, "/deseos");
@@ -100,6 +100,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const dialog = other.getByRole("dialog");
   await expect(dialog.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
   await expect(dialog.getByText(/mismo título que «Celeste»/)).toBeVisible();
+  await expectCarcasaText(dialog); // la lista de duplicados, en la carcasa
   // Por defecto se mantiene lo propio; aquí elegimos conservar los dos.
   await expect(dialog.getByRole("radio", { name: "Mantener el mío" })).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("radio", { name: "Conservar los dos" }).click();
@@ -119,6 +120,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await import("node:fs/promises").then((fs) => fs.writeFile(bad, JSON.stringify({ hola: "mundo" })));
   await other.getByTestId("importar-archivo").setInputFiles(bad);
   await expect(other.getByRole("alert").filter({ hasText: "No se ha importado nada" })).toBeVisible();
+  await expectCarcasaText(other.locator("main")); // el aviso de error, también
   await context.close();
 });
 

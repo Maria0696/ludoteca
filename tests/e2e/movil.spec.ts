@@ -19,6 +19,11 @@ test("Estadísticas, ¿A qué juego? y Ajustes caben en el móvil", async ({ pag
   await expect(page.getByRole("heading", { name: /^Mis propuestas/ })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
+
+  await page.goto("/ajustes");
+  await expect(page.getByRole("heading", { level: 1, name: "Ajustes" })).toBeVisible();
+  expect(await overflow()).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
 });
 
 test("Deseos y Mis listas caben en el móvil", async ({ page }) => {

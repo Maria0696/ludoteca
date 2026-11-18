@@ -54,9 +54,9 @@ export function SettingsView() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>Ajustes</h1>
+      <h1 className={`screen-title ${styles.title}`}>Ajustes</h1>
 
-      <section className={styles.row} aria-labelledby="h-datos">
+      <section className={`window ${styles.row}`} aria-labelledby="h-datos">
         <div className={styles.label}>
           <h2 id="h-datos">Dónde se guardan tus datos</h2>
           <p>Cómo se almacena tu biblioteca en este dispositivo.</p>
@@ -99,7 +99,7 @@ export function SettingsView() {
         </div>
       </section>
 
-      <section className={styles.row} aria-labelledby="h-copia">
+      <section className={`window ${styles.row}`} aria-labelledby="h-copia">
         <div className={styles.label}>
           <h2 id="h-copia">Copia de seguridad</h2>
           <p>
@@ -156,7 +156,7 @@ export function SettingsView() {
       </section>
 
       {showDemo && (
-        <section className={styles.row} aria-labelledby="h-demo">
+        <section className={`window ${styles.row}`} aria-labelledby="h-demo">
           <div className={styles.label}>
             <h2 id="h-demo">Datos de demostración</h2>
             <p>Juegos inventados para probar la app. Están marcados y se retiran de una vez sin tocar tu colección.</p>
@@ -192,7 +192,7 @@ export function SettingsView() {
         </section>
       )}
 
-      <section className={styles.row} aria-labelledby="h-catalogo">
+      <section className={`window ${styles.row}`} aria-labelledby="h-catalogo">
         <div className={styles.label}>
           <h2 id="h-catalogo">Catálogo de carátulas</h2>
           <p>Búsqueda de carátulas, géneros y duración en IGDB.com. Todo se puede escribir o corregir a mano.</p>
@@ -205,13 +205,13 @@ export function SettingsView() {
                 ? "Conectado. Al escribir un título verás sugerencias del catálogo."
                 : "Sin configurar. Faltan IGDB_CLIENT_ID e IGDB_CLIENT_SECRET en el servidor; el README explica cómo obtenerlas gratis con una cuenta de Twitch."}
           </p>
-          <p className="muted" style={{ fontSize: 12 }}>
+          <p className={styles.note}>
             Datos del catálogo proporcionados por IGDB.com, gratuito para uso no comercial.
           </p>
         </div>
       </section>
 
-      <section className={styles.row} aria-labelledby="h-steam">
+      <section className={`window ${styles.row}`} aria-labelledby="h-steam">
         <div className={styles.label}>
           <h2 id="h-steam">Steam</h2>
           <p>Trae tus juegos y tus horas. Puedes repetirlo cuando quieras: no se duplica nada.</p>
@@ -226,7 +226,7 @@ export function SettingsView() {
       </section>
 
       {showDemo && (
-        <section className={styles.row} aria-labelledby="h-creditos">
+        <section className={`window ${styles.row}`} aria-labelledby="h-creditos">
           <div className={styles.label}>
             <h2 id="h-creditos">Imágenes de demostración</h2>
             <p>Los juegos de demostración se ilustran con obras de dominio público, no con sus carátulas oficiales.</p>
