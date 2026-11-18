@@ -1,38 +1,406 @@
 {
-  "name": "Sala de proyección",
-  "source": "DESIGN.md",
-  "references": ["Apple TV", "Netflix", "Steam", "PlayStation 5"],
-  "color": {
-    "bg": "#0b0b0d",
-    "surface": "#141417",
-    "raised": "#1c1c21",
-    "line": "#26262c",
-    "control": "#34343c",
-    "text": "#f4f4f5",
-    "muted": "#a1a1aa",
-    "primary": "#ffffff",
-    "status": {
-      "pendiente": "#a1a1aa",
-      "jugando": "#4ade80",
-      "pausado": "#fbbf24",
-      "completado": "#60a5fa",
-      "abandonado": "#71717a"
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T13:02:12+00:00",
+  "title": "Design System: Ludoteca",
+  "extensions": {
+    "colorMeta": {
+      "noche-morada": {
+        "role": "neutral",
+        "displayName": "Noche morada",
+        "canonical": "#1a1526",
+        "tonalRamp": [
+          "#241f2f",
+          "#4b4754",
+          "#716e79",
+          "#98969d",
+          "#bfbdc2",
+          "#d8d8da",
+          "#eaeaeb",
+          "#f5f4f5"
+        ]
+      },
+      "ventana": {
+        "role": "neutral",
+        "displayName": "Ventana",
+        "canonical": "#12101f",
+        "tonalRamp": [
+          "#23212f",
+          "#4a4854",
+          "#716f78",
+          "#97979d",
+          "#bebec2",
+          "#d8d8da",
+          "#eaeaeb",
+          "#f5f5f5"
+        ]
+      },
+      "superficie-alzada": {
+        "role": "neutral",
+        "displayName": "Superficie alzada",
+        "canonical": "#1f2140",
+        "tonalRamp": [
+          "#1c1e39",
+          "#43445e",
+          "#6b6c81",
+          "#9394a3",
+          "#bcbcc6",
+          "#d7d7dd",
+          "#e9eaed",
+          "#f4f4f6"
+        ]
+      },
+      "marco-suave": {
+        "role": "neutral",
+        "displayName": "Marco suave",
+        "canonical": "#4a4a7a",
+        "tonalRamp": [
+          "#1f1f34",
+          "#3f3f68",
+          "#65658e",
+          "#8f8fad",
+          "#b9b9cc",
+          "#d5d5e0",
+          "#e9e9ef",
+          "#f4f4f7"
+        ]
+      },
+      "papel": {
+        "role": "neutral",
+        "displayName": "Papel",
+        "canonical": "#f3ead2",
+        "tonalRamp": [
+          "#292723",
+          "#514e46",
+          "#7a7569",
+          "#a29c8c",
+          "#cbc3af",
+          "#e6ddc7",
+          "#f6efdc",
+          "#faf7ed"
+        ]
+      },
+      "lavanda": {
+        "role": "neutral",
+        "displayName": "Lavanda",
+        "canonical": "#c9cdf0",
+        "tonalRamp": [
+          "#24242b",
+          "#474955",
+          "#6b6d80",
+          "#8f92ab",
+          "#b3b6d5",
+          "#cbcff1",
+          "#e3e5f7",
+          "#f1f2fb"
+        ]
+      },
+      "oro": {
+        "role": "primary",
+        "displayName": "Oro de moneda",
+        "canonical": "#ffd76a",
+        "tonalRamp": [
+          "#332b15",
+          "#66562a",
+          "#98803f",
+          "#cbab54",
+          "#fed66a",
+          "#ffe7a5",
+          "#fff2cf",
+          "#fff9e7"
+        ]
+      },
+      "peligro": {
+        "role": "error",
+        "displayName": "Peligro",
+        "canonical": "#ff6b6b",
+        "tonalRamp": [
+          "#3e1a1a",
+          "#7d3434",
+          "#bb4f4f",
+          "#fa6969",
+          "#ff9f9f",
+          "#ffc6c6",
+          "#ffe0e0",
+          "#fff0f0"
+        ]
+      },
+      "estado-pendiente": {
+        "role": "status",
+        "displayName": "Pendiente · NUEVA PARTIDA",
+        "canonical": "#ffe94d",
+        "tonalRamp": [
+          "#342f10",
+          "#685f1f",
+          "#9b8e2f",
+          "#cfbd3f",
+          "#ffea55",
+          "#fff299",
+          "#fff8c9",
+          "#fffce4"
+        ]
+      },
+      "estado-jugando": {
+        "role": "status",
+        "displayName": "Jugando · EN PARTIDA",
+        "canonical": "#5dff8b",
+        "tonalRamp": [
+          "#163c21",
+          "#2c7842",
+          "#42b462",
+          "#58f083",
+          "#90ffaf",
+          "#bcffcf",
+          "#dbffe5",
+          "#edfff2"
+        ]
+      },
+      "estado-pausado": {
+        "role": "status",
+        "displayName": "Pausado · PAUSA",
+        "canonical": "#ffb13d",
+        "tonalRamp": [
+          "#3b290e",
+          "#77521c",
+          "#b27c2b",
+          "#eda539",
+          "#ffc877",
+          "#ffdead",
+          "#ffedd3",
+          "#fff6e9"
+        ]
+      },
+      "estado-completado": {
+        "role": "status",
+        "displayName": "Completado · ¡SUPERADO!",
+        "canonical": "#3ff2ff",
+        "tonalRamp": [
+          "#0d3234",
+          "#1a6369",
+          "#27959d",
+          "#34c6d1",
+          "#4cf3ff",
+          "#94f8ff",
+          "#c6fbff",
+          "#e2fdff"
+        ]
+      },
+      "estado-abandonado": {
+        "role": "status",
+        "displayName": "Abandonado · FIN DEL JUEGO",
+        "canonical": "#ff4d6d",
+        "tonalRamp": [
+          "#42141c",
+          "#852839",
+          "#c73c55",
+          "#ff5775",
+          "#ff96a9",
+          "#ffc0cb",
+          "#ffdde3",
+          "#ffeef1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Título de pantalla",
+        "purpose": "Un título por pantalla, en oro con sombra negra."
+      },
+      "title": {
+        "displayName": "Título de ventana",
+        "purpose": "Encabezado de cada ventana y diálogo."
+      },
+      "body": {
+        "displayName": "Lectura",
+        "purpose": "Texto, botones, campos y filas."
+      },
+      "label": {
+        "displayName": "Nota",
+        "purpose": "Metadatos y notas; nunca por debajo de 18 px."
+      },
+      "figure": {
+        "displayName": "Cifra",
+        "purpose": "Cifras grandes de Estadísticas; nunca se parten."
+      }
+    },
+    "shadows": [
+      {
+        "name": "marco-ventana",
+        "value": "0 -4px 0 #f3ead2, 0 4px 0 #f3ead2, -4px 0 0 #f3ead2, 4px 0 0 #f3ead2",
+        "purpose": "Marco de píxel de toda ventana, diálogo y hoja inferior."
+      },
+      {
+        "name": "marco-suave",
+        "value": "inset 0 0 0 2px #4a4a7a",
+        "purpose": "Borde interior de botones secundarios, chips y campos."
+      },
+      {
+        "name": "canto-dorado",
+        "value": "inset 0 -3px 0 #c99a2e",
+        "purpose": "Canto inferior del botón principal."
+      },
+      {
+        "name": "dialogo",
+        "value": "0 40px 100px -20px #000",
+        "purpose": "Separa los diálogos del fondo, junto al marco."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Entradas y respuesta a la pulsación."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Cambios de estado en sitio."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Hoja inferior del móvil."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "movil",
+        "value": "899px"
+      },
+      {
+        "name": "barra-compacta",
+        "value": "1100px"
+      },
+      {
+        "name": "chip-en-iconos",
+        "value": "1400px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "La acción principal de la pantalla; uno por pantalla o diálogo.",
+      "html": "<button class=\"ds-btn-primary\">Añadir juego</button>",
+      "css": ".ds-btn-primary{height:40px;padding:0 16px;border:0;border-radius:0;background:#ffd76a;color:#1b1400;box-shadow:inset 0 -3px 0 #c99a2e;font:400 21px/1 VT323,'Courier New',monospace;cursor:pointer;transition:transform 140ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-primary:active{transform:translateY(2px)}.ds-btn-primary:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acciones secundarias dentro de una ventana.",
+      "html": "<button class=\"ds-btn\">Editar</button>",
+      "css": ".ds-btn{height:40px;padding:0 16px;border:0;border-radius:0;background:#1f2140;color:#f3ead2;box-shadow:inset 0 0 0 2px #4a4a7a;font:400 21px/1 VT323,'Courier New',monospace;cursor:pointer}.ds-btn:hover{background:#2a2c55;color:#fff}.ds-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Botón de peligro",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Solo para borrar o eliminar.",
+      "html": "<button class=\"ds-btn-danger\">Eliminar lista</button>",
+      "css": ".ds-btn-danger{height:40px;padding:0 16px;border:0;border-radius:0;background:#3a1a22;color:#ff6b6b;box-shadow:inset 0 0 0 2px #7a2a36;font:400 21px/1 VT323,'Courier New',monospace;cursor:pointer}.ds-btn-danger:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Grupo de opciones",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Elegir una opción a un toque; lo elegido en papel.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\" aria-label=\"Tiempo\"><button role=\"radio\" aria-checked=\"false\">30 min</button><button role=\"radio\" aria-checked=\"true\">1 h</button><button role=\"radio\" aria-checked=\"false\">2 h</button></div>",
+      "css": ".ds-seg{display:inline-flex;gap:8px}.ds-seg button{height:38px;padding:0 12px;border:0;border-radius:0;background:#1f2140;box-shadow:inset 0 0 0 2px #4a4a7a;color:#f3ead2;font:400 20px/1 VT323,'Courier New',monospace;cursor:pointer}.ds-seg button[aria-checked=true]{background:#f3ead2;color:#12101f;box-shadow:none}.ds-seg button:not([aria-checked=true]):hover{background:#2a2c55}"
+    },
+    {
+      "name": "Campo",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campos de texto y búsqueda.",
+      "html": "<input class=\"ds-input\" placeholder=\"Buscar por título\">",
+      "css": ".ds-input{height:44px;width:280px;padding:0 12px;border:2px solid #4a4a7a;border-radius:0;background:#0a0b1c;color:#f3ead2;font:400 21px VT323,'Courier New',monospace}.ds-input::placeholder{color:#9a9cc4}.ds-input:focus-visible{outline:2px solid #fff;outline-offset:2px;border-color:#ffd76a}"
+    },
+    {
+      "name": "Ventana",
+      "kind": "card",
+      "refersTo": "window",
+      "description": "Una por sección, con marco de papel y título dorado.",
+      "html": "<section class=\"ds-window\"><h2>En cifras</h2><p>22 títulos · 24 copias</p></section>",
+      "css": ".ds-window{margin:4px;padding:20px;background:#12101f;color:#f3ead2;box-shadow:0 -4px 0 #f3ead2,0 4px 0 #f3ead2,-4px 0 0 #f3ead2,4px 0 0 #f3ead2;font:400 21px/1.2 VT323,'Courier New',monospace}.ds-window h2{margin:0 0 14px;font:400 13px/1.5 'Press Start 2P','Courier New',monospace;color:#ffd76a}.ds-window p{margin:0}"
+    },
+    {
+      "name": "Estado",
+      "kind": "custom",
+      "description": "Rombo, etiqueta arcade en su color y nombre normal.",
+      "html": "<span class=\"ds-state\"><b aria-hidden=\"true\">◆ EN PARTIDA ·</b> Jugando</span>",
+      "css": ".ds-state{display:inline-flex;gap:7px;align-items:center;font:400 20px/1 VT323,'Courier New',monospace;color:#c9cdf0}.ds-state b{font-weight:400;color:#5dff8b}"
+    },
+    {
+      "name": "Barra superior",
+      "kind": "nav",
+      "description": "Marca en píxeles, destinos en terminal; el actual en oro.",
+      "html": "<nav class=\"ds-nav\"><b>Ludoteca</b><a>Inicio</a><a aria-current=\"page\">Biblioteca</a><a>Deseos</a></nav>",
+      "css": ".ds-nav{display:flex;gap:6px;align-items:center;padding:16px 24px;background:#12101f;box-shadow:0 4px 0 #f3ead2}.ds-nav b{margin-right:20px;font:400 15px 'Press Start 2P','Courier New',monospace;color:#ffd76a;text-shadow:3px 3px 0 #000}.ds-nav a{padding:2px 9px 3px;font:400 22px/1 VT323,'Courier New',monospace;color:#f3ead2;cursor:pointer}.ds-nav a[aria-current=page]{background:#ffd76a;color:#1b1400}.ds-nav a:not([aria-current]):hover{background:#1f2140;color:#fff}"
     }
-  },
-  "type": {
-    "display": { "family": "Bricolage Grotesque", "weight": 800, "tracking": "-0.03em to -0.045em" },
-    "text": { "family": "Albert Sans", "weights": [400, 500, 600, 700] },
-    "scale": { "hero": "44-92px", "pageTitle": 56, "section": "22-28px", "ui": "14-15px", "meta": "12-13px" }
-  },
-  "radius": { "cover": 12, "field": 10, "panel": 16, "dialog": 20, "control": 999 },
-  "motion": {
-    "pageEnter": "380ms",
-    "stagger": "35ms",
-    "heroCrossfade": "1100ms",
-    "heroDrift": "24s",
-    "heroAdvance": "8s",
-    "press": "scale(0.96) 140ms",
-    "easeOut": "cubic-bezier(0.23, 1, 0.32, 1)",
-    "drawer": "cubic-bezier(0.32, 0.72, 0, 1)"
+  ],
+  "narrative": {
+    "northStar": "Una sola máquina",
+    "overview": "Ludoteca es una máquina de juegos con varias pantallas. Todas comparten la carcasa: un fondo morado oscuro, ventanas con un marco de píxel color papel y dos letras, una de píxeles para los títulos y otra de terminal para todo lo que se lee. Cada pantalla puede tener su toque (las cabinas de neón de la biblioteca, el mapa de la ficha, el cofre de añadir, las bahías azules de Steam, el menú de consola del inicio), pero el marco, las letras y los colores de estado son siempre los mismos.\n\nLas carátulas y el arte de cada juego son lo que más llama la atención; la interfaz los rodea sin competir con ellos. El dorado es escaso a propósito: marca la acción principal y lo elegido. Todo lo demás está en papel, lavanda o el color de su estado.\n\nLa densidad es de pantalla de juego, no de panel de control: una ventana por sección, filas separadas por líneas finas dentro de cada ventana y texto grande (21 px de terminal) que se lee de un vistazo, también en el móvil.",
+    "keyCharacteristics": [
+      "Ventanas de píxel con marco de papel de 4 px, sin esquinas redondeadas.",
+      "Press Start 2P para títulos y VT323 para leer, nunca por debajo de 18 px.",
+      "El dorado solo en la acción principal y en lo elegido.",
+      "Cinco colores de estado, los mismos en toda la app, siempre junto a su nombre.",
+      "Cada pantalla conserva su toque dentro de la misma carcasa."
+    ],
+    "rules": [
+      {
+        "name": "The One Gold Rule",
+        "body": "El oro marca la acción principal y lo elegido. Si en una ventana hay dos cosas doradas que no son título, sobra una.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Lives Once Rule",
+        "body": "Los colores de estado solo existen en `--st-*` de `globals.css`. Cualquier componente los toma de ahí (`ARCADE_STATUS`); nunca un hex suelto.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never Alone Rule",
+        "body": "Un color de estado nunca va solo: siempre lleva su etiqueta arcade o su nombre normal. Sobre fondo claro, el punto de color lleva un aro oscuro.",
+        "section": "colors"
+      },
+      {
+        "name": "The 18-Pixel Floor Rule",
+        "body": "Nada en VT323 por debajo de 18 px. Si no cabe, se reorganiza; no se encoge.",
+        "section": "typography"
+      },
+      {
+        "name": "The Accent Rule",
+        "body": "Press Start 2P con tilde nunca se pone en mayúsculas forzadas: se escribe tal cual («Añadir a la lista de deseos», «Último aviso»).",
+        "section": "typography"
+      },
+      {
+        "name": "The Legacy Fonts Rule",
+        "body": "Albert Sans y Bricolage Grotesque siguen cargadas por herencia (letra base del documento y algún título antiguo), y Anton y Chakra Petch solo viven en el menú del inicio y en la escena del cofre. No se usan en nada nuevo.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Window Per Section Rule",
+        "body": "Una ventana por sección. Dentro, líneas; nunca ventanas dentro de ventanas.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** pon cada sección en una ventana con marco de papel de 4 px y separa sus filas con líneas de 2 px.",
+      "**Do** escribe todo lo que se lee en VT323 a 18 px o más, y los títulos en Press Start 2P.",
+      "**Do** usa el oro solo para la acción principal y lo elegido.",
+      "**Do** toma los colores de estado de `--st-*` y acompáñalos siempre de su etiqueta o su nombre.",
+      "**Do** en el móvil, deja lo frecuente al alcance del pulgar y prueba a 390 y 360 px que nada se parta ni se salga."
+    ],
+    "donts": [
+      "**Don't** redondees esquinas: ni botones, ni ventanas, ni carátulas.",
+      "**Don't** uses Albert Sans, Bricolage Grotesque, Anton ni Chakra Petch fuera de donde ya están.",
+      "**Don't** pongas mayúsculas forzadas en Press Start 2P cuando el texto lleva tildes.",
+      "**Don't** metas ventanas dentro de ventanas.",
+      "**Don't** escribas un color de estado en hex fuera de `globals.css`.",
+      "**Don't** escribas rótulos en inglés: la app habla español, también en sus guiños de recreativa."
+    ]
   }
 }

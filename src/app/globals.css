@@ -42,7 +42,7 @@
   /* next/font define en <html> --font-arcade, --font-terminal, --font-display y --font-text. */
   --font-pixel: var(--font-arcade), "Courier New", monospace;
   --font-term: var(--font-terminal), "Courier New", monospace;
-  /* Texto de las pantallas aún sin pasar a la carcasa (paso 4: catálogo, Importar Steam, alta y ficha). */
+  /* Letra heredada: base del documento por si algo no fija la suya. No se usa en nada nuevo (DESIGN.md). */
   --font: var(--font-text), system-ui, sans-serif;
   --radius-control: 0;
   --radius-field: 0;
