@@ -2,51 +2,84 @@
   margin: 0 var(--gutter) 8px;
 }
 
+/* Biblioteca vacía: una ventana de la carcasa con el cofre que se abre al añadir. */
 .welcome {
-  min-height: calc(100dvh - var(--topbar) - 120px);
+  min-height: calc(100dvh - 120px);
   display: grid;
   place-items: center;
-  padding: 40px var(--gutter);
-  background: radial-gradient(60% 50% at 50% 20%, #1d1d26, transparent 70%);
+  /* En el inicio la barra superior flota sobre el contenido: se le deja su sitio. */
+  padding: calc(var(--topbar) + 40px) var(--gutter) 40px;
 }
 .welcomeCard {
   display: grid;
-  justify-items: start;
-  gap: 18px;
-  max-width: 640px;
-  padding: 40px;
-  border-radius: 24px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+  width: 100%;
+  max-width: 700px;
+  padding: 36px;
   animation: rise 600ms var(--ease-out) backwards;
 }
-.welcomeIcon {
-  width: 28px;
-  height: 28px;
-  color: #fbbf24;
+.welcomeChest {
+  width: 112px;
+  height: auto;
+  image-rendering: pixelated;
 }
-.welcomeCard h2 {
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+.welcomeBody {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  min-width: 0;
 }
-.welcomeCard > p {
+.welcomeBody > p {
   color: var(--muted);
-  font-size: 16px;
+  font-family: var(--font-term);
+  font-size: 22px;
+  line-height: 1.2;
+  max-width: 52ch;
+  text-wrap: pretty;
 }
 .actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 6px;
+}
+.welcomeBody > .welcomeNote {
+  font-size: 19px;
+}
+.welcomeNotice {
+  margin-top: 8px;
+  width: 100%;
 }
 
 @media (max-width: 899px) {
-  .welcomeCard {
-    padding: 26px;
+  .welcome {
+    place-items: start stretch;
+    padding: calc(var(--topbar) + 20px) var(--gutter) 32px;
   }
-  .welcomeCard h2 {
-    font-size: 36px;
+  .welcomeCard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 22px;
+  }
+  .welcomeChest {
+    width: 72px;
+  }
+  .welcomeBody :global(.screen-title) {
+    font-size: 20px;
+  }
+  .actions,
+  .actions :global(.btn) {
+    width: 100%;
+  }
+  /* En un móvil estrecho el texto del botón puede ir en dos líneas antes que salirse. */
+  .actions :global(.btn) {
+    min-height: 48px;
+    height: auto;
+    padding-block: 10px;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
   }
 }

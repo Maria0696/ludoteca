@@ -336,3 +336,24 @@ test("la página que no existe se ve como una ventana de la carcasa", async ({ p
   const [family] = await font(heading);
   expect(family).toMatch(/Press.Start.2P/i);
 });
+
+test("la bienvenida de una biblioteca vacía es una ventana de la carcasa", async ({ page }) => {
+  await openApp(page, "/");
+  const heading = page.getByRole("heading", { name: "Bienvenida a tu ludoteca" });
+  const [family] = await font(heading);
+  expect(family).toMatch(/Press.Start.2P/i);
+  const welcome = page.getByRole("region", { name: "Bienvenida a tu ludoteca" });
+  const box = await welcome.evaluate((el) => [getComputedStyle(el).boxShadow, getComputedStyle(el).borderRadius]);
+  expect(box[0]).toContain("rgb(243, 234, 210)"); // el marco de papel de las ventanas
+  expect(box[1]).toBe("0px");
+  // En el inicio la barra flota sobre el contenido: la ventana empieza por debajo de ella.
+  const bar = (await page.locator("header").first().boundingBox())!;
+  expect((await welcome.boundingBox())!.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+  await expectCarcasaText(page.locator("main"));
+  // Sin jerga técnica: el modo local se explica igual que en el inicio, con el mismo enlace.
+  await expect(welcome).not.toContainText("Supabase");
+  await expect(welcome.getByRole("link", { name: "Haz una copia o conecta la sincronización" })).toHaveAttribute("href", "/ajustes");
+  // La demostración tranquiliza: se puede retirar.
+  await expect(welcome.getByText(/se retiran de una vez desde Ajustes/)).toBeVisible();
+  await expect(welcome.getByRole("button", { name: "Añadir el primer juego" })).toBeVisible();
+});

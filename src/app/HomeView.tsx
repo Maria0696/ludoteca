@@ -1,11 +1,12 @@
 "use client";
 
-import { HardDrive, Sparkles } from "lucide-react";
+import { HardDrive } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
 import { BackupReminder } from "@/components/home/BackupReminder";
 import { MainMenu } from "@/components/home/MainMenu";
+import { CHEST_CLOSED_URL } from "@/components/pixel/sprites";
 import { buildEntries } from "@/lib/filters";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
@@ -38,43 +39,57 @@ export function HomeView() {
   const recent = useMemo(() => [...entries].sort((a, b) => b.game.createdAt.localeCompare(a.game.createdAt)).slice(0, 12), [entries]);
   const champion = useMemo(() => [...entries].sort((a, b) => (b.game.hoursPlayed ?? 0) - (a.game.hoursPlayed ?? 0))[0], [entries]);
 
+  // Mismo aviso de modo local aquí y en el menú: sin jerga, con el camino a Ajustes.
+  const localNotice = (className?: string) => (
+    <p className={`notice ${className ?? ""}`}>
+      <HardDrive aria-hidden />
+      <span>
+        Modo local: tu biblioteca se guarda solo en este navegador. <Link href="/ajustes">Haz una copia o conecta la sincronización</Link>.
+      </span>
+    </p>
+  );
+
   if (library.games.length === 0) {
     return (
       <div className={styles.welcome}>
         <h1 className="sr-only">Inicio</h1>
-        <div className={styles.welcomeCard}>
-          <Sparkles aria-hidden className={styles.welcomeIcon} />
-          <h2>Bienvenida a tu ludoteca</h2>
-          <p>
-            Aquí verás lo que estás jugando a pantalla completa, lo último que has añadido y lo que lleva más tiempo esperando. Empieza
-            añadiendo un juego: título, plataforma y formato bastan.
-          </p>
-          {mode === "local" && (
-            <p className="notice">
-              <HardDrive aria-hidden />
-              Modo local: tu biblioteca se guarda solo en este navegador. Para usarla en varios dispositivos, conecta Supabase (ver Ajustes).
-            </p>
-          )}
-          <div className={styles.actions}>
-            <button type="button" className="btn btn-sticker btn-lg" onClick={() => open()}>
-              Añadir el primer juego
-            </button>
-            {mode === "local" && (
-              <button
-                type="button"
-                className="btn btn-lg"
-                disabled={loadingDemo}
-                onClick={async () => {
-                  setLoadingDemo(true);
-                  await actions.loadDemo();
-                  setLoadingDemo(false);
-                }}
-              >
-                {loadingDemo ? "Cargando…" : "Probar con datos de demostración"}
+        <section className={`window ${styles.welcomeCard}`} aria-labelledby="h-bienvenida">
+          {/* El cofre anticipa lo que pasa al añadir un juego. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio */}
+          <img src={CHEST_CLOSED_URL} alt="" className={styles.welcomeChest} />
+          <div className={styles.welcomeBody}>
+            <h2 id="h-bienvenida" className="screen-title">
+              Bienvenida a tu ludoteca
+            </h2>
+            <p>Aquí estará tu menú de partida: lo que juegas ahora, lo último que has añadido y lo que lleva más tiempo esperando.</p>
+            <p>Para empezar bastan el título, la plataforma y el formato. Lo demás, cuando quieras.</p>
+            <div className={styles.actions}>
+              <button type="button" className="btn btn-sticker btn-lg" onClick={() => open()}>
+                Añadir el primer juego
               </button>
+              {mode === "local" && (
+                <button
+                  type="button"
+                  className="btn btn-lg"
+                  disabled={loadingDemo}
+                  onClick={async () => {
+                    setLoadingDemo(true);
+                    await actions.loadDemo();
+                    setLoadingDemo(false);
+                  }}
+                >
+                  {loadingDemo ? "Cargando…" : "Probar con datos de demostración"}
+                </button>
+              )}
+            </div>
+            {mode === "local" && (
+              <>
+                <p className={styles.welcomeNote}>Los juegos de demostración van marcados y se retiran de una vez desde Ajustes.</p>
+                {localNotice(styles.welcomeNotice)}
+              </>
             )}
           </div>
-        </div>
+        </section>
       </div>
     );
   }
@@ -97,14 +112,7 @@ export function HomeView() {
         notices={
           <>
             <BackupReminder library={library} />
-            {mode === "local" && (
-              <p className={`notice ${styles.localNotice}`}>
-                <HardDrive aria-hidden />
-                <span>
-                  Modo local: tu biblioteca se guarda solo en este navegador. <Link href="/ajustes">Haz una copia o conecta la sincronización</Link>.
-                </span>
-              </p>
-            )}
+            {mode === "local" && localNotice(styles.localNotice)}
           </>
         }
       />
