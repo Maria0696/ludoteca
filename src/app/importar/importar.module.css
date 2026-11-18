@@ -299,10 +299,11 @@
     transform: scale(0.72);
   }
 }
+/* El contador ocupa dos casillas: «+300» no cabe en una con la letra de 18 px. */
 .more {
+  grid-column: span 2;
   display: grid;
   place-items: center;
-  aspect-ratio: 1;
   color: var(--dim);
   font-size: 18px;
   outline: 1px solid var(--edge-dim);
@@ -405,6 +406,11 @@
   .cells {
     grid-template-columns: repeat(auto-fill, minmax(26px, 1fr));
     min-height: 0;
+  }
+  /* Como en el alta: la acción principal cabe en una línea a 360 px. */
+  .page .go {
+    font-size: 12px;
+    white-space: nowrap;
   }
 }
 

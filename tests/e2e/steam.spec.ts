@@ -187,3 +187,23 @@ test("un nombre largo de Steam no desborda la lista en el móvil", async ({ page
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   expect(await row.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
 });
+
+test("en un móvil estrecho, la acción principal va en una línea y el contador cabe", async ({ page }) => {
+  // Una biblioteca de Steam grande: más juegos que casillas, con el contador «+N».
+  const many: SteamGame[] = Array.from({ length: 320 }, (_, i) => ({ appId: 1000 + i, name: `Juego ${i + 1}`, minutes: 60, icon: null }));
+  await page.setViewportSize({ width: 360, height: 740 });
+  await mockSteam(page, many, {});
+  await openApp(page, "/importar");
+  await searchProfile(page);
+  const go = page.getByRole("button", { name: "Copiar a la ludoteca" });
+  await expect(go).toBeVisible();
+  const lines = await go.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
+  const counter = page.getByText(/^\+\d+$/);
+  await expect(counter).toBeVisible();
+  expect(await counter.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+});
