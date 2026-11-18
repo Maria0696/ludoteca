@@ -1046,19 +1046,22 @@ button.slot:hover {
   .nodeTag {
     display: none;
   }
+  /* En el móvil el mapa es una franja: lo que vienes a hacer (estado, «Inserta moneda») va en la primera pantalla. */
   .map {
-    height: 340px;
+    height: clamp(200px, 30svh, 250px);
+    min-height: 0;
     overflow: visible;
-    margin-bottom: 104px;
+    margin-bottom: 92px;
   }
   .talk {
     left: 20px;
     right: 20px;
     width: auto;
     translate: 0 0;
-    bottom: -92px;
-    min-height: 76px;
-    font-size: 24px;
+    bottom: -80px;
+    min-height: 64px;
+    padding: 14px 14px 10px;
+    font-size: 22px;
   }
   .head {
     grid-template-columns: 112px minmax(0, 1fr);
@@ -1071,24 +1074,32 @@ button.slot:hover {
     grid-column: 1 / -1;
     grid-row: 1;
   }
+  /* Título, estado justo debajo, y la carátula con los extras e «Inserta moneda» al lado. */
+  /* Los cinco estados a la vista: en dos filas antes que esconder alguno fuera de la pantalla. */
+  .statusRow {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+  .status {
+    height: 44px;
+  }
   .coverWrap {
     grid-column: 1;
-    grid-row: 2 / span 2;
-  }
-  .extras {
-    grid-column: 2;
-    grid-row: 2;
+    grid-row: 3 / span 2;
     align-self: start;
   }
   .coin {
     grid-column: 2;
     grid-row: 3;
     justify-self: stretch;
-    align-self: end;
+    align-self: start;
   }
-  .statusRow {
-    grid-column: 1 / -1;
+  .extras {
+    grid-column: 2;
     grid-row: 4;
+    align-self: start;
   }
   .badge {
     right: -12px;
