@@ -96,6 +96,16 @@
 .modeChip svg {
   width: 14px;
   height: 14px;
+  flex: none;
+}
+/* El matraz solo sale cuando el chip se queda en iconos. */
+.chipCompact {
+  display: none;
+}
+/* Los botones de la barra nunca se encogen: si falta sitio, la barra se compacta por tramos. */
+.top > :global(.btn),
+.modeChip {
+  flex: none;
 }
 .addBtn {
   margin-left: 6px;
@@ -108,6 +118,8 @@
 .qs {
   position: relative;
   width: 260px;
+  /* Puede estrecharse, pero no tanto que «Buscar juego» deje de caber. */
+  min-width: 170px;
 }
 .qs input {
   width: 100%;
@@ -267,9 +279,45 @@
     display: inline-flex !important;
   }
 }
-@media (max-width: 1080px) {
-  .modeChip span {
+@media (max-width: 1400px) {
+  .chipText {
     display: none;
+  }
+  .chipCompact {
+    display: block;
+  }
+}
+/* Ordenador estrecho o tableta apaisada: menú algo más prieto y «Añadir juego» como en el móvil. */
+@media (min-width: 900px) and (max-width: 1100px) {
+  .top {
+    padding: 0 24px;
+  }
+  .brand {
+    margin-right: 12px;
+  }
+  .nav {
+    gap: 2px;
+  }
+  .nav a {
+    padding: 2px 6px 3px;
+    font-size: 20px;
+  }
+  .addBtn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .addLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .addBtn svg {
+    width: 20px;
+    height: 20px;
   }
 }
 

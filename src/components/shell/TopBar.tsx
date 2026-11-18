@@ -1,6 +1,6 @@
 "use client";
 
-import { HardDrive, Plus, Search, Settings } from "lucide-react";
+import { FlaskConical, HardDrive, Plus, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,6 +17,8 @@ export function TopBar() {
   const hasDemo = library.games.some((g) => g.demo) || library.wishlist.some((w) => w.demo);
   // En Inicio la barra flota sobre el cartel y se vuelve sólida al bajar.
   const overlay = pathname === "/";
+  // El chip se queda en iconos cuando falta sitio: su nombre dice siempre lo mismo que el texto.
+  const modeLabel = [mode === "local" && "Modo local", hasDemo && "Demostración"].filter(Boolean).join(" · ");
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -42,15 +44,24 @@ export function TopBar() {
       <div className={styles.spacer} />
 
       {(mode === "local" || hasDemo) && (
-        <Link href="/ajustes" className={styles.modeChip} title="Ver detalles en Ajustes">
+        <Link href="/ajustes" className={styles.modeChip} title="Ver detalles en Ajustes" aria-label={modeLabel}>
           {mode === "local" && (
             <>
               <HardDrive aria-hidden />
-              <span>Modo local</span>
+              <span className={styles.chipText}>Modo local</span>
             </>
           )}
-          {mode === "local" && hasDemo && <span aria-hidden>·</span>}
-          {hasDemo && <span>Demostración</span>}
+          {mode === "local" && hasDemo && (
+            <span className={styles.chipText} aria-hidden>
+              ·
+            </span>
+          )}
+          {hasDemo && (
+            <>
+              <FlaskConical aria-hidden className={styles.chipCompact} />
+              <span className={styles.chipText}>Demostración</span>
+            </>
+          )}
         </Link>
       )}
 

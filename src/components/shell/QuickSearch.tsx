@@ -50,7 +50,7 @@ export function QuickSearch({ className }: { className?: string }) {
         aria-autocomplete="list"
         aria-activedescendant={open && results[active] ? `${listId}-${active}` : undefined}
         aria-label="Buscar en tu biblioteca"
-        placeholder="Buscar en tu biblioteca"
+        placeholder="Buscar juego"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);
