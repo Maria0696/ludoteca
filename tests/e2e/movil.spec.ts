@@ -1,7 +1,32 @@
 import { expect, test } from "@playwright/test";
-import { cards, choosePlatform, expectCarcasaText, loadDemo } from "./helpers";
+import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
+
+test("la bienvenida de una biblioteca vacía cabe en el móvil y se toca con el pulgar", async ({ page }) => {
+  await openApp(page, "/");
+  const welcome = page.getByRole("region", { name: "Bienvenida a tu ludoteca" });
+  for (const width of [390, 360]) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `se sale a ${width}px`).toBeLessThanOrEqual(0);
+    const box = await welcome.boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    // Nada de dentro se sale de la ventana, ni queda tapado por la barra superior.
+    const spill = await welcome.evaluate((el) => {
+      const right = el.getBoundingClientRect().right;
+      return Math.max(...[...el.querySelectorAll("*")].map((c) => c.getBoundingClientRect().right - right));
+    });
+    expect(spill, `algo se sale de la ventana a ${width}px`).toBeLessThanOrEqual(0);
+    const barBottom = (await page.locator("header").first().boundingBox())!;
+    expect(box!.y, `la ventana queda bajo la barra a ${width}px`).toBeGreaterThanOrEqual(barBottom.y + barBottom.height);
+    await expectCarcasaText(page.locator("main"));
+    for (const name of ["Añadir el primer juego", "Probar con datos de demostración"]) {
+      const button = welcome.getByRole("button", { name });
+      await expect(button).toBeInViewport();
+      expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+  }
+});
 
 test("Estadísticas, ¿A qué juego? y Ajustes caben en el móvil", async ({ page }) => {
   await loadDemo(page);
