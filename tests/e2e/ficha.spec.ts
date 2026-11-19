@@ -491,3 +491,15 @@ test("en el ordenador, el bocadillo va junto a la guardiana sin tapar casillas, 
     }
   }
 });
+
+test("al guardar un dato de la ficha, un «Guardado» breve lo confirma", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  await page.getByRole("button", { name: /^Horas jugadas/ }).click();
+  await page.getByLabel("Horas jugadas").fill("42");
+  await page.getByLabel("Horas jugadas").press("Enter");
+  const saved = page.getByText("Guardado", { exact: true });
+  await expect(saved).toBeVisible();
+  await expect(saved).toHaveCount(0, { timeout: 4000 });
+});
