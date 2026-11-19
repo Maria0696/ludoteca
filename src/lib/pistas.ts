@@ -6,11 +6,15 @@
 
 export type PistaId = "mapa" | "moneda" | "datos";
 
+/** Cortas: caben en un bocadillo junto a la guardiana. */
 export const PISTAS: Record<PistaId, string> = {
-  mapa: "Cada casilla es un nivel de tu partida con este juego. Toca una y te llevo a su misión.",
-  moneda: "¡Moneda echada! Apunto que has jugado hoy: lo verás en «Última partida» y en tu inicio.",
-  datos: "Todo lo que ves en la ficha se cambia tocándolo, y se guarda solo.",
+  mapa: "Cada casilla es un nivel de tu partida. ¡Toca una!",
+  moneda: "¡Moneda echada! Apunto que has jugado hoy.",
+  datos: "Todo en la ficha se cambia tocándolo, y se guarda solo.",
 };
+
+/** La página del manual de instrucciones que lo cuenta con calma. */
+export const PISTA_PAGINA: Record<PistaId, number> = { mapa: 3, datos: 3, moneda: 4 };
 
 export const PISTAS_KEY = "ludoteca:pistas-vistas";
 

@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openAjustes, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -229,12 +229,16 @@ test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async
   await page.goto("/ajustes");
   const [family] = await font(page.getByRole("heading", { level: 1, name: "Ajustes" }));
   expect(family).toMatch(/Press.Start.2P/i);
-  for (const name of ["Dónde se guardan tus datos", "Copia de seguridad", "Eliminar todos los juegos"]) {
+  for (const [apartado, name] of [["datos", "Dónde se guardan tus datos"], ["copia", "Copia de seguridad"], ["eliminar", "Eliminar todos los juegos"]]) {
+    await openAjustes(page, apartado);
     expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+    await expectCarcasaText(page.locator("main"));
   }
+  await openAjustes(page, "creditos");
   await page.getByText(/Ver las \d+ obras/).click(); // créditos desplegados
   await expectCarcasaText(page.locator("main"));
   // Los avisos de eliminar todo, en la carcasa.
+  await openAjustes(page, "eliminar");
   await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
   const dialog = page.getByRole("dialog");
   await expectCarcasaText(dialog);
@@ -252,7 +256,7 @@ test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async
 
 test("el texto suelto de los diálogos está en la carcasa", async ({ page }) => {
   await loadDemo(page);
-  await page.goto("/ajustes");
+  await openAjustes(page, "demostracion");
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
   await expectCarcasaText(page.getByRole("dialog"));
 });
@@ -374,8 +378,10 @@ test("la app habla español: sin rótulos en inglés ni jerga técnica", async (
   await page.goto("/biblioteca");
   await expect(page.getByRole("region", { name: "Elegido" }).getByRole("link", { name: /Ver ficha/ })).toBeVisible();
   // Ajustes sin nombres de variables ni de servicios por dentro.
-  await page.goto("/ajustes");
-  await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
+  for (const apartado of ["copia", "datos", "demostracion", "catalogo", "steam", "creditos", "eliminar"]) {
+    await openAjustes(page, apartado);
+    await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
+  }
 });
 
 test("los estados tienen el mismo color en la biblioteca, la ficha y el alta", async ({ page }) => {
@@ -434,33 +440,58 @@ test("en la ficha, el punto del estado elegido se ve sobre el blanco", async ({ 
   expect(ring).toContain("rgb(18, 16, 31)");
 });
 
-test("Ajustes explica cómo funciona la ludoteca y deja volver a ver las pistas", async ({ page }) => {
-  await openApp(page, "/ajustes");
-  const help = page.getByRole("region", { name: "Cómo funciona" });
-  // La primera ventana de Ajustes, con su marco de papel.
-  expect(await page.locator("main section.window").first().getAttribute("id")).toBe("como-funciona");
-  expect(await help.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
-  for (const text of [
-    "Llegó a tu ludoteca", "Tu copia", "Primera partida", "En marcha", "Tu nota", "Terminado", "Al 100 %",
-    "NUEVA PARTIDA", "EN PARTIDA", "PAUSA", "¡SUPERADO!", "FIN DEL JUEGO", "Inserta moneda",
-  ]) {
-    await expect(help).toContainText(text);
-  }
-  await expectCarcasaText(help);
-  await help.getByRole("button", { name: "Volver a ver las pistas de la guardiana" }).click();
-  await expect(page.getByText("Las pistas volverán a salir en las fichas")).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem("ludoteca:pistas-vistas"))).toBeNull();
+test("Ajustes es un menú de opciones: un apartado a la vez, como en un juego", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  const menu = page.getByRole("navigation", { name: "Apartados de Ajustes" });
+  await expect(menu.getByRole("link")).toHaveText([
+    "Copia de seguridad", "Dónde se guardan tus datos", "Datos de demostración", "Catálogo de carátulas",
+    "Steam", "Imágenes de demostración", "Eliminar todos los juegos", "Manual de instrucciones",
+  ]);
+  // Sin elegir, el primero; solo una ventana a la vista.
+  await expect(menu.getByRole("link", { name: "Copia de seguridad" })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("main section.window")).toHaveCount(1);
+  await expect(page.getByRole("region", { name: "Copia de seguridad" })).toBeVisible();
+  // Elegir otro lo cambia y deja el enlace en la dirección.
+  await menu.getByRole("link", { name: "Steam" }).click();
+  await expect(page).toHaveURL(/\?apartado=steam$/);
+  await expect(page.getByRole("region", { name: "Steam" })).toBeVisible();
+  await expect(page.locator("main section.window")).toHaveCount(1);
+  await expect(menu.getByRole("link", { name: "Steam" })).toHaveAttribute("aria-current", "page");
+  // El menú y su apartado caben en la pantalla, sin desplazarse.
+  expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(0);
+  await expect(menu.getByRole("link", { name: "Manual de instrucciones" })).toHaveAttribute("href", "/manual");
+  await expectCarcasaText(page.locator("main"));
 });
 
-test("las ventanas de Ajustes ocupan todo el ancho de la pantalla", async ({ page }) => {
-  for (const width of [1920, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await openApp(page, "/ajustes");
-    const gutter = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--gutter")));
-    for (const box of await page.locator("main section.window").all()) {
-      const b = (await box.boundingBox())!;
-      // Hasta el margen derecho de la página (el marco de papel sobresale 4 px).
-      expect(Math.abs(width - gutter - (b.x + b.width)), `una ventana se corta a media pantalla a ${width}px`).toBeLessThanOrEqual(24);
-    }
+test("el manual de instrucciones se lee página a página, como el librito de un juego", async ({ page }) => {
+  await openApp(page, "/manual");
+  const [family] = await font(page.getByRole("heading", { level: 1, name: "Manual de instrucciones" }));
+  expect(family).toMatch(/Press.Start.2P/i);
+  const book = page.getByRole("region", { name: "Juegos y copias" });
+  await expect(book).toBeVisible();
+  expect(await book.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
+  await expect(page.getByText("Página 1 de 7")).toBeVisible();
+  await expectCarcasaText(page.locator("main"));
+  await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(page).toHaveURL(/\?pagina=2$/);
+  const states = page.getByRole("region", { name: "Estados" });
+  for (const label of ["NUEVA PARTIDA", "EN PARTIDA", "PAUSA", "¡SUPERADO!", "FIN DEL JUEGO"]) await expect(states).toContainText(label);
+  // Con el teclado también se pasa de página.
+  await page.keyboard.press("ArrowRight");
+  const map = page.getByRole("region", { name: "El mapa de la ficha" });
+  for (const stage of ["Llegó a tu ludoteca", "Tu copia", "Primera partida", "En marcha", "Tu nota", "Terminado", "Al 100 %"]) await expect(map).toContainText(stage);
+  await expect(page.getByText("Página 3 de 7")).toBeVisible();
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByText("Página 2 de 7")).toBeVisible();
+  // Cada página, en la carcasa; la última deja volver a ver las pistas.
+  for (let n = 1; n <= 7; n++) {
+    await openApp(page, `/manual?pagina=${n}`);
+    await expect(page.getByText(`Página ${n} de 7`)).toBeVisible();
+    await expectCarcasaText(page.locator("main"));
   }
+  await expect(page.getByRole("button", { name: "Siguiente" })).toBeDisabled();
+  await page.getByRole("button", { name: "Volver a ver las pistas de la guardiana" }).click();
+  await expect(page.getByText("Las pistas volverán a salir en las fichas")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("ludoteca:pistas-vistas"))).toBeNull();
 });

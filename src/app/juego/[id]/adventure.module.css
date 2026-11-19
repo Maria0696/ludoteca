@@ -43,12 +43,6 @@
   overflow: hidden;
   background: #123a5a;
 }
-/* Con una pista el cuadro es algo más alto: en pantallas bajas, el mapa también, para que no tape casillas. */
-@media (min-width: 900px) {
-  .map:has(.talkHelp) {
-    min-height: 440px;
-  }
-}
 .mapCanvas {
   position: absolute;
   inset: 0;
@@ -157,11 +151,100 @@
   font-size: 26px;
   line-height: 1.08;
 }
-.talkHelp {
+/* Bocadillo de la guardiana: junto a ella en el mapa, con su pico apuntándole. */
+.hint {
+  position: absolute;
+  z-index: 6;
+  width: min(300px, calc(100% - 16px));
+  padding: 12px 40px 10px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 -3px 0 var(--paper), 0 3px 0 var(--paper), -3px 0 0 var(--paper), 3px 0 0 var(--paper), 0 8px 0 3px #0006;
+  font-size: 21px;
+  line-height: 1.12;
+  animation: hint-in 260ms var(--ease-out) backwards;
+}
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+.hint p {
+  margin: 0 0 6px;
+}
+.hint::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  box-shadow: 3px 3px 0 var(--paper);
+}
+.hint[data-side="arriba"]::after {
+  left: var(--tail);
+  bottom: -7px;
+  translate: -50% 0;
+  rotate: 45deg;
+}
+.hint[data-side="abajo"]::after {
+  left: var(--tail);
+  top: -7px;
+  translate: -50% 0;
+  rotate: -135deg;
+}
+.hint[data-side="derecha"]::after {
+  top: var(--tail);
+  left: -7px;
+  translate: 0 -50%;
+  rotate: 135deg;
+}
+.hint[data-side="izquierda"]::after {
+  top: var(--tail);
+  right: -7px;
+  translate: 0 -50%;
+  rotate: -45deg;
+}
+.hintLink {
   color: var(--gold);
-  white-space: nowrap;
   font-size: 20px;
   text-underline-offset: 4px;
+}
+.hintClose {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  cursor: pointer;
+}
+.hintClose svg {
+  width: 18px;
+  height: 18px;
+}
+.hintClose:focus-visible,
+.hintLink:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .hintClose {
+    width: 44px;
+    height: 44px;
+    top: -2px;
+    right: -2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
 }
 .talkName {
   position: absolute;
@@ -1075,9 +1158,17 @@ button.slot:hover {
     overflow: visible;
     margin-bottom: 76px;
   }
-  /* Con una pista el cuadro es más alto: se deja su hueco debajo del mapa. */
-  .map:has(.talkHelp) {
-    margin-bottom: 160px;
+  /* Con el bocadillo, el mapa gana un poco de alto: cabe junto a la guardiana sin tapar casillas. */
+  .map:has(.hint) {
+    height: 310px;
+  }
+  .hint {
+    width: min(210px, calc(100% - 16px));
+    padding: 10px 36px 8px 10px;
+    font-size: 18px;
+  }
+  .hintLink {
+    font-size: 18px;
   }
   /* El cuadro cuelga del borde del mapa y crece hacia abajo: nunca tapa las casillas. */
   .talk {

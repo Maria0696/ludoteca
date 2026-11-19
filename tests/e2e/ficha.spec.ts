@@ -365,42 +365,71 @@ const PISTAS = "ludoteca:pistas-vistas";
 const openFicha = async (page: Page, title: RegExp) => {
   await page.goto("/biblioteca");
   await cards(page).getByRole("link", { name: title }).first().click();
-  return page.getByRole("status", { name: "Guardiana" });
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toBeVisible();
+  return page.getByRole("status", { name: "Pista de la guardiana" });
 };
+const freshHints = (page: Page, seen: string[] = []) =>
+  page.addInitScript(
+    ([key, value]) => {
+      if (!sessionStorage.getItem("pistas-preparadas")) {
+        localStorage.setItem(key, value);
+        sessionStorage.setItem("pistas-preparadas", "1");
+      }
+    },
+    [PISTAS, JSON.stringify(seen)],
+  );
 
-test("la primera ficha, la guardiana explica el mapa una sola vez", async ({ page }) => {
-  await page.addInitScript((key) => {
-    if (!sessionStorage.getItem("pistas-preparadas")) {
-      localStorage.removeItem(key);
-      sessionStorage.setItem("pistas-preparadas", "1");
-    }
-  }, PISTAS);
+/** Lo que tapa el bocadillo: casillas, sus nombres, la carátula y el cuadro de la guardiana. */
+const coveredBy = (page: Page) =>
+  page.evaluate(() => {
+    const bubble = document.querySelector('[aria-label="Pista de la guardiana"]')!.getBoundingClientRect();
+    const map = document.querySelector('[aria-label="Guardiana"]')!.parentElement!;
+    const nodes = [...map.querySelectorAll("button[aria-label$='conseguido'], button[aria-label$='pendiente']")];
+    const targets = [
+      ...nodes.flatMap((n) => [n, n.nextElementSibling].filter(Boolean) as Element[]),
+      document.querySelector('[aria-label="Guardiana"]')!,
+      document.querySelector('[class*="coverWrap"]')!,
+    ];
+    return targets
+      .map((t) => ({ name: t.getAttribute("aria-label") ?? t.textContent?.trim().slice(0, 30) ?? "", r: t.getBoundingClientRect() }))
+      .filter(({ r }) => r.width && r.height && r.left < bubble.right && r.right > bubble.left && r.top < bubble.bottom && r.bottom > bubble.top)
+      .map(({ name }) => name);
+  });
+
+test("la primera ficha, la guardiana explica el mapa en un bocadillo, una sola vez", async ({ page }) => {
+  await freshHints(page);
   await loadDemo(page);
-  let keeper = await openFicha(page, /Hades/);
-  await expect(keeper).toContainText("Cada casilla es un nivel");
-  await expect(keeper.getByRole("link", { name: "Cómo funciona" })).toHaveAttribute("href", "/ajustes#como-funciona");
-  keeper = await openFicha(page, /Celeste/);
-  await expect(keeper).toContainText("se cambia tocándolo");
-  keeper = await openFicha(page, /Hollow Knight/);
-  await expect(keeper).not.toContainText("Cada casilla");
-  await expect(keeper).not.toContainText("se cambia tocándolo");
-  await expect(keeper.getByRole("link", { name: "Cómo funciona" })).toHaveCount(0);
+  let hint = await openFicha(page, /Hades/);
+  await expect(hint).toContainText("¡Toca una!");
+  await expect(hint.getByRole("link", { name: "Ver el manual" })).toHaveAttribute("href", "/manual?pagina=3");
+  // La guardiana sigue con su frase de siempre en su cuadro.
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).not.toContainText("¡Toca una!");
+  hint = await openFicha(page, /Celeste/);
+  await expect(hint).toContainText("se cambia tocándolo");
+  hint = await openFicha(page, /Hollow Knight/);
+  await expect(hint).toHaveCount(0);
+});
+
+test("el bocadillo se cierra al tocar la equis", async ({ page }) => {
+  await freshHints(page);
+  await loadDemo(page);
+  const hint = await openFicha(page, /Hades/);
+  await hint.getByRole("button", { name: "Cerrar la pista" }).click();
+  await expect(hint).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toBeVisible();
 });
 
 test("la primera moneda, la guardiana cuenta qué apunta", async ({ page }) => {
-  await page.addInitScript((key) => {
-    if (!sessionStorage.getItem("pistas-preparadas")) {
-      localStorage.setItem(key, JSON.stringify(["mapa", "datos"]));
-      sessionStorage.setItem("pistas-preparadas", "1");
-    }
-  }, PISTAS);
+  await freshHints(page, ["mapa", "datos"]);
   await loadDemo(page);
-  const keeper = await openFicha(page, /Hades/);
+  const hint = await openFicha(page, /Hades/);
+  await expect(hint).toHaveCount(0);
   await page.getByRole("button", { name: /Inserta moneda/ }).click();
-  await expect(keeper).toContainText("¡Moneda echada!");
-  await page.getByRole("button", { name: /Inserta moneda/ }).click();
+  await expect(hint).toContainText("¡Moneda echada!");
+  await expect(hint.getByRole("link", { name: "Ver el manual" })).toHaveAttribute("href", "/manual?pagina=4");
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toContainText("¡Hoy has jugado!");
   await page.reload();
-  await expect(page.getByRole("status", { name: "Guardiana" })).toContainText("¡Hoy has jugado!");
+  await expect(page.getByRole("status", { name: "Pista de la guardiana" })).toHaveCount(0);
 });
 
 test("sin almacenamiento, la ficha abre sin pistas", async ({ page }) => {
@@ -412,25 +441,9 @@ test("sin almacenamiento, la ficha abre sin pistas", async ({ page }) => {
       return original.call(this, key);
     };
   });
-  const keeper = await openFicha(page, /Hades/);
+  const hint = await openFicha(page, /Hades/);
   await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
-  await expect(keeper).not.toContainText("Cada casilla");
-});
-
-test("en el ordenador, el enlace «Cómo funciona» de la guardiana se puede pulsar", async ({ page }) => {
-  await page.addInitScript((key) => {
-    if (!sessionStorage.getItem("pistas-preparadas")) {
-      localStorage.removeItem(key);
-      sessionStorage.setItem("pistas-preparadas", "1");
-    }
-  }, PISTAS);
-  await loadDemo(page);
-  const keeper = await openFicha(page, /Hades/);
-  // La cabecera de la ficha sube sobre el mapa: su hueco no puede tapar el enlace.
-  const link = keeper.getByRole("link", { name: "Cómo funciona" });
-  await expect(link).toBeVisible();
-  await link.click({ timeout: 5000 });
-  await expect(page.getByRole("region", { name: "Cómo funciona" })).toBeInViewport();
+  await expect(hint).toHaveCount(0);
 });
 
 test("con el almacenamiento lleno, la pista no se repite en cada visita", async ({ page }) => {
@@ -443,48 +456,38 @@ test("con el almacenamiento lleno, la pista no se repite en cada visita", async 
       return original.call(this, key, value);
     };
   });
-  const keeper = await openFicha(page, /Hades/);
+  const hint = await openFicha(page, /Hades/);
   await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
-  // Si no puede recordarse, mejor no enseñarla que repetirla siempre.
-  await expect(keeper).not.toContainText("Cada casilla");
+  await expect(hint).toHaveCount(0);
 });
 
 test("una ficha que no existe no gasta la pista del mapa", async ({ page }) => {
-  await page.addInitScript((key) => {
-    if (!sessionStorage.getItem("pistas-preparadas")) {
-      localStorage.removeItem(key);
-      sessionStorage.setItem("pistas-preparadas", "1");
-    }
-  }, PISTAS);
+  await freshHints(page);
   await loadDemo(page);
   await page.goto("/juego/no-existe");
   await expect(page.getByRole("heading", { name: "Este juego no está en tu biblioteca" })).toBeVisible();
-  const keeper = await openFicha(page, /Hades/);
-  await expect(keeper).toContainText("Cada casilla");
+  const hint = await openFicha(page, /Hades/);
+  await expect(hint).toContainText("¡Toca una!");
 });
 
-test("en el ordenador, la pista de la guardiana no tapa ninguna casilla del mapa ni su nombre", async ({ page }) => {
+test("en el ordenador, el bocadillo va junto a la guardiana sin tapar casillas, nombres ni la carátula", async ({ page }) => {
   await loadDemo(page);
   for (const [width, height] of [[1920, 1000], [1920, 880], [1440, 900], [1366, 650], [1280, 800], [1024, 768]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => localStorage.removeItem("ludoteca:pistas-vistas"));
-    const keeper = await openFicha(page, /Hades/);
-    await expect(keeper).toContainText("Toca una");
-    const talk = (await keeper.boundingBox())!;
-    // Tampoco la carátula tapa el cuadro: empieza a su derecha.
-    const cover = (await page.locator('[class*="coverWrap"]').first().boundingBox())!;
-    expect(talk.x, `la carátula tapa el cuadro a ${width}px`).toBeGreaterThanOrEqual(cover.x + cover.width);
-    // Las casillas y sus nombres (los rótulos van tras cada botón).
-    const spots = await page.getByRole("button", { name: /, (conseguido|pendiente)$/ }).evaluateAll((els) =>
-      els.flatMap((el) => [el, el.nextElementSibling].filter(Boolean).map((e) => {
-        const b = (e as Element).getBoundingClientRect();
-        return { name: el.getAttribute("aria-label")!, x: b.x, y: b.y, w: b.width, h: b.height };
-      })),
-    );
-    for (const s of spots) {
-      if (!s.w) continue;
-      const overlap = s.x < talk.x + talk.width && s.x + s.w > talk.x && s.y < talk.y + talk.height && s.y + s.h > talk.y;
-      expect(overlap, `la pista tapa «${s.name}» a ${width}px`).toBe(false);
+    const hint = await openFicha(page, /Hades/);
+    await expect(hint).toBeVisible();
+    expect(await coveredBy(page), `a ${width}×${height}`).toEqual([]);
+    // Junto a ella: a menos de 160 px de la guardiana.
+    const keeper = (await page.locator('[class*="keeper"]').first().boundingBox())!;
+    const box = (await hint.boundingBox())!;
+    const dx = Math.max(0, box.x - (keeper.x + keeper.width), keeper.x - (box.x + box.width));
+    const dy = Math.max(0, box.y - (keeper.y + keeper.height), keeper.y - (box.y + box.height));
+    expect(Math.hypot(dx, dy), `lejos de la guardiana a ${width}×${height}`).toBeLessThanOrEqual(160);
+    // El enlace al manual se puede pulsar.
+    if (width === 1440) {
+      await hint.getByRole("link", { name: "Ver el manual" }).click({ timeout: 5000 });
+      await expect(page.getByRole("region", { name: "El mapa de la ficha" })).toBeVisible();
     }
   }
 });

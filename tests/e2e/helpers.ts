@@ -5,6 +5,11 @@ export async function openApp(page: Page, path = "/") {
   await expect(page.getByText("Cargando tu biblioteca…")).toHaveCount(0);
 }
 
+/** Abre un apartado del menú de Ajustes (copia, datos, demostracion, catalogo, steam, creditos, eliminar). */
+export async function openAjustes(page: Page, apartado: string) {
+  await openApp(page, `/ajustes?apartado=${apartado}`);
+}
+
 export async function loadDemo(page: Page) {
   await openApp(page, "/biblioteca");
   await page.getByRole("button", { name: "Probar con datos de demostración" }).click();

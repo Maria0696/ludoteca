@@ -1,15 +1,70 @@
-/* Ajustes en la carcasa: cada ajuste es una ventana, con su explicación a la izquierda. */
+/* Ajustes como menú de opciones de un juego: la lista a la izquierda y un solo apartado a la derecha. */
 .page {
   padding: 36px var(--gutter) 0;
 }
 .title {
   margin-bottom: 24px;
 }
-.row {
+.options {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 28px;
-  margin-bottom: 28px;
+  align-items: start;
+}
+.menu {
+  padding: 12px;
+}
+.menu ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-family: var(--font-term);
+  font-size: 22px;
+  line-height: 1.1;
+  text-decoration: none;
+}
+.menu a[aria-current="page"] {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  .menu a:not([aria-current="page"]):hover {
+    background: var(--hover);
+    color: #fff;
+  }
+}
+.menu svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.menuManual {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid var(--line);
+}
+.current {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.back {
+  display: none;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
 }
 .label {
   display: grid;
@@ -29,7 +84,7 @@
   font-family: var(--font-term);
   font-size: 20px;
   line-height: 1.2;
-  max-width: 44ch;
+  max-width: 75ch;
 }
 /* El contenido de la ventana: sin marco propio. */
 .panel {
@@ -108,103 +163,35 @@
   color: var(--text);
 }
 
-/* «Cómo funciona»: el ancla deja sitio a la barra superior, que en el móvil también está fija. */
-.help {
-  scroll-margin-top: calc(var(--topbar) + 16px);
-}
-/* Grids anidados que no crecen con su contenido: en el móvil nada se sale del marco. */
-.help .panel,
-.helpList,
-.helpList > div {
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
-}
-.helpList {
-  display: grid;
-  gap: 0;
-}
-.helpList > div {
-  display: grid;
-  gap: 6px;
-  padding: 12px 0;
-  border-bottom: 2px solid var(--line);
-}
-.helpList > div:first-child {
-  padding-top: 0;
-}
-.helpList > div:last-child {
-  border-bottom: 0;
-}
-.helpList dt {
-  color: var(--gold);
-  font-size: 22px;
-}
-.helpList dd {
-  margin: 0;
-  color: var(--muted);
-}
-/* En pantallas anchas, los apartados de «Cómo funciona» en columnas: llenan la ventana sin líneas eternas. */
-@media (min-width: 1200px) {
-  .help .panel {
-    max-width: none;
-  }
-  .helpList {
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 24px 40px;
-  }
-  .helpList > div,
-  .helpList > div:first-child,
-  .helpList > div:last-child {
-    align-content: start;
-    padding: 0 0 0 16px;
-    border-bottom: 0;
-    border-left: 2px solid var(--line);
-  }
-}
-.helpStates {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.helpStages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: nivel;
-}
-.helpStages li {
-  counter-increment: nivel;
-  padding: 2px 8px;
-  background: var(--raised);
-  color: var(--text);
-}
-/* Un texto largo: en un móvil estrecho va en dos líneas antes que salirse. */
-.helpReset {
-  height: auto;
-  min-height: 44px;
-  padding-block: 8px;
-  white-space: normal;
-  text-align: center;
-  line-height: 1.1;
-}
-.helpStages li::before {
-  content: counter(nivel) " · ";
-  color: var(--gold);
-}
-
 @media (max-width: 899px) {
   .page {
     padding-top: 18px;
   }
   /* minmax(0, 1fr): la columna no crece con su contenido más ancho y nada se sale del marco. */
-  .row {
+  /* En el móvil, primero la lista y, al tocar, el apartado con su «volver». */
+  .options {
     grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .page[data-apartado="no"] .current,
+  .page[data-apartado="si"] .menu {
+    display: none;
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-self: start;
+    min-height: 44px;
+    color: var(--text);
+    font-family: var(--font-term);
+    font-size: 21px;
+  }
+  .back svg {
+    width: 18px;
+    height: 18px;
+  }
+  .row {
     gap: 14px;
   }
 }

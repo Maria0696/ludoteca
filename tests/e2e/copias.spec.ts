@@ -40,7 +40,7 @@ test("el inicio recuerda hacer una copia y deja de hacerlo al exportarla", async
   await expect(page.getByText("Copia exportada: 1 juego, 1 copia, 0 deseos y 0 listas")).toBeVisible();
   await expect(reminder(page)).toHaveCount(0);
 
-  await openApp(page, "/ajustes");
+  await openApp(page, "/ajustes?apartado=copia");
   await expect(page.getByText("Última copia desde este navegador: hoy.")).toBeVisible();
 
   // Una copia de hace 45 días vuelve a mostrar el aviso; «Ahora no» lo esconde.
@@ -66,6 +66,6 @@ test("con solo datos de demostración no se pide copia", async ({ page }) => {
   await openApp(page, "/");
   await expect(page.getByRole("group", { name: "Menú principal" })).toBeVisible();
   await expect(reminder(page)).toHaveCount(0);
-  await openApp(page, "/ajustes");
+  await openApp(page, "/ajustes?apartado=copia");
   await expect(page.getByText("Aún no has exportado ninguna copia desde este navegador.")).toBeVisible();
 });

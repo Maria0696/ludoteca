@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type CSSProperties, useEffect, useRef } from "react";
 import { KEEPER_URL, TROPHY_URL } from "@/components/pixel/sprites";
 import styles from "./adventure.module.css";
+import { KeeperHint } from "./KeeperHint";
 import { STAGES, TROPHY_STAGE, currentStage } from "./progress";
 
 /* Posición de cada nivel, en %: una versión apaisada y otra para móvil. */
@@ -87,15 +88,17 @@ export function AdventureMap({
   selected,
   onSelect,
   line,
-  help = false,
+  hint = null,
+  onCloseHint,
   hopSignal,
 }: {
   reached: boolean[];
   selected: number | null;
   onSelect: (stage: number) => void;
   line: string;
-  /** La frase es una pista: lleva el enlace a «Cómo funciona». */
-  help?: boolean;
+  /** Una pista de primera vez: sale en un bocadillo junto a la guardiana. */
+  hint?: { text: string; page: number } | null;
+  onCloseHint?: () => void;
   /** Cambia cada vez que la guardiana debe dar un salto. */
   hopSignal: number;
 }) {
@@ -179,19 +182,9 @@ export function AdventureMap({
         <span className={styles.talkName} aria-hidden>
           Guardiana
         </span>
-        <p>
-          {line}
-          {/* En la misma línea que la pista: el cuadro no crece y no tapa el mapa. */}
-          {help && (
-            <>
-              {" "}
-              <Link href="/ajustes#como-funciona" className={styles.talkHelp}>
-                Cómo funciona
-              </Link>
-            </>
-          )}
-        </p>
+        <p>{line}</p>
       </div>
+      {hint && <KeeperHint text={hint.text} page={hint.page} onClose={() => onCloseHint?.()} keeperRef={keeperRef} />}
     </div>
   );
 }

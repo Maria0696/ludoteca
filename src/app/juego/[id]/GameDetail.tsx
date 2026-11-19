@@ -12,7 +12,7 @@ import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
-import { PISTAS, type PistaId, marcarPista, pistasVistas } from "@/lib/pistas";
+import { PISTAS, PISTA_PAGINA, type PistaId, marcarPista, pistasVistas } from "@/lib/pistas";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
@@ -124,8 +124,9 @@ export function GameDetail({ id }: { id: string }) {
         reached={reached}
         selected={selected}
         onSelect={selectStage}
-        line={pista ? PISTAS[pista] : keeperLine(game)}
-        help={pista !== null}
+        line={keeperLine(game)}
+        hint={pista ? { text: PISTAS[pista], page: PISTA_PAGINA[pista] } : null}
+        onCloseHint={() => setPista(null)}
         hopSignal={hopSignal}
       />
 
