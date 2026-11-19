@@ -1,6 +1,6 @@
 "use client";
 
-import { HardDrive } from "lucide-react";
+import { HardDrive, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
@@ -12,10 +12,33 @@ import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
 import styles from "./home.module.css";
 
+const LOCAL_NOTICE_KEY = "ludoteca:aviso-local-cerrado";
+
+/** Una vez leído, el aviso de modo local del menú se puede cerrar; Ajustes lo sigue explicando. */
+function useLocalNoticeClosed(): [boolean, () => void] {
+  const [closed, setClosed] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(LOCAL_NOTICE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const close = () => {
+    setClosed(true);
+    try {
+      localStorage.setItem(LOCAL_NOTICE_KEY, "1");
+    } catch {
+      // Sin almacenamiento, se cierra solo esta vez.
+    }
+  };
+  return [closed, close];
+}
+
 export function HomeView() {
   const { library, actions, mode } = useLibrary();
   const { open } = useAddGame();
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [noticeClosed, closeNotice] = useLocalNoticeClosed();
   const entries = useMemo(() => buildEntries(library), [library]);
   const stats = useMemo(() => computeStats(library), [library]);
 
@@ -40,12 +63,17 @@ export function HomeView() {
   const champion = useMemo(() => [...entries].sort((a, b) => (b.game.hoursPlayed ?? 0) - (a.game.hoursPlayed ?? 0))[0], [entries]);
 
   // Mismo aviso de modo local aquí y en el menú: sin jerga, con el camino a Ajustes.
-  const localNotice = (className?: string) => (
+  const localNotice = (className?: string, onClose?: () => void) => (
     <p className={`notice ${className ?? ""}`}>
       <HardDrive aria-hidden />
       <span>
         Modo local: tu biblioteca se guarda solo en este navegador. <Link href="/ajustes">Haz una copia o conecta la sincronización</Link>.
       </span>
+      {onClose && (
+        <button type="button" className={styles.noticeClose} aria-label="Cerrar el aviso de modo local" onClick={onClose}>
+          <X aria-hidden />
+        </button>
+      )}
     </p>
   );
 
@@ -112,7 +140,7 @@ export function HomeView() {
         notices={
           <>
             <BackupReminder library={library} />
-            {mode === "local" && localNotice(styles.localNotice)}
+            {mode === "local" && !noticeClosed && localNotice(styles.localNotice, closeNotice)}
           </>
         }
       />

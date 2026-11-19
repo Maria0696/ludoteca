@@ -181,3 +181,18 @@ test("en una ventana baja, las opciones del menú no se mueven al cambiar de pan
   await page.waitForTimeout(1000);
   await expect(chosen).toHaveText(label!);
 });
+
+test("el aviso de modo local del inicio se puede cerrar y no vuelve", async ({ page }) => {
+  await loadDemo(page);
+  await openApp(page, "/");
+  const notice = page.getByText(/^Modo local: tu biblioteca se guarda solo en este navegador/);
+  await expect(notice).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar el aviso de modo local" }).click();
+  await expect(notice).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("group", { name: "Menú principal" })).toBeVisible();
+  await expect(notice).toHaveCount(0);
+  // Ajustes lo sigue explicando.
+  await openApp(page, "/ajustes?apartado=datos");
+  await expect(page.getByText(/Tu biblioteca se guarda solo en este navegador/)).toBeVisible();
+});

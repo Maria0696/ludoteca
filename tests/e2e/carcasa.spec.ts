@@ -495,3 +495,33 @@ test("el manual de instrucciones se lee página a página, como el librito de un
   await expect(page.getByText("Las pistas volverán a salir en las fichas")).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("ludoteca:pistas-vistas"))).toBeNull();
 });
+
+test("las sugerencias del catálogo al añadir, sin esquinas redondeadas", async ({ page }) => {
+  await page.route("**/api/catalogo?*", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        results: [
+          { igdbId: 1, title: "Cr de prueba", year: 2020, coverUrl: "https://images.example/c.jpg", backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null, criticRating: null },
+        ],
+      },
+    }),
+  );
+  await page.route("https://images.example/**", (route) => route.fulfill({ status: 404 }));
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  await dialog.getByLabel("Título").fill("cr");
+  await expect(dialog.getByRole("option", { name: /Cr de prueba/ })).toBeVisible();
+  const rounded = await dialog.evaluate((root) =>
+    [...root.querySelectorAll("*")]
+      .filter((el) => {
+        const s = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        // Los puntos de color de estado son círculos a propósito.
+        return r.width > 14 && ["borderTopLeftRadius", "borderTopRightRadius", "borderBottomLeftRadius", "borderBottomRightRadius"].some((k) => parseFloat(s[k as "borderTopLeftRadius"]) > 0);
+      })
+      .map((el) => `${el.tagName}.${String(el.className).slice(0, 30)}`),
+  );
+  expect(rounded).toEqual([]);
+});

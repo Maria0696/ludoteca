@@ -102,7 +102,8 @@ test("buscar, filtrar por plataforma, formato y estado, y ordenar", async ({ pag
   await page.getByPlaceholder("Buscar por título").fill("zzz");
   await expect(page.getByRole("heading", { name: "Ningún juego coincide" })).toBeVisible();
   await page.getByRole("button", { name: "Restablecer filtros" }).click();
-  await expect(page.getByText("22 títulos", { exact: true })).toBeVisible();
+  // Sin filtros, el número solo está en la cabecera («22 títulos · 24 copias»).
+  await expect(page.getByText("22 títulos", { exact: true })).toHaveCount(0);
 
   await page.getByRole("tab", { name: /PS5/ }).click();
   await expect(page.getByText("6 de 22 títulos")).toBeVisible();
@@ -120,7 +121,8 @@ test("buscar, filtrar por plataforma, formato y estado, y ordenar", async ({ pag
   await page.getByRole("button", { name: "Digital", exact: true }).click();
   await expect(page.getByText(/de 22 títulos/)).toBeVisible();
   await page.getByRole("button", { name: "Restablecer", exact: true }).click();
-  await expect(page.getByText("22 títulos", { exact: true })).toBeVisible();
+  // Sin filtros, el número solo está en la cabecera («22 títulos · 24 copias»).
+  await expect(page.getByText("22 títulos", { exact: true })).toHaveCount(0);
 
   await page.getByRole("combobox").filter({ hasText: "Por plataforma" }).selectOption("ninguno");
   await page.getByRole("combobox").filter({ hasText: "Añadidos recientemente" }).selectOption("titulo");
@@ -339,4 +341,23 @@ test("en un portátil pequeño, «/» en la biblioteca va a su buscador sin perd
   await expect(page.getByRole("searchbox", { name: "Buscar por título" })).toBeFocused();
   await expect(page).toHaveURL(/vista=lista/);
   await expect(page).toHaveURL(/estado=jugando/);
+});
+
+test("la biblioteca dice su recuento una sola vez", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await expect(page.getByText(/22 títulos/)).toHaveCount(1);
+  await page.getByRole("button", { name: "Jugando", exact: true }).click();
+  await expect(page.getByText(/^\d+ de 22 títulos$/)).toBeVisible();
+});
+
+test("«NUEVA PARTIDA» parpadea al llegar, no para siempre", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  const badge = page.locator('[class*="badge"][data-status="pendiente"]').first();
+  await expect(badge).toBeVisible();
+  expect(await badge.evaluate((el) => getComputedStyle(el).animationName)).not.toBe("none");
+  const iterations = await badge.evaluate((el) => getComputedStyle(el).animationIterationCount);
+  expect(iterations).not.toBe("infinite");
+  expect(Number(iterations)).toBeLessThanOrEqual(4);
 });

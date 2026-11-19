@@ -149,7 +149,7 @@
   gap: 16px;
   min-height: 76px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 0;
   content-visibility: auto;
   contain-intrinsic-size: auto 76px;
   transition: background-color 160ms ease;
@@ -194,7 +194,7 @@
   height: 36px;
   font-size: 13px;
   padding-left: 12px;
-  border-radius: 999px;
+  border-radius: 0;
 }
 @media (max-width: 899px) {
   .row {
@@ -240,7 +240,7 @@
 .pickedCover {
   width: 48px;
   flex: none;
-  border-radius: 8px !important;
+  border-radius: 0;
 }
 .catalog {
   position: relative;
@@ -277,7 +277,7 @@
   z-index: 5;
   background: var(--raised);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 0;
   box-shadow: 0 30px 60px -12px #000;
   padding: 6px;
   max-height: 360px;
@@ -296,7 +296,7 @@
   gap: 12px;
   align-items: center;
   padding: 6px;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
 }
 .catalogList li[aria-selected="true"] {
@@ -321,7 +321,7 @@
 .catalogCover {
   width: 36px;
   flex: none;
-  border-radius: 6px !important;
+  border-radius: 0;
 }
 .catalogCover :global(.cover-fallback strong),
 .catalogCover :global(.cover-fallback span) {
@@ -337,7 +337,7 @@
   display: flex;
   gap: 12px;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--raised);
 }
 .duplicate > svg {
