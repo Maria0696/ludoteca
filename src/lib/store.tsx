@@ -23,6 +23,7 @@ import {
 import { isSupabaseConfigured, localModeAllowed } from "./config";
 import { LocalRepository } from "./repo/local";
 import type { Changes, Repository, StorageMode } from "./repo/types";
+import { type GtCounts, type GtItem, planGameTrackerImport } from "./gametracker-import";
 import { type SteamImportCounts, type SteamImportItem, planSteamImport } from "./steam-import";
 
 /*
@@ -59,6 +60,8 @@ interface Actions {
   applyChanges(changes: Changes): Promise<void>;
   /** Guarda un grupo de juegos de Steam; si falla, avisa con un error y no cambia nada. */
   importSteam(items: SteamImportItem[]): Promise<SteamImportCounts>;
+  /** Guarda un grupo de juegos y deseos de Game Tracker; lo que ya está se salta. Si falla, avisa con un error. */
+  importGameTracker(items: GtItem[]): Promise<GtCounts>;
   loadDemo(): Promise<void>;
   removeDemo(): Promise<void>;
 }
@@ -468,6 +471,26 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           ...before,
           games: [...before.games.map((g) => changed.get(g.id) ?? g), ...plan.games.filter((g) => !known.has(g.id))],
           copies: [...before.copies, ...plan.copies],
+        });
+        return plan.counts;
+      },
+
+      async importGameTracker(items) {
+        const repo = repoRef.current;
+        if (!repo) throw new Error("La biblioteca aún no está lista.");
+        const plan = planGameTrackerImport(libRef.current, items);
+        if (plan.games.length || plan.copies.length || plan.wishlist.length) await repo.save({ games: plan.games, copies: plan.copies, wishlist: plan.wishlist });
+        const before = libRef.current;
+        // Por identificador: al repetir una tanda cortada, lo reescrito sustituye a lo que ya hubiera.
+        const merge = <T extends { id: string }>(current: T[], added: T[]) => {
+          const ids = new Set(added.map((x) => x.id));
+          return [...current.filter((x) => !ids.has(x.id)), ...added];
+        };
+        commit({
+          ...before,
+          games: merge(before.games, plan.games),
+          copies: merge(before.copies, plan.copies),
+          wishlist: merge(before.wishlist, plan.wishlist),
         });
         return plan.counts;
       },

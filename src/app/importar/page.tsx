@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import { SteamImport } from "./SteamImport";
+import { Suspense } from "react";
+import { ImportView } from "./ImportView";
 
-export const metadata: Metadata = { title: "Importar de Steam" };
+export const metadata: Metadata = { title: "Importar" };
 
 export default function ImportarPage() {
-  return <SteamImport />;
+  return (
+    <Suspense>
+      <ImportView />
+    </Suspense>
+  );
 }

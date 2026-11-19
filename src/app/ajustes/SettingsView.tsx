@@ -264,7 +264,7 @@ export function SettingsView() {
               </div>
               <div className={styles.panel}>
                 <div className={styles.actions}>
-                  <Link href="/importar" className="btn">
+                  <Link href="/importar?origen=steam" className="btn">
                     Importar de Steam
                   </Link>
                 </div>
