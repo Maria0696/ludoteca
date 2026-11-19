@@ -257,6 +257,7 @@ test("en la tabla se eligen varios juegos y se les cambia el estado de una vez",
   const bar = page.getByRole("region", { name: "Cambio en grupo" });
   await expect(bar).toContainText("3 elegidos");
   await bar.getByLabel("Cambiar estado a…").selectOption("abandonado");
+  await bar.getByRole("button", { name: "Cambiar", exact: true }).click();
   await expect(page.getByText("3 juegos pasan a Abandonado")).toBeVisible();
   for (const title of ["Hades", "Celeste", "Hollow Knight"]) await expect(statusOf(page, title)).toHaveValue("abandonado");
   await expect(bar).toHaveCount(0);
@@ -268,19 +269,37 @@ test("en la tabla se eligen varios juegos y se les cambia el estado de una vez",
 
 test("elegir todos los que se ven respeta el filtro, y Esc quita la selección", async ({ page }) => {
   await loadDemo(page);
-  await page.goto("/biblioteca?vista=lista&estado=jugando");
+  await page.goto("/biblioteca?vista=lista");
+  // Filtrar desde la propia pantalla: la selección vive mientras no se recarga.
+  await page.getByRole("button", { name: "Jugando", exact: true }).click();
+  await expect(page).toHaveURL(/estado=jugando/);
   const rows = await page.getByRole("checkbox", { name: /^Elegir «/ }).count();
   await page.getByRole("checkbox", { name: "Elegir todos los que se ven" }).check();
   const bar = page.getByRole("region", { name: "Cambio en grupo" });
   await expect(bar).toContainText(`${rows} elegidos`);
   // Al quitar el filtro, los elegidos siguen siendo los mismos.
-  await page.goto("/biblioteca?vista=lista");
-  await page.getByRole("checkbox", { name: "Elegir «Celeste»" }).check();
-  await page.goto("/biblioteca?vista=lista&estado=jugando");
-  await page.getByRole("checkbox", { name: "Elegir todos los que se ven" }).check();
+  await page.getByRole("button", { name: "Jugando", exact: true }).click();
+  await expect(page).not.toHaveURL(/estado=jugando/);
+  await expect(page.getByRole("checkbox", { name: /^Elegir «/ })).not.toHaveCount(rows);
   await expect(bar).toContainText(`${rows} elegidos`);
   await page.keyboard.press("Escape");
   await expect(bar).toHaveCount(0);
+});
+
+test("con el teclado, moverse por «Cambiar estado a…» no cambia nada hasta pulsar «Cambiar»", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  await pick(page, "Hades").check();
+  await pick(page, "Celeste").check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  const select = bar.getByLabel("Cambiar estado a…");
+  await select.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByText(/pasan? a /)).toHaveCount(0);
+  await expect(statusOf(page, "Hades")).toHaveValue("jugando");
+  await expect(statusOf(page, "Celeste")).toHaveValue("completado");
+  await expect(bar).toContainText("2 elegidos");
 });
 
 test("un filtro que oculta un juego elegido lo saca de la selección", async ({ page }) => {
@@ -299,10 +318,25 @@ test("en el cambio en grupo solo cuentan los que cambian", async ({ page }) => {
   await page.goto("/biblioteca?vista=lista");
   await pick(page, "Celeste").check();
   await pick(page, "Inside").check();
-  await page.getByRole("region", { name: "Cambio en grupo" }).getByLabel("Cambiar estado a…").selectOption("completado");
+  let bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await bar.getByLabel("Cambiar estado a…").selectOption("completado");
+  await bar.getByRole("button", { name: "Cambiar", exact: true }).click();
   await expect(page.getByText(/pasan? a Completado/)).toHaveCount(0);
   await pick(page, "Celeste").check();
   await pick(page, "Hades").check();
-  await page.getByRole("region", { name: "Cambio en grupo" }).getByLabel("Cambiar estado a…").selectOption("completado");
+  bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await bar.getByLabel("Cambiar estado a…").selectOption("completado");
+  await bar.getByRole("button", { name: "Cambiar", exact: true }).click();
   await expect(page.getByText("«Hades» pasa a Completado")).toBeVisible();
+});
+
+test("en un portátil pequeño, «/» en la biblioteca va a su buscador sin perder los filtros", async ({ page }) => {
+  await loadDemo(page);
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.goto("/biblioteca?vista=lista&estado=jugando");
+  await page.locator("body").click({ position: { x: 5, y: 400 } });
+  await page.keyboard.press("/");
+  await expect(page.getByRole("searchbox", { name: "Buscar por título" })).toBeFocused();
+  await expect(page).toHaveURL(/vista=lista/);
+  await expect(page).toHaveURL(/estado=jugando/);
 });

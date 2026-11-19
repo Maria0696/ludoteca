@@ -22,8 +22,13 @@ export function useShortcuts(): void {
       if (busy(e)) return;
       if (e.key === "/") {
         e.preventDefault();
-        const search = document.querySelector<HTMLInputElement>('header input[aria-keyshortcuts="/"]');
-        if (search && search.offsetParent !== null) search.focus();
+        // El buscador de la barra si se ve; si no, el de la propia pantalla (la biblioteca, sin tocar sus filtros);
+        // y solo si no hay ninguno, se va a buscar a la biblioteca.
+        const visible = (el: HTMLInputElement | null) => (el && el.offsetParent !== null ? el : null);
+        const search =
+          visible(document.querySelector<HTMLInputElement>('header input[aria-keyshortcuts="/"]')) ??
+          visible(document.querySelector<HTMLInputElement>('#contenido input[type="search"]'));
+        if (search) search.focus();
         else router.push("/biblioteca?buscar=1");
       } else if (e.key === "a" || e.key === "A") {
         e.preventDefault();

@@ -103,6 +103,8 @@ export function LibraryView() {
 
   // Cambio en grupo en la tabla: solo cuentan los elegidos que se ven; un filtro que oculta uno lo saca.
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  // El estado elegido en la barra solo se aplica con «Cambiar»: con el teclado, moverse por la lista no cambia nada.
+  const [bulkStatus, setBulkStatus] = useState<GameStatus | "">("");
   const visibleKey = visible.map((e) => e.game.id).join();
   const [pickedFor, setPickedFor] = useState(visibleKey);
   if (pickedFor !== visibleKey) {
@@ -355,15 +357,7 @@ export function LibraryView() {
                   <p>
                     {picked.size} {picked.size === 1 ? "elegido" : "elegidos"}
                   </p>
-                  <select
-                    className="select"
-                    aria-label="Cambiar estado a…"
-                    value=""
-                    onChange={(e) => {
-                      actions.setStatusMany([...picked], e.target.value as GameStatus);
-                      setPicked(new Set());
-                    }}
-                  >
+                  <select className="select" aria-label="Cambiar estado a…" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as GameStatus)}>
                     <option value="" disabled>
                       Cambiar estado a…
                     </option>
@@ -373,6 +367,19 @@ export function LibraryView() {
                       </option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    className="btn btn-ink"
+                    disabled={!bulkStatus}
+                    onClick={() => {
+                      if (!bulkStatus) return;
+                      actions.setStatusMany([...picked], bulkStatus);
+                      setPicked(new Set());
+                      setBulkStatus("");
+                    }}
+                  >
+                    Cambiar
+                  </button>
                   <button type="button" className="btn btn-quiet" onClick={() => setPicked(new Set())}>
                     <X aria-hidden />
                     Quitar la selección
