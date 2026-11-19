@@ -339,3 +339,20 @@ test("el manual cabe en el móvil en todas sus páginas", async ({ page }) => {
     for (const name of ["Anterior", "Siguiente"]) expect(Math.round((await page.getByRole("button", { name }).boundingBox())!.height)).toBeGreaterThanOrEqual(44);
   }
 });
+
+test("en el móvil, la barra del cambio en grupo queda encima de la barra inferior", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  const box = page.getByRole("checkbox", { name: "Elegir «Hades»" });
+  const hit = await box.evaluate((el) => (el.closest("label") ?? el).getBoundingClientRect());
+  expect(Math.round(hit.height)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(hit.width)).toBeGreaterThanOrEqual(44);
+  await box.check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await expect(bar).toBeInViewport({ ratio: 1 });
+  const nav = (await page.getByRole("navigation", { name: "Principal" }).last().boundingBox())!;
+  const b = (await bar.boundingBox())!;
+  expect(b.y + b.height).toBeLessThanOrEqual(nav.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await expectCarcasaText(bar);
+});

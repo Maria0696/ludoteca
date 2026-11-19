@@ -570,7 +570,7 @@
 .rowHead,
 .row {
   display: grid;
-  grid-template-columns: 48px minmax(0, 2.2fr) minmax(0, 1.4fr) 150px 70px 60px 120px;
+  grid-template-columns: 44px 48px minmax(0, 2.2fr) minmax(0, 1.4fr) 150px 70px 60px 120px;
   gap: 14px;
   align-items: center;
   padding: 8px 14px;
@@ -587,6 +587,47 @@
 .row {
   border-bottom: 1px solid #ffffff10;
   box-shadow: inset 3px 0 0 var(--k);
+}
+.row[data-picked] {
+  background: #ffd76a14;
+}
+/* Casilla para elegir la fila: 44 px de zona táctil. */
+.pick {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px 0;
+  cursor: pointer;
+}
+.pick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+/* Barra del cambio en grupo: pegada arriba mientras bajas por la tabla. */
+.bulk {
+  position: sticky;
+  top: calc(var(--topbar) + 10px);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 4px 16px;
+  padding: 12px 16px;
+  font-family: var(--term);
+  font-size: 21px;
+}
+.bulk p {
+  margin: 0;
+  color: var(--gold);
+}
+.bulk :global(.select) {
+  width: auto;
+  min-width: 220px;
 }
 .row:last-child {
   border-bottom: 0;
@@ -697,11 +738,30 @@
   }
   .rowHead,
   .row {
-    grid-template-columns: 48px minmax(0, 2fr) minmax(0, 1.2fr) 140px 64px 56px 110px;
+    grid-template-columns: 44px 48px minmax(0, 2fr) minmax(0, 1.2fr) 140px 64px 56px 110px;
   }
 }
 
 @media (max-width: 899px) {
+  /* En el móvil, la barra del cambio en grupo queda encima de la barra inferior, al alcance del pulgar. */
+  .bulk {
+    position: fixed;
+    top: auto;
+    bottom: calc(var(--bottombar) + 10px);
+    left: var(--gutter);
+    right: var(--gutter);
+    margin: 0;
+    padding: 10px 12px;
+    gap: 8px 12px;
+  }
+  .bulk :global(.select) {
+    flex: 1;
+    min-width: 0;
+  }
+  /* Mientras se ve la barra fija, la tabla deja su sitio debajo: la última fila no queda tapada. */
+  .bulk ~ .table {
+    margin-bottom: 140px;
+  }
   .page {
     padding-top: 20px;
   }
@@ -780,7 +840,7 @@
   }
   .rowHead,
   .row {
-    grid-template-columns: 44px minmax(0, 1fr) 130px;
+    grid-template-columns: 44px 44px minmax(0, 1fr) 130px;
     gap: 10px;
     padding-inline: 10px;
   }
