@@ -1,16 +1,70 @@
-/* Ajustes en la carcasa: cada ajuste es una ventana, con su explicación a la izquierda. */
+/* Ajustes como menú de opciones de un juego: la lista a la izquierda y un solo apartado a la derecha. */
 .page {
   padding: 36px var(--gutter) 0;
-  max-width: 1180px;
 }
 .title {
   margin-bottom: 24px;
 }
-.row {
+.options {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 28px;
-  margin-bottom: 28px;
+  align-items: start;
+}
+.menu {
+  padding: 12px;
+}
+.menu ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-family: var(--font-term);
+  font-size: 22px;
+  line-height: 1.1;
+  text-decoration: none;
+}
+.menu a[aria-current="page"] {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  .menu a:not([aria-current="page"]):hover {
+    background: var(--hover);
+    color: #fff;
+  }
+}
+.menu svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.menuManual {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid var(--line);
+}
+.current {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.back {
+  display: none;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
 }
 .label {
   display: grid;
@@ -30,7 +84,7 @@
   font-family: var(--font-term);
   font-size: 20px;
   line-height: 1.2;
-  max-width: 44ch;
+  max-width: 75ch;
 }
 /* El contenido de la ventana: sin marco propio. */
 .panel {
@@ -40,7 +94,10 @@
   font-family: var(--font-term);
   font-size: 21px;
   line-height: 1.2;
-  max-width: 68ch;
+}
+/* Las ventanas ocupan todo el ancho; los párrafos, no tanto que cueste leerlos. */
+.panel p {
+  max-width: 75ch;
 }
 .modeLine {
   display: flex;
@@ -110,8 +167,31 @@
   .page {
     padding-top: 18px;
   }
+  /* minmax(0, 1fr): la columna no crece con su contenido más ancho y nada se sale del marco. */
+  /* En el móvil, primero la lista y, al tocar, el apartado con su «volver». */
+  .options {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .page[data-apartado="no"] .current,
+  .page[data-apartado="si"] .menu {
+    display: none;
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-self: start;
+    min-height: 44px;
+    color: var(--text);
+    font-family: var(--font-term);
+    font-size: 21px;
+  }
+  .back svg {
+    width: 18px;
+    height: 18px;
+  }
   .row {
-    grid-template-columns: 1fr;
     gap: 14px;
   }
 }

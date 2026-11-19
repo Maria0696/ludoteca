@@ -5,6 +5,7 @@ import Link from "next/link";
 import { type CSSProperties, useEffect, useRef } from "react";
 import { KEEPER_URL, TROPHY_URL } from "@/components/pixel/sprites";
 import styles from "./adventure.module.css";
+import { KeeperHint } from "./KeeperHint";
 import { STAGES, TROPHY_STAGE, currentStage } from "./progress";
 
 /* Posición de cada nivel, en %: una versión apaisada y otra para móvil. */
@@ -87,12 +88,17 @@ export function AdventureMap({
   selected,
   onSelect,
   line,
+  hint = null,
+  onCloseHint,
   hopSignal,
 }: {
   reached: boolean[];
   selected: number | null;
   onSelect: (stage: number) => void;
   line: string;
+  /** Una pista de primera vez: sale en un bocadillo junto a la guardiana. */
+  hint?: { text: string; page: number } | null;
+  onCloseHint?: () => void;
   /** Cambia cada vez que la guardiana debe dar un salto. */
   hopSignal: number;
 }) {
@@ -171,10 +177,14 @@ export function AdventureMap({
       ))}
       {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio */}
       <img ref={keeperRef} className={styles.keeper} style={spotStyle(stop)} src={KEEPER_URL} alt="" />
-      <div className={`${styles.window} ${styles.talk}`}>
-        <span className={styles.talkName}>Guardiana</span>
+      {/* «status»: lo que cuenta la guardiana se anuncia al cambiar (por ejemplo, tras la moneda). */}
+      <div className={`${styles.window} ${styles.talk}`} role="status" aria-label="Guardiana">
+        <span className={styles.talkName} aria-hidden>
+          Guardiana
+        </span>
         <p>{line}</p>
       </div>
+      {hint && <KeeperHint text={hint.text} page={hint.page} onClose={() => onCloseHint?.()} keeperRef={keeperRef} />}
     </div>
   );
 }

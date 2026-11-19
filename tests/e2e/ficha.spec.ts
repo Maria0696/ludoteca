@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { STAGES, currentStage, keeperLine, progressPercent, reachedStages } from "../../src/app/juego/[id]/progress";
 import { isoToDmy, parseDmy } from "../../src/lib/format";
 import type { Copy, Game } from "../../src/lib/model";
-import { addGame, cards, openApp } from "./helpers";
+import { addGame, cards, loadDemo, openApp } from "./helpers";
 
 const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, lastPlayedAt: null } as unknown as Game;
 const withData = (patch: Partial<Game>) => ({ ...base, ...patch }) as Game;
@@ -359,4 +359,135 @@ test("un dato mal escrito avisa y no se guarda", async ({ page }) => {
   await page.getByLabel("Horas jugadas").fill("3,5");
   await page.getByLabel("Horas jugadas").press("Enter");
   await expect(page.getByRole("button", { name: /^Horas jugadas: 3,5 h/ })).toBeVisible();
+});
+
+const PISTAS = "ludoteca:pistas-vistas";
+const openFicha = async (page: Page, title: RegExp) => {
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: title }).first().click();
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toBeVisible();
+  return page.getByRole("status", { name: "Pista de la guardiana" });
+};
+const freshHints = (page: Page, seen: string[] = []) =>
+  page.addInitScript(
+    ([key, value]) => {
+      if (!sessionStorage.getItem("pistas-preparadas")) {
+        localStorage.setItem(key, value);
+        sessionStorage.setItem("pistas-preparadas", "1");
+      }
+    },
+    [PISTAS, JSON.stringify(seen)],
+  );
+
+/** Lo que tapa el bocadillo: casillas, sus nombres, la carátula y el cuadro de la guardiana. */
+const coveredBy = (page: Page) =>
+  page.evaluate(() => {
+    const bubble = document.querySelector('[aria-label="Pista de la guardiana"]')!.getBoundingClientRect();
+    const map = document.querySelector('[aria-label="Guardiana"]')!.parentElement!;
+    const nodes = [...map.querySelectorAll("button[aria-label$='conseguido'], button[aria-label$='pendiente']")];
+    const targets = [
+      ...nodes.flatMap((n) => [n, n.nextElementSibling].filter(Boolean) as Element[]),
+      document.querySelector('[aria-label="Guardiana"]')!,
+      document.querySelector('[class*="coverWrap"]')!,
+    ];
+    return targets
+      .map((t) => ({ name: t.getAttribute("aria-label") ?? t.textContent?.trim().slice(0, 30) ?? "", r: t.getBoundingClientRect() }))
+      .filter(({ r }) => r.width && r.height && r.left < bubble.right && r.right > bubble.left && r.top < bubble.bottom && r.bottom > bubble.top)
+      .map(({ name }) => name);
+  });
+
+test("la primera ficha, la guardiana explica el mapa en un bocadillo, una sola vez", async ({ page }) => {
+  await freshHints(page);
+  await loadDemo(page);
+  let hint = await openFicha(page, /Hades/);
+  await expect(hint).toContainText("¡Toca una!");
+  await expect(hint.getByRole("link", { name: "Ver el manual" })).toHaveAttribute("href", "/manual?pagina=3");
+  // La guardiana sigue con su frase de siempre en su cuadro.
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).not.toContainText("¡Toca una!");
+  hint = await openFicha(page, /Celeste/);
+  await expect(hint).toContainText("se cambia tocándolo");
+  hint = await openFicha(page, /Hollow Knight/);
+  await expect(hint).toHaveCount(0);
+});
+
+test("el bocadillo se cierra al tocar la equis", async ({ page }) => {
+  await freshHints(page);
+  await loadDemo(page);
+  const hint = await openFicha(page, /Hades/);
+  await hint.getByRole("button", { name: "Cerrar la pista" }).click();
+  await expect(hint).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toBeVisible();
+});
+
+test("la primera moneda, la guardiana cuenta qué apunta", async ({ page }) => {
+  await freshHints(page, ["mapa", "datos"]);
+  await loadDemo(page);
+  const hint = await openFicha(page, /Hades/);
+  await expect(hint).toHaveCount(0);
+  await page.getByRole("button", { name: /Inserta moneda/ }).click();
+  await expect(hint).toContainText("¡Moneda echada!");
+  await expect(hint.getByRole("link", { name: "Ver el manual" })).toHaveAttribute("href", "/manual?pagina=4");
+  await expect(page.getByRole("status", { name: "Guardiana", exact: true })).toContainText("¡Hoy has jugado!");
+  await page.reload();
+  await expect(page.getByRole("status", { name: "Pista de la guardiana" })).toHaveCount(0);
+});
+
+test("sin almacenamiento, la ficha abre sin pistas", async ({ page }) => {
+  await loadDemo(page);
+  await page.addInitScript(() => {
+    const original = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (key: string) {
+      if (key === "ludoteca:pistas-vistas") throw new Error("almacenamiento bloqueado");
+      return original.call(this, key);
+    };
+  });
+  const hint = await openFicha(page, /Hades/);
+  await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
+  await expect(hint).toHaveCount(0);
+});
+
+test("con el almacenamiento lleno, la pista no se repite en cada visita", async ({ page }) => {
+  await loadDemo(page);
+  await page.addInitScript(() => {
+    localStorage.removeItem("ludoteca:pistas-vistas");
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === "ludoteca:pistas-vistas") throw new DOMException("cuota llena", "QuotaExceededError");
+      return original.call(this, key, value);
+    };
+  });
+  const hint = await openFicha(page, /Hades/);
+  await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
+  await expect(hint).toHaveCount(0);
+});
+
+test("una ficha que no existe no gasta la pista del mapa", async ({ page }) => {
+  await freshHints(page);
+  await loadDemo(page);
+  await page.goto("/juego/no-existe");
+  await expect(page.getByRole("heading", { name: "Este juego no está en tu biblioteca" })).toBeVisible();
+  const hint = await openFicha(page, /Hades/);
+  await expect(hint).toContainText("¡Toca una!");
+});
+
+test("en el ordenador, el bocadillo va junto a la guardiana sin tapar casillas, nombres ni la carátula", async ({ page }) => {
+  await loadDemo(page);
+  for (const [width, height] of [[1920, 1000], [1920, 880], [1440, 900], [1366, 650], [1280, 800], [1024, 768]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => localStorage.removeItem("ludoteca:pistas-vistas"));
+    const hint = await openFicha(page, /Hades/);
+    await expect(hint).toBeVisible();
+    expect(await coveredBy(page), `a ${width}×${height}`).toEqual([]);
+    // Junto a ella: a menos de 160 px de la guardiana.
+    const keeper = (await page.locator('[class*="keeper"]').first().boundingBox())!;
+    const box = (await hint.boundingBox())!;
+    const dx = Math.max(0, box.x - (keeper.x + keeper.width), keeper.x - (box.x + box.width));
+    const dy = Math.max(0, box.y - (keeper.y + keeper.height), keeper.y - (box.y + box.height));
+    expect(Math.hypot(dx, dy), `lejos de la guardiana a ${width}×${height}`).toBeLessThanOrEqual(160);
+    // El enlace al manual se puede pulsar.
+    if (width === 1440) {
+      await hint.getByRole("link", { name: "Ver el manual" }).click({ timeout: 5000 });
+      await expect(page.getByRole("region", { name: "El mapa de la ficha" })).toBeVisible();
+    }
+  }
 });
