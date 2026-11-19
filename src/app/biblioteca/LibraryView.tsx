@@ -19,9 +19,10 @@ import {
   facetValues,
   filterEntries,
   sortEntries,
+  storeOf,
 } from "@/lib/filters";
 import { copiesSummary, formatNumber, relativeDay } from "@/lib/format";
-import { type Format, type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { type Copy, type Format, type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
 import { formatHours } from "@/lib/recommend";
 import { isDirection, nearest } from "@/lib/spatial-nav";
 import { useLibrary } from "@/lib/store";
@@ -65,6 +66,7 @@ export function LibraryView() {
       q: params.get("q") ?? "",
       platforms: tab ? [tab] : [],
       formats: readList(params, "formato") as Format[],
+      stores: readList(params, "tienda"),
       genres: readList(params, "genero"),
       statuses: readList(params, "estado") as GameStatus[],
       favorites: params.get("favoritos") === "1",
@@ -95,7 +97,7 @@ export function LibraryView() {
     const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
     setParams({ [key]: next.join(",") || null });
   };
-  const resetFilters = () => setParams({ formato: null, genero: null, estado: null, favoritos: null, q: null });
+  const resetFilters = () => setParams({ formato: null, tienda: null, genero: null, estado: null, favoritos: null, q: null });
 
   const entries = useMemo(() => buildEntries(library), [library]);
   const facets = useMemo(() => facetValues(entries), [entries]);
@@ -171,6 +173,15 @@ export function LibraryView() {
           Favoritos
         </button>
       </div>
+      {facets.stores.length > 0 && (
+        <div className={styles.filterGroup} role="group" aria-label="Tienda">
+          {facets.stores.map((st) => (
+            <button key={st.value} type="button" className={styles.chip} aria-pressed={filters.stores.includes(st.value)} onClick={() => toggleIn("tienda", st.value)}>
+              {st.value}
+            </button>
+          ))}
+        </div>
+      )}
       {facets.genres.length > 0 && (
         <label className={styles.genre}>
           <span className="sr-only">Género</span>
@@ -323,7 +334,7 @@ export function LibraryView() {
                 {activeCount > (filters.q ? 1 : 0) || tab ? " con estos filtros." : "."}
               </p>
               <div className={styles.gameOverActions}>
-                <button type="button" className={`${styles.chip} ${styles.chipStrong}`} onClick={() => setParams({ formato: null, genero: null, estado: null, favoritos: null, q: null, plataforma: null })}>
+                <button type="button" className={`${styles.chip} ${styles.chipStrong}`} onClick={() => setParams({ formato: null, tienda: null, genero: null, estado: null, favoritos: null, q: null, plataforma: null })}>
                   Restablecer filtros
                 </button>
                 {filters.q && (
@@ -546,8 +557,11 @@ function groupEntries(entries: LibraryEntry[], group: Group, tab: string): Entry
         entries: list,
       }));
   }
+  // Si alguna copia de PC tiene tienda, la balda de PC se parte por tienda.
+  const pcStores = entries.some((e) => e.copies.some((c) => c.platform === "PC" && storeOf(c)));
+  const shelfOf = (c: Copy) => (pcStores && c.platform === "PC" ? `PC · ${storeOf(c) || "sin tienda"}` : c.platform);
   for (const e of entries) {
-    const platforms = e.copies.length ? [...new Set(e.copies.map((c) => c.platform))] : ["Sin copia"];
+    const platforms = e.copies.length ? [...new Set(e.copies.map(shelfOf))] : ["Sin copia"];
     for (const p of platforms) map.set(p, [...(map.get(p) ?? []), e]);
   }
   return [...map.entries()]
@@ -559,7 +573,7 @@ function groupEntries(entries: LibraryEntry[], group: Group, tab: string): Entry
         label: p,
         title: PLATFORM_LONG[p] ?? p,
         detail: `${list.length} ${list.length === 1 ? "juego" : "juegos"}${playing ? ` · ${playing} jugando` : ""}`,
-        color: p === "Sin copia" ? undefined : platformColor(p),
+        color: p === "Sin copia" ? undefined : platformColor(p.startsWith("PC · ") ? "PC" : p),
         entries: list,
       };
     });

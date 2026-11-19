@@ -3,7 +3,8 @@ import path from "node:path";
 import { type Page, expect, test } from "@playwright/test";
 import { parseCsv } from "../../src/lib/csv";
 import { type GtEntry, type GtItem, classifyGameTracker, gtPlatform, parseGameTracker, planCopies, planGameTrackerImport } from "../../src/lib/gametracker-import";
-import { type Library, createGame, emptyLibrary } from "../../src/lib/model";
+import { EMPTY_FILTERS, buildEntries, facetValues, filterEntries } from "../../src/lib/filters";
+import { type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { addGame, expectCarcasaText, openApp } from "./helpers";
 
 const HEADER =
@@ -275,5 +276,63 @@ test.describe("pantalla", () => {
     await page.getByLabel("Archivo de Game Tracker").setInputFiles(bad);
     await expect(page.getByRole("alert").filter({ hasText: "Game Tracker" })).toHaveText("Este archivo no parece una exportación de Game Tracker.");
     await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toHaveCount(0);
+  });
+});
+
+async function importSample(page: Page) {
+  await loadSample(page);
+  await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
+  await expect(page.getByText(/^Copiados /)).toBeVisible();
+}
+
+/** Cabeceras de balda de la biblioteca (son decorativas: están ocultas a los lectores de pantalla). */
+const shelf = (page: Page, name: string) => page.locator("main li[aria-hidden] > strong").filter({ hasText: new RegExp(`^${name}$`) });
+
+test.describe("tienda", () => {
+  test("el filtro de tienda deja los juegos con alguna copia de esa tienda", () => {
+    const a = createGame({ title: "A" });
+    const b = createGame({ title: "B" });
+    const c = createGame({ title: "C" });
+    const library: Library = {
+      ...emptyLibrary(),
+      games: [a, b, c],
+      copies: [
+        createCopy(a.id, { platform: "PC", format: "digital", store: "Steam" }),
+        createCopy(b.id, { platform: "PC", format: "digital", store: "Epic Games" }),
+        createCopy(b.id, { platform: "PC", format: "digital", store: "Steam" }),
+        createCopy(c.id, { platform: "PS4", format: "fisico" }),
+      ],
+    };
+    const entries = buildEntries(library);
+    expect(filterEntries(entries, { ...EMPTY_FILTERS, stores: ["Steam"] }).map((e) => e.game.title)).toEqual(["A", "B"]);
+    expect(facetValues(entries).stores).toEqual([
+      { value: "Steam", count: 2 },
+      { value: "Epic Games", count: 1 },
+    ]);
+  });
+
+  test("la balda de PC se divide por tienda y se filtra por tienda", async ({ page }) => {
+    test.setTimeout(90_000);
+    await importSample(page);
+    await openApp(page, "/biblioteca");
+    for (const name of ["PC · Steam", "PC · Epic Games", "PC · sin tienda"]) await expect(shelf(page, name)).toHaveCount(1);
+    await expect(shelf(page, "PC")).toHaveCount(0);
+    await expect(page.locator("main").getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" })).toHaveCount(2);
+
+    await page.getByRole("group", { name: "Tienda" }).getByRole("button", { name: /^Steam/ }).click();
+    await expect(page).toHaveURL(/tienda=Steam/);
+    const main = page.locator("main");
+    await expect(main.getByRole("listitem").filter({ hasText: "Final Fantasy X/X-2 HD Remaster" }).first()).toBeVisible();
+    await expect(main.getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" }).first()).toBeVisible();
+    await expect(main.getByText("Horizon Zero Dawn")).toHaveCount(0);
+    await page.getByRole("button", { name: "Restablecer", exact: true }).first().click();
+    await expect(page).not.toHaveURL(/tienda=/);
+  });
+
+  test("sin tiendas, la balda se llama PC y no hay filtro de tienda", async ({ page }) => {
+    await openApp(page, "/biblioteca");
+    await addGame(page, { title: "Celeste", platform: "PC" });
+    await expect(shelf(page, "PC")).toHaveCount(1);
+    await expect(page.getByRole("group", { name: "Tienda" })).toHaveCount(0);
   });
 });

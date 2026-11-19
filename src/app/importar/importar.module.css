@@ -378,6 +378,9 @@
   padding: 0;
   list-style: none;
 }
+.done p {
+  margin: 0 0 16px;
+}
 .doneActions {
   display: flex;
   flex-wrap: wrap;
