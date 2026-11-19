@@ -270,6 +270,21 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
   await expect(page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" })).toBeVisible();
 });
 
+test("en el móvil, el inicio enseña sus cinco opciones y los datos de cada partida se leen", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/");
+  const menu = page.getByRole("group", { name: "Menú principal" });
+  // Las cinco a la vista, sin deslizar el menú.
+  for (const name of ["Continuar", "Nueva partida", "Elegir modo", "Novedades", "Estadísticas"]) {
+    await expect(menu.getByRole("button", { name }), `«${name}» a la vista`).toBeInViewport({ ratio: 1 });
+  }
+  expect(await menu.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  // Los datos de cada partida guardada, a 18 px o más.
+  const detail = page.getByRole("group", { name: "Partidas guardadas" }).getByRole("button").first().locator("small");
+  expect(await detail.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
 test("en el móvil, el enlace del bocadillo lleva al manual, que cabe en la pantalla", async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("pistas-preparadas")) {

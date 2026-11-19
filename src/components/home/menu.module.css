@@ -178,7 +178,7 @@
 }
 .empty {
   max-width: 44ch;
-  font-size: 17px;
+  font-size: 18px;
   color: #dcdbe6;
 }
 
@@ -230,7 +230,7 @@
   white-space: nowrap;
 }
 .slotText small {
-  font-size: 14px;
+  font-size: 18px;
   color: #dcdbe6;
 }
 .slotHours {
@@ -574,17 +574,17 @@
     gap: 12px;
     padding: 0;
   }
+  /* Las cinco opciones a la vista, en varias filas: nada se esconde fuera de la pantalla. */
   .list {
     display: flex;
-    gap: 4px;
+    flex-wrap: wrap;
+    gap: 4px 2px;
     padding: 4px var(--gutter) 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
   }
   .item {
     flex: none;
-    padding: 0 18px 2px 12px;
-    font-size: 32px;
+    padding: 0 14px 2px 10px;
+    font-size: 24px;
   }
   .itemOn,
   .itemOn:hover {
