@@ -54,8 +54,8 @@
   height: 1100px;
   translate: -50% 50%;
   background: repeating-conic-gradient(#ffe27a55 0 11deg, transparent 11deg 28deg);
-  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
-  mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, var(--black) 12%, transparent 62%);
+  mask-image: radial-gradient(circle, var(--black) 12%, transparent 62%);
   opacity: 0.25;
   pointer-events: none;
   transition: opacity 300ms ease;
@@ -150,7 +150,7 @@
   text-wrap: balance;
   overflow-wrap: anywhere;
   color: var(--gold);
-  -webkit-text-stroke: 4px #000;
+  -webkit-text-stroke: 4px var(--black);
   paint-order: stroke fill;
 }
 .win h2.winLong {
@@ -184,7 +184,7 @@
   z-index: 2;
   /* El formulario habla con las letras de la carcasa; la escena del cofre conserva las suyas. */
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   font-weight: 400;
   line-height: 1.15;
   display: grid;
@@ -207,7 +207,7 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
   color: var(--gold);
-  text-shadow: 3px 3px 0 #000;
+  text-shadow: 3px 3px 0 var(--black);
 }
 .head {
   padding-right: 48px;
@@ -225,7 +225,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #fff;
+  color: var(--white);
   cursor: pointer;
 }
 .close svg {
@@ -248,7 +248,7 @@
   border-radius: 0;
   background: #ffffff14;
   box-shadow: inset 0 0 0 2px #ffd76a80;
-  color: #fff;
+  color: var(--white);
   font-family: var(--font-term);
   font-size: 24px;
 }
@@ -261,7 +261,7 @@
 }
 .error {
   color: #ff8a7e;
-  font-size: 19px;
+  font-size: var(--size-meta);
 }
 .tiles {
   display: flex;
@@ -277,9 +277,9 @@
   border: 0;
   background: #ffffff12;
   box-shadow: inset 0 0 0 2px #ffffff30;
-  color: #fff;
+  color: var(--white);
   font: inherit;
-  font-size: 20px;
+  font-size: var(--size-label);
   cursor: pointer;
   transition: transform 140ms var(--snap);
 }
@@ -299,14 +299,14 @@
   align-items: start;
 }
 .familyName {
-  font-size: 19px;
+  font-size: var(--size-meta);
   line-height: var(--tile);
   color: #c4c3d2;
 }
 .family .tile {
   min-height: var(--tile);
   padding: 0 10px;
-  font-size: 20px;
+  font-size: var(--size-label);
 }
 .tile:hover {
   transform: translateY(-2px);
@@ -315,12 +315,12 @@
 .tile[aria-checked="true"] {
   background: var(--gold);
   box-shadow: none;
-  color: #1b1400;
+  color: var(--gold-ink);
 }
 .tile:focus-visible,
 .go:focus-visible,
 .close:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--white);
   outline-offset: 2px;
 }
 .dot {
@@ -329,7 +329,7 @@
   border-radius: 50%;
 }
 .tile[aria-checked="true"] .dot {
-  box-shadow: 0 0 0 2px #1b1400;
+  box-shadow: 0 0 0 2px var(--gold-ink);
 }
 /* «Más plataformas»: un enlace discreto bajo tus plataformas. */
 .more {
@@ -348,7 +348,7 @@
   color: var(--gold);
 }
 .more:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--white);
   outline-offset: 2px;
 }
 .customPlatform {
@@ -357,7 +357,7 @@
   padding: 0 12px;
   border: 0;
   background: #ffffff1c;
-  color: #fff;
+  color: var(--white);
   font: inherit;
 }
 .duplicate {
@@ -391,10 +391,10 @@
 }
 .goAlt {
   background: #ffffff24;
-  color: #fff;
+  color: var(--white);
 }
 .hint {
-  font-size: 19px;
+  font-size: var(--size-meta);
   color: var(--muted);
 }
 
@@ -453,7 +453,7 @@
   .form .tile {
     min-height: 38px;
     padding: 0 10px;
-    font-size: 19px;
+    font-size: var(--size-meta);
   }
 }
 @media (prefers-reduced-motion: reduce) {

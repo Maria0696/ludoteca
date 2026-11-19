@@ -29,7 +29,7 @@
   padding: 6px 12px;
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 22px;
+  font-size: var(--size-lead);
   line-height: 1.1;
   text-decoration: none;
 }
@@ -40,7 +40,7 @@
 @media (hover: hover) and (pointer: fine) {
   .menu a:not([aria-current="page"]):hover {
     background: var(--hover);
-    color: #fff;
+    color: var(--white);
   }
 }
 .menu svg {
@@ -82,7 +82,7 @@
 .label p {
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   line-height: 1.2;
   max-width: 75ch;
 }
@@ -92,7 +92,7 @@
   gap: 14px;
   align-content: start;
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.2;
 }
 /* Las ventanas ocupan todo el ancho; los párrafos, no tanto que cueste leerlos. */
@@ -103,7 +103,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 21px;
+  font-size: var(--size-body);
 }
 .modeLine svg {
   width: 18px;
@@ -115,18 +115,18 @@
   flex-wrap: wrap;
 }
 .lastBackup {
-  font-size: 21px;
+  font-size: var(--size-body);
 }
 .note {
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
 }
 .errors {
   list-style: disc;
   padding-left: 18px;
   margin-top: 6px;
-  font-size: 20px;
+  font-size: var(--size-label);
 }
 .conflicts {
   display: grid;
@@ -137,9 +137,9 @@
   gap: 8px;
 }
 .conflictsHead h3 {
-  font-size: 22px;
+  font-size: var(--size-lead);
   font-weight: 400;
-  color: #fff;
+  color: var(--white);
 }
 .conflict {
   display: grid;
@@ -149,14 +149,14 @@
 }
 .summary {
   cursor: pointer;
-  font-size: 21px;
+  font-size: var(--size-body);
 }
 .credits {
   display: grid;
   gap: 8px;
   margin-top: 14px;
   color: var(--muted);
-  font-size: 18px;
+  font-size: var(--size-note);
   line-height: 1.15;
 }
 .credits a {
@@ -185,7 +185,7 @@
     min-height: 44px;
     color: var(--text);
     font-family: var(--font-term);
-    font-size: 21px;
+    font-size: var(--size-body);
   }
   .back svg {
     width: 18px;

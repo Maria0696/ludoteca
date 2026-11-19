@@ -9,7 +9,7 @@
   background: var(--gold);
   color: var(--gold-ink);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   text-decoration: none;
 }
 .skip:focus {
@@ -46,7 +46,7 @@
   font-size: 15px;
   line-height: 1;
   color: var(--gold);
-  text-shadow: 3px 3px 0 #000;
+  text-shadow: 3px 3px 0 var(--black);
   text-decoration: none;
   margin-right: 24px;
   white-space: nowrap;
@@ -60,7 +60,7 @@
   padding: 2px 9px 3px;
   text-decoration: none;
   font-family: var(--font-term);
-  font-size: 22px;
+  font-size: var(--size-lead);
   line-height: 1;
   color: var(--text);
   white-space: nowrap;
@@ -72,7 +72,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .nav a:not([aria-current="page"]):hover {
-    color: #fff;
+    color: var(--white);
     background: var(--raised);
   }
 }
@@ -88,7 +88,7 @@
   background: var(--raised);
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
   text-decoration: none;
   white-space: nowrap;
   margin-right: 4px;
@@ -125,18 +125,18 @@
   width: 100%;
   height: 40px;
   border: 2px solid var(--control);
-  background: #0a0b1c;
+  background: var(--field);
   color: var(--text);
   padding: 0 12px 0 36px;
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   transition: border-color 180ms ease;
 }
 .qs input::placeholder {
   color: var(--faint);
 }
 .qs input:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--white);
   outline-offset: 2px;
   border-color: var(--gold);
 }
@@ -153,7 +153,7 @@
   box-shadow: var(--pixel-frame-soft);
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
   line-height: 1;
   pointer-events: none;
 }
@@ -173,7 +173,7 @@
   width: 380px;
   padding: 8px;
   background: var(--window);
-  box-shadow: var(--pixel-frame), 0 30px 60px -12px #000;
+  box-shadow: var(--pixel-frame), 0 30px 60px -12px var(--black);
   transform-origin: top right;
   animation: pop 180ms var(--ease-out);
 }
@@ -199,7 +199,7 @@
   min-width: 0;
 }
 .qsList strong {
-  font-size: 21px;
+  font-size: var(--size-body);
   font-weight: 400;
   line-height: 1.05;
   white-space: nowrap;
@@ -207,7 +207,7 @@
   text-overflow: ellipsis;
 }
 .qsList small {
-  font-size: 18px;
+  font-size: var(--size-note);
   color: var(--muted);
 }
 .qsCover {
@@ -223,7 +223,7 @@
 }
 .qsAll {
   padding: 10px 12px !important;
-  font-size: 21px;
+  font-size: var(--size-body);
   color: var(--gold);
 }
 
@@ -255,9 +255,9 @@
   color: var(--text) !important;
   border: 0 !important;
   border-radius: 0 !important;
-  font-size: 20px !important;
+  font-size: var(--size-label) !important;
   line-height: 1.15 !important;
-  box-shadow: 0 -3px 0 var(--paper), 0 3px 0 var(--paper), -3px 0 0 var(--paper), 3px 0 0 var(--paper), 0 24px 48px -12px #000 !important;
+  box-shadow: 0 -3px 0 var(--paper), 0 3px 0 var(--paper), -3px 0 0 var(--paper), 3px 0 0 var(--paper), 0 24px 48px -12px var(--black) !important;
 }
 .toast :global([data-title]) {
   font-weight: 400 !important;
@@ -268,19 +268,19 @@
   box-shadow: inset 0 0 0 2px var(--frame-soft) !important;
   border-radius: 0 !important;
   font-family: var(--font-term) !important;
-  font-size: 19px !important;
+  font-size: var(--size-meta) !important;
   font-weight: 400 !important;
   height: 30px !important;
   padding: 0 10px !important;
 }
 /* Sonner quita el contorno del botón; el foco de teclado tiene que verse igual que en el resto de la app. */
 .toast :global([data-button]):focus-visible {
-  outline: 2px solid #fff !important;
+  outline: 2px solid var(--white) !important;
   outline-offset: 2px !important;
 }
 .toast :global([data-description]) {
   color: var(--muted) !important;
-  font-size: 18px !important;
+  font-size: var(--size-note) !important;
 }
 
 @media (max-width: 1280px) {
@@ -317,7 +317,7 @@
   }
   .nav a {
     padding: 2px 6px 3px;
-    font-size: 20px;
+    font-size: var(--size-label);
   }
   .addBtn {
     width: 44px;
@@ -390,7 +390,7 @@
     gap: 2px;
     min-width: 0;
     font-family: var(--font-term);
-    font-size: 18px;
+    font-size: var(--size-note);
     line-height: 1;
     color: var(--muted);
     text-decoration: none;

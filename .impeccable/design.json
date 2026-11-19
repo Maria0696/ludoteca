@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-18T13:02:12+00:00",
+  "generatedAt": "2026-11-19T11:24:26+00:00",
   "title": "Design System: Ludoteca",
   "extensions": {
     "colorMeta": {
@@ -124,6 +124,51 @@
           "#fff0f0"
         ]
       },
+      "blanco": {
+        "role": "neutral",
+        "displayName": "Blanco",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#4c4c4c",
+          "#737373",
+          "#999999",
+          "#bfbfbf",
+          "#d9d9d9",
+          "#ebebeb",
+          "#f5f5f5"
+        ]
+      },
+      "negro": {
+        "role": "neutral",
+        "displayName": "Negro",
+        "canonical": "#000000",
+        "tonalRamp": [
+          "#262626",
+          "#4c4c4c",
+          "#737373",
+          "#999999",
+          "#bfbfbf",
+          "#d9d9d9",
+          "#ebebeb",
+          "#f5f5f5"
+        ]
+      },
+      "campo": {
+        "role": "neutral",
+        "displayName": "Campo",
+        "canonical": "#0a0b1c",
+        "tonalRamp": [
+          "#202131",
+          "#484955",
+          "#6f707a",
+          "#96979e",
+          "#bebec2",
+          "#d8d8db",
+          "#eaeaec",
+          "#f5f5f5"
+        ]
+      },
       "estado-pendiente": {
         "role": "status",
         "displayName": "Pendiente · NUEVA PARTIDA",
@@ -209,13 +254,25 @@
         "displayName": "Título de ventana",
         "purpose": "Encabezado de cada ventana y diálogo."
       },
+      "lead": {
+        "displayName": "Destacado",
+        "purpose": "Destinos de la barra y encabezados dentro de una ventana."
+      },
       "body": {
         "displayName": "Lectura",
         "purpose": "Texto, botones, campos y filas."
       },
       "label": {
+        "displayName": "Etiqueta",
+        "purpose": "Etiquetas de campo y de cifra, estados."
+      },
+      "meta": {
+        "displayName": "Dato secundario",
+        "purpose": "Datos secundarios y pistas."
+      },
+      "note": {
         "displayName": "Nota",
-        "purpose": "Metadatos y notas; nunca por debajo de 18 px."
+        "purpose": "Notas y metadatos; el mínimo, 18 px."
       },
       "figure": {
         "displayName": "Cifra",
@@ -379,6 +436,11 @@
       {
         "name": "The Legacy Fonts Rule",
         "body": "Albert Sans y Bricolage Grotesque siguen cargadas por herencia (letra base del documento y algún título antiguo), y Anton y Chakra Petch solo viven en el menú del inicio y en la escena del cofre. No se usan en nada nuevo.",
+        "section": "typography"
+      },
+      {
+        "name": "The Token Rule",
+        "body": "Un tamaño de lectura o un color de la carcasa se escribe con su token (var(--size-body), var(--paper), var(--white)), nunca a mano. Los mundos propios pueden tener sus variables locales.",
         "section": "typography"
       },
       {
