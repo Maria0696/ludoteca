@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { addGame, cards, expectCarcasaText, loadDemo, openAjustes, openApp } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openAjustes, openApp, placeholderRoom } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -549,3 +549,16 @@ for (const [ruta, nombre, texto] of [
     await expect(page.getByRole("status", { name: "Pista de la guardiana" })).toHaveCount(0);
   });
 }
+
+test("en el ordenador, Deseos no repite los filtros en un botón «Filtros»", async ({ page }) => {
+  await loadDemo(page);
+  await openApp(page, "/deseos");
+  await expect(page.getByRole("group", { name: "Prioridad" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Filtros/ })).toBeHidden();
+});
+
+test("en el ordenador, el ejemplo del nombre de una lista nueva se lee entero", async ({ page }) => {
+  await loadDemo(page);
+  await openApp(page, "/listas");
+  expect(await placeholderRoom(page.getByLabel("Nombre de la nueva lista"))).toBeGreaterThanOrEqual(0);
+});

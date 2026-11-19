@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp, placeholderRoom } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
 
@@ -335,6 +335,10 @@ test("en el móvil, Ajustes es primero la lista de apartados y luego el elegido"
   const menu = page.getByRole("navigation", { name: "Apartados de Ajustes" });
   await expect(menu).toBeVisible();
   await expect(page.locator("main section.window:visible")).toHaveCount(0);
+  // Sin apartado elegido, ninguno va en dorado: el dorado es «elegido».
+  for (const link of await menu.getByRole("link").all()) {
+    expect(await link.evaluate((el) => getComputedStyle(el).backgroundColor), await link.innerText()).not.toBe("rgb(255, 215, 106)");
+  }
   for (const link of await menu.getByRole("link").all()) expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
   await menu.getByRole("link", { name: "Copia de seguridad" }).click();
   await expect(page.getByRole("region", { name: "Copia de seguridad" })).toBeVisible();
@@ -403,15 +407,7 @@ test("en el móvil, Deseos filtra con una hoja, como la biblioteca, y el primer 
 test("en el móvil, el campo de una lista nueva se lee entero", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/listas");
-  const field = page.getByLabel("Nombre de la nueva lista");
-  const room = await field.evaluate((el) => {
-    const s = getComputedStyle(el);
-    const ctx = document.createElement("canvas").getContext("2d")!;
-    ctx.font = `${s.fontSize} ${s.fontFamily}`;
-    const free = el.getBoundingClientRect().width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - parseFloat(s.borderLeftWidth) - parseFloat(s.borderRightWidth);
-    return free - ctx.measureText((el as HTMLInputElement).placeholder).width;
-  });
-  expect(room).toBeGreaterThanOrEqual(0);
+  expect(await placeholderRoom(page.getByLabel("Nombre de la nueva lista"))).toBeGreaterThanOrEqual(0);
 });
 
 test("el manual deja su margen en el móvil", async ({ page }) => {
