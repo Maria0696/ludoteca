@@ -204,10 +204,10 @@ export function GameDetail({ id }: { id: string }) {
         </div>
 
         <div className={styles.lower}>
-          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="ficha-tecnica">
+          <Foldable label="Ficha técnica" labelledBy="ficha-tecnica">
             <TechSheet game={game} update={update} />
-          </section>
-          <section className={`${styles.window} ${styles.panel}`} aria-labelledby="mas-datos">
+          </Foldable>
+          <Foldable label="Más datos" labelledBy="mas-datos">
             <MorePanel
               game={game}
               lists={library.lists}
@@ -216,7 +216,7 @@ export function GameDetail({ id }: { id: string }) {
               onChangeCover={() => setCoverDialog(true)}
               onDelete={() => setConfirmDelete(true)}
             />
-          </section>
+          </Foldable>
         </div>
       </div>
 
@@ -260,5 +260,19 @@ export function GameDetail({ id }: { id: string }) {
         />
       )}
     </div>
+  );
+}
+
+/** En el móvil, una ventana larga empieza plegada con su título a la vista; en el ordenador, siempre abierta. */
+function Foldable({ label, labelledBy, children }: { label: string; labelledBy: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(() => typeof window === "undefined" || !window.matchMedia("(max-width: 899px)").matches);
+  return (
+    <section className={`${styles.window} ${styles.panel} ${styles.foldable}`} aria-labelledby={labelledBy} data-plegado={open ? undefined : ""}>
+      <button type="button" className={styles.foldToggle} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <span className="sr-only">{open ? "Ocultar" : "Mostrar"} {label}</span>
+        <span aria-hidden>{open ? "Ocultar" : "Mostrar"}</span>
+      </button>
+      {children}
+    </section>
   );
 }

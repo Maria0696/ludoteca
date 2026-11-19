@@ -519,3 +519,11 @@ test("«Deshacer» un cambio de estado no se lleva lo que editaste después", as
   await page.reload();
   await expect(page.getByRole("button", { name: /^Horas jugadas: 99 h/ })).toBeVisible();
 });
+
+test("en el ordenador, «Ficha técnica» y «Más datos» se ven abiertos, sin botón de plegar", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Stardew/ }).first().click();
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByText("Desarrolladora")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Mostrar|Ocultar) (Ficha técnica|Más datos)$/ })).toHaveCount(0);
+});
