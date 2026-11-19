@@ -228,7 +228,7 @@ export function LibraryView() {
         </p>
         <div className={styles.headActions}>
           <Link href="/importar" className={styles.chip}>
-            Importar de Steam
+            Importar…
           </Link>
           <div className={styles.viewToggle} role="group" aria-label="Vista">
             <button type="button" className={styles.chip} aria-pressed={view === "caratulas"} onClick={() => setParams({ vista: null })}>
@@ -588,7 +588,7 @@ function FirstRun() {
             Añadir el primer juego
           </button>
           <Link href="/importar" className={styles.chip}>
-            Importar de Steam
+            Importar…
           </Link>
           {mode === "local" && (
             <button

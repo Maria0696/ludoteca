@@ -1,7 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { writeFileSync } from "node:fs";
+import path from "node:path";
+import { type Page, expect, test } from "@playwright/test";
 import { parseCsv } from "../../src/lib/csv";
 import { type GtEntry, type GtItem, classifyGameTracker, gtPlatform, parseGameTracker, planCopies, planGameTrackerImport } from "../../src/lib/gametracker-import";
 import { type Library, createGame, emptyLibrary } from "../../src/lib/model";
+import { addGame, expectCarcasaText, openApp } from "./helpers";
 
 const HEADER =
   "createdAt;updatedAt;id;externalId;source;title;alternativeNames;externalLink;cover;artworks;externalRating;userRating;firstReleaseDate;gameModes;playerPerspectives;releaseStatus;summary;availablePlatforms;userPlatforms;genres;developers;publishers;spaces;tags;videos;formats;location;storageUnit;section";
@@ -212,5 +215,65 @@ test.describe("planificar", () => {
     const edited: GtItem = { ...kirby, copies: [copy("Switch", "fisico")] };
     const plan = planGameTrackerImport(emptyLibrary(), [edited]);
     expect(plan.copies.map((c) => [c.platform, c.format])).toEqual([["Switch", "fisico"]]);
+  });
+});
+
+const SAMPLE = path.join(__dirname, "fixtures", "gametracker-muestra.csv");
+
+async function loadSample(page: Page) {
+  await openApp(page, "/importar?origen=gametracker");
+  await page.getByLabel("Archivo de Game Tracker").setInputFiles(SAMPLE);
+}
+
+test.describe("pantalla", () => {
+  test("la pantalla importa de Game Tracker lo que falta y lo repetido no entra", async ({ page }) => {
+    test.setTimeout(120_000);
+    await openApp(page, "/biblioteca");
+    await addGame(page, { title: "Hades", platform: "Switch" });
+    await page.getByRole("link", { name: "Importar…" }).click();
+    await expect(page).toHaveURL(/\/importar$/);
+    const origin = page.getByRole("navigation", { name: "Origen de la importación" });
+    await origin.getByRole("link", { name: "Game Tracker" }).click();
+    await expect(page).toHaveURL(/origen=gametracker/);
+    await expect(origin.getByRole("link", { name: "Game Tracker" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("heading", { level: 1, name: "Copiar desde Game Tracker" })).toBeVisible();
+
+    await page.getByLabel("Archivo de Game Tracker").setInputFiles(SAMPLE);
+    await expect(page.getByRole("status").filter({ hasText: "juegos nuevos" })).toHaveText("7 juegos nuevos · 1 deseo nuevo · 2 ya los tienes · 1 para revisar");
+
+    const review = page.getByRole("region", { name: "Para revisar" });
+    await expect(review.getByRole("button", { name: /^Quitar / })).toHaveCount(4);
+    await review.getByRole("button", { name: "Quitar Switch 2 · Físico" }).click();
+    await review.getByRole("button", { name: "Quitar Switch · Digital" }).click();
+    await expect(review.getByRole("button", { name: /^Quitar / })).toHaveCount(2);
+
+    await page.getByRole("checkbox", { name: "Copiar «Genshin Impact»" }).uncheck();
+    await expect(page.getByRole("link", { name: "Haz antes una copia de seguridad" })).toHaveAttribute("href", "/ajustes?apartado=copia");
+    await expectCarcasaText(page.locator("main"));
+
+    await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
+    await expect(page.getByText("Copiados 6 juegos, 12 copias y 1 deseo.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Ver la biblioteca" })).toBeVisible();
+
+    await openApp(page, "/biblioteca?q=Kirby&agrupar=ninguno");
+    const kirby = page.locator("main").getByRole("listitem").filter({ hasText: "Kirby and the Forgotten Land" });
+    await expect(kirby).toContainText("Switch 2");
+    await expect(kirby).toContainText("2 copias");
+    await openApp(page, "/deseos");
+    await expect(page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: "Fable" })).toHaveCount(1);
+    await openApp(page, "/biblioteca?q=Genshin");
+    await expect(page.getByText("Genshin Impact")).toHaveCount(0);
+
+    await loadSample(page);
+    await expect(page.getByRole("status").filter({ hasText: "nuevo" })).toHaveText("1 juego nuevo · 0 deseos nuevos · 9 ya los tienes · 0 para revisar");
+  });
+
+  test("un archivo que no es de Game Tracker no deja copiar nada", async ({ page }) => {
+    const bad = test.info().outputPath("otra-cosa.csv");
+    writeFileSync(bad, "hola;adios\n1;2\n");
+    await openApp(page, "/importar?origen=gametracker");
+    await page.getByLabel("Archivo de Game Tracker").setInputFiles(bad);
+    await expect(page.getByRole("alert").filter({ hasText: "Game Tracker" })).toHaveText("Este archivo no parece una exportación de Game Tracker.");
+    await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toHaveCount(0);
   });
 });

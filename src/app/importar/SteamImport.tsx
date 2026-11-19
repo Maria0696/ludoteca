@@ -8,6 +8,7 @@ import type { CatalogGame } from "@/lib/catalog";
 import type { SteamGame, SteamLibraryResponse, SteamSheetsResponse } from "@/lib/steam";
 import { type SteamImportCounts, type SteamState, steamStates } from "@/lib/steam-import";
 import { useLibrary } from "@/lib/store";
+import { OriginNav } from "./OriginNav";
 import styles from "./importar.module.css";
 
 type Phase = "inicio" | "leyendo" | "eleccion" | "copiando" | "hecho";
@@ -186,6 +187,7 @@ export function SteamImport() {
 
   return (
     <div className={styles.page} data-fase={phase}>
+      <OriginNav current="steam" />
       <header className={styles.top}>
         <h1>Copiar desde Steam</h1>
         <form

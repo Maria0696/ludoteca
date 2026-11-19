@@ -1,3 +1,4 @@
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp, placeholderRoom } from "./helpers";
 
@@ -264,10 +265,12 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
     return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
   });
   expect(lines).toBe(1);
-  // Importar de Steam sale de la cabecera en el móvil; sigue en Ajustes.
-  await expect(head.getByRole("link", { name: "Importar de Steam" })).toBeHidden();
+  // «Importar…» sale de la cabecera en el móvil; Steam sigue en Ajustes.
+  await expect(head.getByRole("link", { name: "Importar…" })).toBeHidden();
   await page.goto("/ajustes?apartado=steam");
-  await expect(page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" })).toBeVisible();
+  const steam = page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" });
+  await expect(steam).toBeVisible();
+  await expect(steam).toHaveAttribute("href", "/importar?origen=steam");
 });
 
 test("en el móvil, el inicio enseña sus cinco opciones y los datos de cada partida se leen", async ({ page }) => {
@@ -479,4 +482,15 @@ test("en el móvil, el campo del perfil de Steam va a lo ancho y se lee entero",
   expect(room).toBeGreaterThanOrEqual(0);
   const button = (await page.getByRole("button", { name: "Buscar", exact: true }).boundingBox())!;
   expect(Math.round(button.height)).toBeGreaterThanOrEqual(44);
+});
+
+test("en el móvil, copiar desde Game Tracker cabe sin desplazarse de lado", async ({ page }) => {
+  await openApp(page, "/importar?origen=gametracker");
+  await page.getByLabel("Archivo de Game Tracker").setInputFiles(path.join(__dirname, "fixtures", "gametracker-muestra.csv"));
+  await expect(page.getByRole("region", { name: "Para revisar" })).toBeVisible();
+  // Si algo no cabe, el móvil ensancha la página entera en vez de desplazarla: se compara con el ancho del aparato.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  const remove = page.getByRole("region", { name: "Para revisar" }).getByRole("button", { name: /^Quitar / }).first();
+  expect(Math.round((await remove.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+  await expectCarcasaText(page.locator("main"));
 });
