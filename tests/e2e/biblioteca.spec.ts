@@ -246,3 +246,63 @@ test("«Elegido» enseña solo los datos que hay, sin filas de «---»", async (
   await expect(chosen).toContainText("41 h");
   await expect(chosen).not.toContainText("Sin partidas todavía");
 });
+
+const pick = (page: import("@playwright/test").Page, title: string) => page.getByRole("checkbox", { name: `Elegir «${title}»` });
+const statusOf = (page: import("@playwright/test").Page, title: string) => page.getByRole("combobox", { name: `Estado de ${title}` });
+
+test("en la tabla se eligen varios juegos y se les cambia el estado de una vez", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  for (const title of ["Hades", "Celeste", "Hollow Knight"]) await pick(page, title).check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await expect(bar).toContainText("3 elegidos");
+  await bar.getByLabel("Cambiar estado a…").selectOption("abandonado");
+  await expect(page.getByText("3 juegos pasan a Abandonado")).toBeVisible();
+  for (const title of ["Hades", "Celeste", "Hollow Knight"]) await expect(statusOf(page, title)).toHaveValue("abandonado");
+  await expect(bar).toHaveCount(0);
+  await page.getByRole("button", { name: "Deshacer" }).click();
+  await expect(statusOf(page, "Hades")).toHaveValue("jugando");
+  await expect(statusOf(page, "Celeste")).toHaveValue("completado");
+  await expect(statusOf(page, "Hollow Knight")).toHaveValue("pausado");
+});
+
+test("elegir todos los que se ven respeta el filtro, y Esc quita la selección", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista&estado=jugando");
+  const rows = await page.getByRole("checkbox", { name: /^Elegir «/ }).count();
+  await page.getByRole("checkbox", { name: "Elegir todos los que se ven" }).check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await expect(bar).toContainText(`${rows} elegidos`);
+  // Al quitar el filtro, los elegidos siguen siendo los mismos.
+  await page.goto("/biblioteca?vista=lista");
+  await page.getByRole("checkbox", { name: "Elegir «Celeste»" }).check();
+  await page.goto("/biblioteca?vista=lista&estado=jugando");
+  await page.getByRole("checkbox", { name: "Elegir todos los que se ven" }).check();
+  await expect(bar).toContainText(`${rows} elegidos`);
+  await page.keyboard.press("Escape");
+  await expect(bar).toHaveCount(0);
+});
+
+test("un filtro que oculta un juego elegido lo saca de la selección", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  await pick(page, "Hades").check();
+  await pick(page, "Celeste").check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await expect(bar).toContainText("2 elegidos");
+  await page.getByRole("button", { name: "Jugando", exact: true }).click();
+  await expect(bar).toContainText("1 elegido");
+});
+
+test("en el cambio en grupo solo cuentan los que cambian", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  await pick(page, "Celeste").check();
+  await pick(page, "Inside").check();
+  await page.getByRole("region", { name: "Cambio en grupo" }).getByLabel("Cambiar estado a…").selectOption("completado");
+  await expect(page.getByText(/pasan? a Completado/)).toHaveCount(0);
+  await pick(page, "Celeste").check();
+  await pick(page, "Hades").check();
+  await page.getByRole("region", { name: "Cambio en grupo" }).getByLabel("Cambiar estado a…").selectOption("completado");
+  await expect(page.getByText("«Hades» pasa a Completado")).toBeVisible();
+});
