@@ -70,10 +70,16 @@ export function TopBar() {
       <Link href="/biblioteca?buscar=1" className={`btn btn-quiet btn-icon ${styles.mobileOnly}`} aria-label="Buscar">
         <Search />
       </Link>
-      <Link href="/ajustes" className="btn btn-quiet btn-icon" aria-label="Ajustes" aria-current={pathname.startsWith("/ajustes") ? "page" : undefined}>
+      <Link href="/ajustes" className="btn btn-quiet btn-icon" aria-label="Ajustes" aria-current={pathname.startsWith("/ajustes") || pathname.startsWith("/manual") ? "page" : undefined}>
         <Settings />
       </Link>
-      <button type="button" className={`btn btn-sticker ${styles.addBtn}`} onClick={() => open()}>
+      <button
+        type="button"
+        className={`btn btn-sticker ${styles.addBtn}`}
+        onClick={() => open()}
+        aria-keyshortcuts="A"
+        title="Añadir juego (A)"
+      >
         <Plus strokeWidth={2.5} />
         <span className={styles.addLabel}>Añadir juego</span>
       </button>

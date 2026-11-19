@@ -50,6 +50,7 @@ export function QuickSearch({ className }: { className?: string }) {
         aria-autocomplete="list"
         aria-activedescendant={open && results[active] ? `${listId}-${active}` : undefined}
         aria-label="Buscar en tu biblioteca"
+        aria-keyshortcuts="/"
         placeholder="Buscar juego"
         value={q}
         onChange={(e) => {
@@ -75,6 +76,12 @@ export function QuickSearch({ className }: { className?: string }) {
           }
         }}
       />
+      {/* La tecla del atajo, solo con el campo vacío: no tapa lo que se escribe. */}
+      {!q && (
+        <kbd className={styles.qsKey} aria-hidden>
+          /
+        </kbd>
+      )}
       {open && q.trim().length > 0 && (
         <ul id={listId} role="listbox" className={styles.qsList} aria-label="Resultados">
           {results.map(({ game, copies }, i) => (

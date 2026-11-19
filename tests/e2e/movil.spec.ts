@@ -266,7 +266,7 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
   expect(lines).toBe(1);
   // Importar de Steam sale de la cabecera en el móvil; sigue en Ajustes.
   await expect(head.getByRole("link", { name: "Importar de Steam" })).toBeHidden();
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=steam");
   await expect(page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" })).toBeVisible();
 });
 
@@ -283,4 +283,91 @@ test("en el móvil, el inicio enseña sus cinco opciones y los datos de cada par
   const detail = page.getByRole("group", { name: "Partidas guardadas" }).getByRole("button").first().locator("small");
   expect(await detail.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("en el móvil, el enlace del bocadillo lleva al manual, que cabe en la pantalla", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("pistas-preparadas")) {
+      localStorage.removeItem("ludoteca:pistas-vistas");
+      sessionStorage.setItem("pistas-preparadas", "1");
+    }
+  });
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  await page.getByRole("status", { name: "Pista de la guardiana" }).getByRole("link", { name: "Ver el manual" }).click();
+  await expect(page.getByRole("region", { name: "El mapa de la ficha" })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("en el móvil, el bocadillo de la guardiana no tapa las casillas del mapa", async ({ page }) => {
+  await loadDemo(page);
+  for (const [width, height] of [[390, 844], [360, 740]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => localStorage.removeItem("ludoteca:pistas-vistas"));
+    await page.goto("/biblioteca");
+    await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+    const hint = page.getByRole("status", { name: "Pista de la guardiana" });
+    await expect(hint).toContainText("¡Toca una!");
+    // «¡Toca una!»: todas las casillas tienen que poder tocarse mientras lo dice.
+    for (const node of await page.getByRole("button", { name: /, (conseguido|pendiente)$/ }).all()) {
+      const covered = await node.evaluate((el) => {
+        const b = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        return !(hit && (hit === el || el.contains(hit)));
+      });
+      expect(covered, `${await node.getAttribute("aria-label")} tapada a ${width}px`).toBe(false);
+    }
+    const box = (await hint.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    // El cuadro de la guardiana no tapa el título.
+    const talk = (await page.getByRole("status", { name: "Guardiana", exact: true }).boundingBox())!;
+    const title = (await page.getByRole("heading", { level: 1, name: "Hades" }).boundingBox())!;
+    expect(talk.y + talk.height).toBeLessThanOrEqual(title.y);
+  }
+});
+
+test("en el móvil, Ajustes es primero la lista de apartados y luego el elegido", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/ajustes");
+  const menu = page.getByRole("navigation", { name: "Apartados de Ajustes" });
+  await expect(menu).toBeVisible();
+  await expect(page.locator("main section.window:visible")).toHaveCount(0);
+  for (const link of await menu.getByRole("link").all()) expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+  await menu.getByRole("link", { name: "Copia de seguridad" }).click();
+  await expect(page.getByRole("region", { name: "Copia de seguridad" })).toBeVisible();
+  await expect(menu).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await expectCarcasaText(page.locator("main"));
+  await page.getByRole("link", { name: "Todos los ajustes" }).click();
+  await expect(menu).toBeVisible();
+});
+
+test("el manual cabe en el móvil en todas sus páginas", async ({ page }) => {
+  for (let n = 1; n <= 7; n++) {
+    await openApp(page, `/manual?pagina=${n}`);
+    await expect(page.getByText(`Página ${n} de 7`)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `página ${n}`).toBeLessThanOrEqual(0);
+    await expectCarcasaText(page.locator("main"));
+    for (const name of ["Anterior", "Siguiente"]) expect(Math.round((await page.getByRole("button", { name }).boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("en el móvil, la barra del cambio en grupo queda encima de la barra inferior", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  const box = page.getByRole("checkbox", { name: "Elegir «Hades»" });
+  const hit = await box.evaluate((el) => (el.closest("label") ?? el).getBoundingClientRect());
+  expect(Math.round(hit.height)).toBeGreaterThanOrEqual(44);
+  expect(Math.round(hit.width)).toBeGreaterThanOrEqual(44);
+  await box.check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await expect(bar).toBeInViewport({ ratio: 1 });
+  const nav = (await page.getByRole("navigation", { name: "Principal" }).last().boundingBox())!;
+  const b = (await bar.boundingBox())!;
+  expect(b.y + b.height).toBeLessThanOrEqual(nav.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await expectCarcasaText(bar);
 });

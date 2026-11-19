@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { addGame, loadDemo, openApp } from "./helpers";
 
 async function openWarnings(page: Page) {
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=eliminar");
   await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "¿Eliminar tus 22 juegos?" })).toBeVisible();
@@ -56,7 +56,7 @@ test("cancelar en cualquier aviso no borra nada", async ({ page }) => {
 });
 
 test("sin juegos no se ofrece el botón", async ({ page }) => {
-  await openApp(page, "/ajustes");
+  await openApp(page, "/ajustes?apartado=eliminar");
   await expect(page.getByText("No hay juegos que eliminar.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Eliminar todos los juegos" })).toHaveCount(0);
 });
@@ -64,7 +64,7 @@ test("sin juegos no se ofrece el botón", async ({ page }) => {
 test("con un solo juego, el aviso no dice «tus 1 juego»", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=eliminar");
   await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
   await expect(page.getByRole("dialog").getByRole("heading", { name: "¿Eliminar tu único juego?" })).toBeVisible();
 });

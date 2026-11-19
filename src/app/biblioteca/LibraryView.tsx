@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, List, Search, SlidersHorizontal, Star } from "lucide-react";
+import { LayoutGrid, List, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -100,6 +100,34 @@ export function LibraryView() {
   const entries = useMemo(() => buildEntries(library), [library]);
   const facets = useMemo(() => facetValues(entries), [entries]);
   const visible = useMemo(() => sortEntries(filterEntries(entries, filters), sort), [entries, filters, sort]);
+
+  // Cambio en grupo en la tabla: solo cuentan los elegidos que se ven; un filtro que oculta uno lo saca.
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  // El estado elegido en la barra solo se aplica con «Cambiar»: con el teclado, moverse por la lista no cambia nada.
+  const [bulkStatus, setBulkStatus] = useState<GameStatus | "">("");
+  const visibleKey = visible.map((e) => e.game.id).join();
+  const [pickedFor, setPickedFor] = useState(visibleKey);
+  if (pickedFor !== visibleKey) {
+    setPickedFor(visibleKey);
+    const ids = new Set(visible.map((e) => e.game.id));
+    setPicked((prev) => new Set([...prev].filter((id) => ids.has(id))));
+  }
+  const allPicked = visible.length > 0 && visible.every((e) => picked.has(e.game.id));
+  const togglePick = (id: string, on: boolean) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  useEffect(() => {
+    if (picked.size === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.querySelector("dialog[open]")) setPicked(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [picked.size]);
   const activeCount = activeFilterCount({ ...filters, platforms: [] }) + (filters.q ? 1 : 0);
   const chosen = visible.find((e) => e.game.id === chosenId) ?? visible[0];
 
@@ -323,62 +351,121 @@ export function LibraryView() {
               ))}
             </ul>
           ) : (
-            <div className={styles.table} role="table" aria-label="Juegos">
-              <div className={styles.rowHead} role="row">
-                <span role="columnheader" />
-                <span role="columnheader">Título</span>
-                <span role="columnheader" className={styles.hideNarrow}>
-                  Copias
-                </span>
-                <span role="columnheader">Estado</span>
-                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
-                  Horas
-                </span>
-                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
-                  Nota
-                </span>
-                <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
-                  Última partida
-                </span>
-              </div>
-              {visible.map(({ game, copies }) => (
-                <div key={game.id} className={styles.row} role="row" style={led(ARCADE_STATUS[game.status].color)}>
-                  <span role="cell">
-                    <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
+            <>
+              {picked.size > 0 && (
+                <section className={`window ${styles.bulk}`} aria-label="Cambio en grupo">
+                  <p>
+                    {picked.size} {picked.size === 1 ? "elegido" : "elegidos"}
+                  </p>
+                  <select className="select" aria-label="Cambiar estado a…" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as GameStatus)}>
+                    <option value="" disabled>
+                      Cambiar estado a…
+                    </option>
+                    {GAME_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABEL[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-ink"
+                    disabled={!bulkStatus}
+                    onClick={() => {
+                      if (!bulkStatus) return;
+                      actions.setStatusMany([...picked], bulkStatus);
+                      setPicked(new Set());
+                      setBulkStatus("");
+                    }}
+                  >
+                    Cambiar
+                  </button>
+                  <button type="button" className="btn btn-quiet" onClick={() => setPicked(new Set())}>
+                    <X aria-hidden />
+                    Quitar la selección
+                  </button>
+                </section>
+              )}
+              <div className={styles.table} role="table" aria-label="Juegos">
+                <div className={styles.rowHead} role="row">
+                  <span role="columnheader">
+                    <label className={styles.pick}>
+                      <input
+                        type="checkbox"
+                        aria-label="Elegir todos los que se ven"
+                        checked={allPicked}
+                        ref={(el) => {
+                          if (el) el.indeterminate = picked.size > 0 && !allPicked;
+                        }}
+                        onChange={(e) => setPicked(e.target.checked ? new Set(visible.map((v) => v.game.id)) : new Set())}
+                      />
+                    </label>
                   </span>
-                  <span role="cell" className={styles.rowTitle}>
-                    <Link href={`/juego/${game.id}`}>{game.title}</Link>
-                    <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
+                  <span role="columnheader" />
+                  <span role="columnheader">Título</span>
+                  <span role="columnheader" className={styles.hideNarrow}>
+                    Copias
                   </span>
-                  <span role="cell" className={styles.hideNarrow}>
-                    {copiesSummary(copies)}
+                  <span role="columnheader">Estado</span>
+                  <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                    Horas
                   </span>
-                  <span role="cell">
-                    <select
-                      className={`select ${styles.statusSelect}`}
-                      aria-label={`Estado de ${game.title}`}
-                      value={game.status}
-                      onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
-                    >
-                      {GAME_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {STATUS_LABEL[s]}
-                        </option>
-                      ))}
-                    </select>
+                  <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                    Nota
                   </span>
-                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                    {game.hoursPlayed ? formatHours(game.hoursPlayed) : "—"}
-                  </span>
-                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                    {game.rating != null ? formatNumber(game.rating) : "—"}
-                  </span>
-                  <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                    {relativeDay(game.lastPlayedAt)}
+                  <span role="columnheader" className={`${styles.hideNarrow} ${styles.num}`}>
+                    Última partida
                   </span>
                 </div>
-              ))}
-            </div>
+                {visible.map(({ game, copies }) => (
+                  <div key={game.id} className={styles.row} role="row" style={led(ARCADE_STATUS[game.status].color)} data-picked={picked.has(game.id) || undefined}>
+                    <span role="cell">
+                      <label className={styles.pick}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Elegir «${game.title}»`}
+                          checked={picked.has(game.id)}
+                          onChange={(e) => togglePick(game.id, e.target.checked)}
+                        />
+                      </label>
+                    </span>
+                    <span role="cell">
+                      <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
+                    </span>
+                    <span role="cell" className={styles.rowTitle}>
+                      <Link href={`/juego/${game.id}`}>{game.title}</Link>
+                      <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
+                    </span>
+                    <span role="cell" className={styles.hideNarrow}>
+                      {copiesSummary(copies)}
+                    </span>
+                    <span role="cell">
+                      <select
+                        className={`select ${styles.statusSelect}`}
+                        aria-label={`Estado de ${game.title}`}
+                        value={game.status}
+                        onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
+                      >
+                        {GAME_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABEL[s]}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                      {game.hoursPlayed ? formatHours(game.hoursPlayed) : "—"}
+                    </span>
+                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                      {game.rating != null ? formatNumber(game.rating) : "—"}
+                    </span>
+                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                      {relativeDay(game.lastPlayedAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
 

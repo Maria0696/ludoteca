@@ -38,6 +38,8 @@ interface Actions {
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
   setStatus(id: string, status: GameStatus): void;
+  /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
+  setStatusMany(ids: string[], status: GameStatus): void;
   markPlayedToday(id: string): void;
   deleteGame(id: string): void;
   /** Vacía la biblioteca; si no lo consigue del todo, avisa con un error. */
@@ -171,6 +173,21 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       commit({ ...libRef.current, games: replaceById(libRef.current.games, game) });
       return persist((r) => r.save({ games: [game] }));
     };
+    const saveGames = (games: Game[]) => {
+      commit({ ...libRef.current, games: games.reduce((all, g) => replaceById(all, g), libRef.current.games) });
+      return persist((r) => r.save({ games }));
+    };
+    /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
+    const withStatus = (previous: Game, status: GameStatus): Game => {
+      const next: Game = { ...previous, status, updatedAt: nowIso() };
+      const today = todayIso();
+      if (status === "jugando") {
+        next.startedAt ??= today;
+        next.lastPlayedAt = today;
+      }
+      if (status === "completado") next.finishedAt ??= today;
+      return next;
+    };
     const saveCopy = (copy: Copy) => {
       commit({ ...libRef.current, copies: replaceById(libRef.current.copies, copy) });
       return persist((r) => r.save({ copies: [copy] }));
@@ -214,16 +231,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setStatus(id, status) {
         const previous = findGame(id);
         if (!previous || previous.status === status) return;
-        const next: Game = { ...previous, status, updatedAt: nowIso() };
-        const today = todayIso();
-        if (status === "jugando") {
-          next.startedAt ??= today;
-          next.lastPlayedAt = today;
-        }
-        if (status === "completado") next.finishedAt ??= today;
-        void saveGame(next);
+        void saveGame(withStatus(previous, status));
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
           action: { label: "Deshacer", onClick: () => void saveGame({ ...previous, updatedAt: nowIso() }) },
+        });
+      },
+
+      setStatusMany(ids, status) {
+        // Solo cuentan los que cambian: si ninguno cambia, no hay nada que avisar.
+        const previous = ids.map(findGame).filter((g): g is Game => Boolean(g) && g!.status !== status);
+        if (previous.length === 0) return;
+        void saveGames(previous.map((g) => withStatus(g, status)));
+        const what = previous.length === 1 ? `«${previous[0].title}» pasa` : `${previous.length} juegos pasan`;
+        toast(`${what} a ${STATUS_LABEL[status]}`, {
+          action: { label: "Deshacer", onClick: () => void saveGames(previous.map((g) => ({ ...g, updatedAt: nowIso() }))) },
         });
       },
 

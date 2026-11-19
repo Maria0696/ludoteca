@@ -7,6 +7,7 @@ import { AddGameProvider } from "../game/AddGameProvider";
 import { BottomNav } from "./BottomNav";
 import { StateGate } from "./StateGate";
 import { TopBar } from "./TopBar";
+import { useShortcuts } from "./useShortcuts";
 import styles from "./shell.module.css";
 
 function AppToaster() {
@@ -18,6 +19,12 @@ function AppToaster() {
       toastOptions={{ className: styles.toast }}
     />
   );
+}
+
+/** Los atajos necesitan el alta: viven dentro de su proveedor. */
+function Shortcuts() {
+  useShortcuts();
+  return null;
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -33,6 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <LibraryProvider>
       <AddGameProvider>
+        <Shortcuts />
         <a href="#contenido" className={styles.skip}>
           Saltar al contenido
         </a>

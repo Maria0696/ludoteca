@@ -142,13 +142,109 @@
 .talk {
   position: absolute;
   z-index: 4;
-  left: 50%;
-  translate: -50% 0;
+  /* Alineado con la columna del título, a la derecha de la carátula que sube sobre el mapa. */
+  left: calc(max(0px, (100% - 1240px) / 2) + 20px + clamp(130px, 15vw, 210px) + clamp(16px, 2.6vw, 32px));
   bottom: 18px;
-  width: min(620px, 62%);
+  /* Ancho y bajo: con una pista sigue en dos líneas y no sube sobre las casillas. */
+  width: min(820px, calc(100% - (max(0px, (100% - 1240px) / 2) + 20px + clamp(130px, 15vw, 210px) + clamp(16px, 2.6vw, 32px)) - 20px));
   padding: 16px 18px 12px;
   font-size: 26px;
   line-height: 1.08;
+}
+/* Bocadillo de la guardiana: junto a ella en el mapa, con su pico apuntándole. */
+.hint {
+  position: absolute;
+  z-index: 6;
+  width: min(300px, calc(100% - 16px));
+  padding: 12px 40px 10px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 0 -3px 0 var(--paper), 0 3px 0 var(--paper), -3px 0 0 var(--paper), 3px 0 0 var(--paper), 0 8px 0 3px #0006;
+  font-size: 21px;
+  line-height: 1.12;
+  animation: hint-in 260ms var(--ease-out) backwards;
+}
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+.hint p {
+  margin: 0 0 6px;
+}
+.hint::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  box-shadow: 3px 3px 0 var(--paper);
+}
+.hint[data-side="arriba"]::after {
+  left: var(--tail);
+  bottom: -7px;
+  translate: -50% 0;
+  rotate: 45deg;
+}
+.hint[data-side="abajo"]::after {
+  left: var(--tail);
+  top: -7px;
+  translate: -50% 0;
+  rotate: -135deg;
+}
+.hint[data-side="derecha"]::after {
+  top: var(--tail);
+  left: -7px;
+  translate: 0 -50%;
+  rotate: 135deg;
+}
+.hint[data-side="izquierda"]::after {
+  top: var(--tail);
+  right: -7px;
+  translate: 0 -50%;
+  rotate: -45deg;
+}
+.hintLink {
+  color: var(--gold);
+  font-size: 20px;
+  text-underline-offset: 4px;
+}
+.hintClose {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  cursor: pointer;
+}
+.hintClose svg {
+  width: 18px;
+  height: 18px;
+}
+.hintClose:focus-visible,
+.hintLink:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .hintClose {
+    width: 44px;
+    height: 44px;
+    top: -2px;
+    right: -2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
 }
 .talkName {
   position: absolute;
@@ -178,6 +274,12 @@
   gap: clamp(16px, 2.6vw, 32px);
   align-items: end;
   margin-top: clamp(-96px, -7vw, -44px);
+  /* La cabecera sube sobre el mapa: su hueco no tapa el cuadro de la guardiana; solo lo que se ve recibe clics. */
+  pointer-events: none;
+}
+.coverWrap,
+.identity > * {
+  pointer-events: auto;
 }
 .coverWrap {
   position: relative;
@@ -1054,14 +1156,28 @@ button.slot:hover {
     height: clamp(200px, 30svh, 250px);
     min-height: 0;
     overflow: visible;
-    margin-bottom: 92px;
+    margin-bottom: 76px;
   }
+  /* Con el bocadillo, el mapa gana un poco de alto: cabe junto a la guardiana sin tapar casillas. */
+  .map:has(.hint) {
+    height: 310px;
+  }
+  .hint {
+    width: min(210px, calc(100% - 16px));
+    padding: 10px 36px 8px 10px;
+    font-size: 18px;
+  }
+  .hintLink {
+    font-size: 18px;
+  }
+  /* El cuadro cuelga del borde del mapa y crece hacia abajo: nunca tapa las casillas. */
   .talk {
     left: 20px;
     right: 20px;
     width: auto;
     translate: 0 0;
-    bottom: -80px;
+    top: calc(100% - 8px);
+    bottom: auto;
     min-height: 64px;
     padding: 14px 14px 10px;
     font-size: 22px;

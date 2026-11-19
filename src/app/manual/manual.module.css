@@ -1,0 +1,240 @@
+/* El manual de instrucciones: el librito de un juego, una página por tema con su dibujo. */
+.page {
+  display: grid;
+  gap: 18px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px var(--gutter) 0;
+}
+.book {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) minmax(0, 3fr);
+  gap: 32px;
+  align-items: center;
+  min-height: 360px;
+  padding: 28px;
+  animation: page-in 260ms var(--ease-out) backwards;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+.art {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-height: 240px;
+  padding: 24px;
+  background: var(--raised);
+  box-shadow: var(--pixel-frame-soft);
+}
+.text {
+  display: grid;
+  gap: 14px;
+  align-content: center;
+  font-family: var(--font-term);
+  font-size: 23px;
+  line-height: 1.2;
+}
+.text h2 {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--gold);
+}
+.text p {
+  max-width: 48ch;
+  color: var(--text);
+}
+.text :global(.btn) {
+  justify-self: start;
+  height: auto;
+  min-height: 44px;
+  padding-block: 8px;
+  white-space: normal;
+}
+
+/* Dibujos */
+.sprite {
+  width: 140px;
+  height: auto;
+  image-rendering: pixelated;
+}
+.copies {
+  display: flex;
+  gap: 36px;
+}
+.copies figure {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.copies img {
+  width: 72px;
+  image-rendering: pixelated;
+}
+.copies figcaption {
+  font-family: var(--font-term);
+  font-size: 20px;
+  color: var(--muted);
+}
+.states {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.stages {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-term);
+  font-size: 20px;
+  color: var(--muted);
+}
+.stages li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stages b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  background: #5a5f7a;
+  color: #d8daf0;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 400;
+}
+.stages li[data-done] {
+  color: var(--text);
+}
+.stages li[data-done] b {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+.coin {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 22px 12px;
+  background: #ffe45c;
+  color: #1b1400;
+  box-shadow: 0 6px 0 #b8901f;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+}
+.coin small {
+  font-family: var(--font-term);
+  font-size: 20px;
+}
+.session {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.session span {
+  padding: 6px 12px;
+  background: var(--window);
+  box-shadow: var(--pixel-frame-soft);
+  font-family: var(--font-term);
+  font-size: 20px;
+}
+.session span[data-on] {
+  background: var(--paper);
+  color: var(--window);
+  box-shadow: none;
+}
+
+/* Paso de página e índice */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pager :global(.btn) {
+  min-height: 44px;
+}
+.pager p {
+  white-space: nowrap;
+  font-family: var(--font-term);
+  font-size: 21px;
+  color: var(--muted);
+}
+.index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.index button {
+  min-height: 36px;
+  padding: 2px 10px;
+  border: 0;
+  background: none;
+  box-shadow: var(--pixel-frame-soft);
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: 19px;
+  cursor: pointer;
+}
+.index button[aria-current="page"] {
+  background: var(--gold);
+  color: var(--gold-ink);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .index button:not([aria-current="page"]):hover {
+    background: var(--hover);
+    color: #fff;
+  }
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding-top: 12px;
+  }
+  .book {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    min-height: 0;
+    padding: 18px;
+  }
+  .art {
+    min-height: 0;
+    padding: 18px;
+  }
+  .sprite {
+    width: 96px;
+  }
+  .text {
+    font-size: 21px;
+  }
+  .text h2 {
+    font-size: 15px;
+  }
+  /* En el móvil se pasa con «Anterior» y «Siguiente»: el índice ocuparía varias filas. */
+  .index {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book {
+    animation: none;
+  }
+}

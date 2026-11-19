@@ -79,7 +79,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
   await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });
 
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=copia");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exportar copia" }).click();
   const download = await downloadPromise;
@@ -95,7 +95,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const other = await context.newPage();
   await openApp(other, "/biblioteca");
   await addGame(other, { title: "Celeste", platform: "PS4", format: "Digital" });
-  await other.goto("/ajustes");
+  await other.goto("/ajustes?apartado=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
   const dialog = other.getByRole("dialog");
   await expect(dialog.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
@@ -110,7 +110,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await expect(other.getByText("3 títulos · 3 copias")).toBeVisible();
 
   // Importar el mismo archivo otra vez no duplica nada.
-  await other.goto("/ajustes");
+  await other.goto("/ajustes?apartado=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
   await expect(other.getByRole("dialog").getByText(/ya los tienes iguales/)).toBeVisible();
   await other.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
@@ -127,7 +127,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
 test("datos de demostración separados y retirables", async ({ page }) => {
   await loadDemo(page);
   // Sin juegos propios no se habla de «0 juegos tuyos».
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración y ningún juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
   await expect(page.getByRole("dialog").getByText("No tienes juegos tuyos todavía: solo se va lo de demostración.")).toBeVisible();
@@ -135,7 +135,7 @@ test("datos de demostración separados y retirables", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await addGame(page, { title: "Mi juego real", platform: "PC", format: "Digital" });
-  await page.goto("/ajustes");
+  await page.goto("/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración junto a 1 juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
   await expect(page.getByRole("dialog").getByText(/Tu juego no se toca\.$/)).toBeVisible();
