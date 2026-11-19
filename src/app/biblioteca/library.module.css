@@ -744,6 +744,23 @@
 }
 
 @media (max-width: 899px) {
+  /* En el móvil, el título se lee entero: puede ir en dos líneas. */
+  .rowTitle a {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    font-size: var(--size-label);
+    line-height: 1.1;
+  }
+  .row .thumb {
+    width: 36px;
+  }
+  /* El estado entero: letra de nota y la flecha pegada al borde. */
+  .statusSelect {
+    padding-inline: 8px 24px !important;
+    background-position: right 6px center !important;
+    font-size: var(--size-note) !important;
+  }
   /* En el móvil, la barra del cambio en grupo queda encima de la barra inferior, al alcance del pulgar. */
   .bulk {
     position: fixed;
@@ -841,7 +858,7 @@
   }
   .rowHead,
   .row {
-    grid-template-columns: 44px 44px minmax(0, 1fr) 130px;
+    grid-template-columns: 40px 36px minmax(0, 1fr) 124px;
     gap: 10px;
     padding-inline: 10px;
   }

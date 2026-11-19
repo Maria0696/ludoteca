@@ -278,6 +278,32 @@
     animation: none;
   }
 }
+/* Ventanas plegables de la ficha (solo en el móvil). */
+.foldable {
+  position: relative;
+}
+.foldToggle {
+  display: none;
+}
+@media (max-width: 899px) {
+  .foldToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-grid;
+    place-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    background: var(--navy);
+    color: var(--paper);
+    font-size: var(--size-label);
+    cursor: pointer;
+  }
+  .foldable[data-plegado] > :not(h2):not(.foldToggle) {
+    display: none;
+  }
+}
 .talkName {
   position: absolute;
   left: 12px;

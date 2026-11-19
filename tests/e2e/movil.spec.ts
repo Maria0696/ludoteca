@@ -419,3 +419,53 @@ test("el manual deja su margen en el móvil", async ({ page }) => {
   const gap = await page.locator("main p").evaluateAll((els) => Math.min(...els.map((e) => window.innerWidth - e.getBoundingClientRect().right)));
   expect(gap).toBeGreaterThanOrEqual(16);
 });
+
+test("en el móvil, la tabla de la biblioteca enseña los títulos enteros", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  const titles = page.getByRole("table", { name: "Juegos" }).getByRole("link");
+  await expect(titles.first()).toBeVisible();
+  const cut = await titles.evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+  expect(cut).toEqual([]);
+  // Un título de longitud normal (hasta 24 letras) cabe en dos líneas; uno muy largo puede usar más, pero entero.
+  const tall = await titles.evaluateAll((els) =>
+    els
+      .filter((e) => (e.textContent ?? "").length <= 24)
+      .filter((e) => Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)) > 2)
+      .map((e) => e.textContent),
+  );
+  expect(tall).toEqual([]);
+  // Y el estado se lee entero, sin que la flecha del desplegable lo corte.
+  const statusCut = await page.getByRole("combobox", { name: /^Estado de / }).evaluateAll((els) =>
+    els
+      .map((el) => {
+        const s = getComputedStyle(el);
+        const ctx = document.createElement("canvas").getContext("2d")!;
+        ctx.font = `${s.fontSize} ${s.fontFamily}`;
+        const text = (el as HTMLSelectElement).selectedOptions[0].text;
+        const free = el.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
+        return free - ctx.measureText(text).width < 0 ? text : null;
+      })
+      .filter(Boolean),
+  );
+  expect(statusCut).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("en el móvil, «Ficha técnica» y «Más datos» empiezan plegados y se abren al tocarlos", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Stardew/ }).first().click();
+  const sheet = page.getByRole("region", { name: "Ficha técnica" });
+  await expect(sheet.getByRole("heading", { name: "Ficha técnica" })).toBeVisible();
+  const toggle = sheet.getByRole("button", { name: "Mostrar Ficha técnica" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(sheet.getByText("Desarrolladora")).toBeHidden();
+  await toggle.click();
+  await expect(sheet.getByText("Desarrolladora")).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "Ocultar Ficha técnica" })).toHaveAttribute("aria-expanded", "true");
+  const more = page.getByRole("region", { name: "Más datos" });
+  await expect(more.getByRole("button", { name: /Eliminar/ })).toBeHidden();
+  await more.getByRole("button", { name: "Mostrar Más datos" }).click();
+  await expect(more.getByRole("button", { name: /Eliminar/ })).toBeVisible();
+});
