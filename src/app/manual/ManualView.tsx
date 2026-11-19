@@ -34,6 +34,7 @@ const PAGES: Page[] = [
       <>
         <p>Un juego es la obra; cada copia, un ejemplar que tienes: su plataforma, su formato y de dónde salió.</p>
         <p>Un mismo juego puede tener varias copias, por ejemplo una en Switch y otra en PC.</p>
+        <p>Con el teclado, la tecla / te lleva al buscador.</p>
       </>
     ),
   },
@@ -91,6 +92,7 @@ const PAGES: Page[] = [
       <>
         <p>«Añadir juego» abre el cofre. Título, plataforma y formato bastan.</p>
         <p>Precio, horas, notas y estantería se completan después en la ficha.</p>
+        <p>Con el teclado, la tecla A abre el cofre.</p>
       </>
     ),
   },
