@@ -255,12 +255,22 @@ test.describe("pantalla", () => {
     await expect(page).toHaveURL(/origen=gametracker/);
     await expect(origin.getByRole("link", { name: "Game Tracker" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("heading", { level: 1, name: "Copiar desde Game Tracker" })).toBeVisible();
+    // Como Steam: el archivo a la izquierda, la Ludoteca a la derecha, y todo en español.
+    await expect(page.getByRole("region", { name: "Game Tracker" }).getByText("Elegir archivo")).toBeVisible();
+    await expect(page.getByText(/Choose File|No file chosen/)).toHaveCount(0);
+    const ludoteca = page.getByRole("region", { name: "Ludoteca" });
+    await expect(ludoteca.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
 
-    await page.route("https://images.example/**", (route) => route.fulfill({ status: 404 }));
+    // Una imagen de 1×1 píxel: la carátula de Ark carga; las demás no tienen y muestran su inicial.
+    const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+    await page.route("https://images.example/**", (route) => route.fulfill({ status: 200, contentType: "image/png", body: pixel }));
     await page.getByLabel("Archivo de Game Tracker").setInputFiles(SAMPLE);
     // La carátula ayuda a distinguir juegos con nombres parecidos.
-    await expect(page.getByRole("region", { name: /^Juegos nuevos/ }).locator("img")).toHaveCount(1);
-    await expect(page.getByRole("status").filter({ hasText: "juegos nuevos" })).toHaveText("7 juegos nuevos · 1 deseo nuevo · 2 ya los tienes · 1 para revisar");
+    const fresh = page.getByRole("region", { name: /^Juegos nuevos/ });
+    await expect(fresh.locator("img")).toHaveCount(1);
+    await expect(fresh.getByRole("listitem").filter({ hasText: "Horizon Zero Dawn" })).toContainText("H");
+    await expect(ludoteca.getByRole("status").filter({ hasText: "juegos nuevos" })).toHaveText("7 juegos nuevos · 1 deseo nuevo · 2 ya los tienes · 1 para revisar");
+    await expect(page.getByRole("region", { name: "Game Tracker" }).getByRole("region", { name: "Para revisar" })).toBeVisible();
 
     const review = page.getByRole("region", { name: "Para revisar" });
     await expect(review.getByRole("button", { name: /^Quitar / })).toHaveCount(4);
@@ -295,7 +305,7 @@ test.describe("pantalla", () => {
     await openApp(page, "/importar?origen=gametracker");
     await page.getByLabel("Archivo de Game Tracker").setInputFiles(bad);
     await expect(page.getByRole("alert").filter({ hasText: "Game Tracker" })).toHaveText("Este archivo no parece una exportación de Game Tracker.");
-    await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
   });
 });
 

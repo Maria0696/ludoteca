@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { ChevronsRight, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { type GtCounts, type GtItem, type ItemCopy, type PlannedCopy, classifyGameTracker, parseGameTracker } from "@/lib/gametracker-import";
@@ -13,6 +13,9 @@ type Phase = "inicio" | "revision" | "copiando" | "hecho";
 
 /** Grupos pequeños: la barra avanza de verdad y un fallo no pierde lo ya guardado. */
 const BATCH = 50;
+/** Como en Steam: más casillas no se distinguen; el resto se resume con un número. */
+const MAX_CELLS = 77;
+const EMPTY_CELLS = 44;
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const copyLabel = (c: PlannedCopy) => (c.store ? `${c.platform} · ${c.store}` : `${c.platform} · ${FORMAT_LABEL[c.format]}`);
@@ -26,6 +29,7 @@ export function GameTrackerImport() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [done, setDone] = useState(0);
   const [result, setResult] = useState<GtCounts | null>(null);
 
@@ -44,6 +48,7 @@ export function GameTrackerImport() {
     if (!file) return;
     setProblem(null);
     setResult(null);
+    setFileName(file.name);
     const parsed = parseGameTracker(await file.text());
     if (!parsed.ok) {
       setItems([]);
@@ -101,13 +106,7 @@ export function GameTrackerImport() {
       return next;
     });
 
-  const cover = (item: GtItem) =>
-    item.entry.coverUrl ? (
-      // eslint-disable-next-line @next/next/no-img-element -- carátula del catálogo, pequeña y diferida
-      <img className={styles.thumb} src={item.entry.coverUrl} alt="" width={36} height={48} loading="lazy" />
-    ) : (
-      <span className={styles.thumb} aria-hidden />
-    );
+  const cover = (item: GtItem) => <CoverImg item={item} className={styles.thumb} />;
 
   const pick = (item: GtItem) => (
     <input
@@ -117,6 +116,34 @@ export function GameTrackerImport() {
       disabled={copying}
       onChange={() => toggle(item.id)}
     />
+  );
+
+  const fileInput = (
+    <input
+      className="sr-only"
+      type="file"
+      accept=".csv,text/csv"
+      aria-label="Archivo de Game Tracker"
+      disabled={copying}
+      onChange={(e) => {
+        void readFile(e.target.files?.[0]);
+        // Así se puede volver a elegir el mismo archivo.
+        e.target.value = "";
+      }}
+    />
+  );
+
+  const row = (item: GtItem, detail: string | null) => (
+    <li key={item.id} className={styles.item}>
+      <label className={styles.itemHead}>
+        {pick(item)}
+        {cover(item)}
+        <span>
+          {item.entry.title}
+          {detail && <small>{detail}</small>}
+        </span>
+      </label>
+    </li>
   );
 
   return (
@@ -132,146 +159,152 @@ export function GameTrackerImport() {
         </p>
       )}
 
-      {(phase === "inicio" || phase === "revision") && (
-        <section
-          className={`${styles.card} ${styles.file}`}
-          aria-labelledby="gt-archivo"
-          data-arrastrando={dragging || undefined}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            void readFile(e.dataTransfer.files[0]);
-          }}
-        >
-          <h2 id="gt-archivo">Tu archivo</h2>
-          {phase === "inicio" && (
-            <p>
-              En Game Tracker, exporta tu colección en CSV y elígela aquí (o suéltala encima). Verás qué entra, qué ya tienes y qué conviene revisar antes de
-              copiar nada.
-            </p>
-          )}
-          <label className={styles.fileField}>
-            <span>Archivo de Game Tracker</span>
-            <input type="file" accept=".csv,text/csv" onChange={(e) => void readFile(e.target.files?.[0])} />
-          </label>
-        </section>
-      )}
+      {phase !== "hecho" && (
+        <div className={styles.bays}>
+          <section
+            className={styles.card}
+            aria-labelledby="bahia-gametracker"
+            data-arrastrando={dragging || undefined}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!copying) setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              if (!copying) void readFile(e.dataTransfer.files[0]);
+            }}
+          >
+            <h2 id="bahia-gametracker">
+              Game Tracker {items.length > 0 && <small>{count(items.length, "fila", "filas")}</small>}
+            </h2>
 
-      {(phase === "revision" || copying) && (
-        <>
-          <p className={styles.summary} role="status">
-            {count(games.length, "juego nuevo", "juegos nuevos")} · {count(wishes.length, "deseo nuevo", "deseos nuevos")} ·{" "}
-            {count(owned.length, "ya lo tienes", "ya los tienes")} · {review.length} para revisar
-          </p>
+            {phase === "inicio" ? (
+              <div className={styles.intro}>
+                <p>En Game Tracker, exporta tu colección en CSV. Verás qué entra, qué ya tienes y qué conviene revisar antes de copiar nada.</p>
+                <div className={styles.drop}>
+                  <p>Suelta aquí tu archivo</p>
+                  <label className={styles.pickFile}>
+                    {fileInput}
+                    <span>Elegir archivo</span>
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className={styles.fileRow}>
+                  <span>{fileName}</span>
+                  <label className={styles.pickFile}>
+                    {fileInput}
+                    <span>Elegir otro</span>
+                  </label>
+                </div>
+                <div className={styles.tools}>
+                  <input type="search" aria-label="Buscar en el archivo" placeholder="Buscar juego" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  <button type="button" disabled={copying} onClick={() => setAll(fresh, true)}>
+                    Todos
+                  </button>
+                  <button type="button" disabled={copying} onClick={() => setAll(fresh, false)}>
+                    Ninguno
+                  </button>
+                </div>
+                <div className={styles.list}>
+                  {review.length > 0 && (
+                    <section className={styles.group} aria-labelledby="gt-revisar">
+                      <h3 id="gt-revisar">Para revisar</h3>
+                      <p className={styles.fine}>El archivo no dice qué formato va con cada consola. Quita las copias que no tengas y añade las que falten.</p>
+                      <ul className={styles.items}>
+                        {review.map((item) => (
+                          <li key={item.id} className={styles.item}>
+                            <label className={styles.itemHead}>
+                              {pick(item)}
+                              {cover(item)}
+                              <span>{item.entry.title}</span>
+                            </label>
+                            <ul className={styles.copies}>
+                              {item.copies.map((c) => (
+                                <li key={c.id}>
+                                  {copyLabel(c)}
+                                  <button
+                                    type="button"
+                                    aria-label={`Quitar ${copyLabel(c)}`}
+                                    disabled={copying}
+                                    onClick={() => setCopies(item.id, (list) => list.filter((x) => x.id !== c.id))}
+                                  >
+                                    <X aria-hidden />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                            <AddCopy
+                              title={item.entry.title}
+                              disabled={copying}
+                              onAdd={(c) => setCopies(item.id, (list) => (list.some((x) => sameCopy(x, c)) ? list : [...list, c]))}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
 
-          {review.length > 0 && (
-            <section className={styles.card} aria-labelledby="gt-revisar">
-              <h2 id="gt-revisar">Para revisar</h2>
-              <p className={styles.fine}>El archivo no dice qué formato va con cada consola. Quita las copias que no tengas y añade las que falten.</p>
-              <ul className={styles.items}>
-                {review.map((item) => (
-                  <li key={item.id} className={styles.item}>
-                    <label className={styles.itemHead}>
-                      {pick(item)}
-                      {cover(item)}
-                      <span>{item.entry.title}</span>
-                    </label>
-                    <ul className={styles.copies}>
-                      {item.copies.map((c) => (
-                        <li key={copyLabel(c)}>
-                          {copyLabel(c)}
-                          <button
-                            type="button"
-                            aria-label={`Quitar ${copyLabel(c)}`}
-                            disabled={copying}
-                            onClick={() => setCopies(item.id, (list) => list.filter((x) => !sameCopy(x, c)))}
-                          >
-                            <X aria-hidden />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                    <AddCopy title={item.entry.title} disabled={copying} onAdd={(c) => setCopies(item.id, (list) => (list.some((x) => sameCopy(x, c)) ? list : [...list, c]))} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+                  {games.length > 0 && (
+                    <section className={styles.group} aria-labelledby="gt-juegos">
+                      <h3 id="gt-juegos">Juegos nuevos</h3>
+                      <ul className={styles.items}>
+                        {games.filter((i) => i.state === "nuevo" && matches(i)).map((item) => row(item, item.copies.map(copyLabel).join(", ") || "Sin copia"))}
+                      </ul>
+                    </section>
+                  )}
 
-          <div className={styles.tools}>
-            <input type="search" aria-label="Buscar en el archivo" placeholder="Buscar juego" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <button type="button" disabled={copying} onClick={() => setAll(fresh, true)}>
-              Todos
-            </button>
-            <button type="button" disabled={copying} onClick={() => setAll(fresh, false)}>
-              Ninguno
-            </button>
+                  {wishes.length > 0 && (
+                    <section className={styles.group} aria-labelledby="gt-deseos">
+                      <h3 id="gt-deseos">Deseos nuevos</h3>
+                      <ul className={styles.items}>{wishes.filter(matches).map((item) => row(item, item.entry.platforms[0] ?? null))}</ul>
+                    </section>
+                  )}
+
+                  {owned.length > 0 && (
+                    <details className={styles.owned}>
+                      <summary>Ya los tienes ({owned.length}): no se tocan</summary>
+                      <ul>
+                        {owned.map((item) => (
+                          <li key={item.id}>{item.entry.title}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+
+          <div className={styles.arrow} aria-hidden>
+            <ChevronsRight />
           </div>
 
-          {games.length > 0 && (
-            <section className={styles.card} aria-labelledby="gt-juegos">
-              <h2 id="gt-juegos">
-                Juegos nuevos <small>{games.length}</small>
-              </h2>
-              <ul className={styles.items}>
-                {games.filter((i) => i.state === "nuevo" && matches(i)).map((item) => (
-                  <li key={item.id} className={styles.item}>
-                    <label className={styles.itemHead}>
-                      {pick(item)}
-                      {cover(item)}
-                      <span>
-                        {item.entry.title}
-                        <small>{item.copies.map(copyLabel).join(", ") || "Sin copia"}</small>
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {wishes.length > 0 && (
-            <section className={styles.card} aria-labelledby="gt-deseos">
-              <h2 id="gt-deseos">
-                Deseos nuevos <small>{wishes.length}</small>
-              </h2>
-              <ul className={styles.items}>
-                {wishes.filter(matches).map((item) => (
-                  <li key={item.id} className={styles.item}>
-                    <label className={styles.itemHead}>
-                      {pick(item)}
-                      {cover(item)}
-                      <span>
-                        {item.entry.title}
-                        {item.entry.platforms[0] && <small>{item.entry.platforms[0]}</small>}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {owned.length > 0 && (
-            <details className={styles.owned}>
-              <summary>Ya los tienes ({owned.length}): no se tocan</summary>
-              <ul>
-                {owned.map((item) => (
-                  <li key={item.id}>{item.entry.title}</li>
-                ))}
-              </ul>
-            </details>
-          )}
-
-          <section className={`${styles.card} ${styles.send}`} aria-label="Copiar">
-            <p className={styles.fine}>
-              <Link href="/ajustes?apartado=copia">Haz antes una copia de seguridad</Link>: si algo no te convence, podrás volver a como estaba.
-            </p>
+          <section className={styles.card} aria-labelledby="bahia-ludoteca">
+            <h2 id="bahia-ludoteca">Ludoteca</h2>
+            {phase !== "inicio" && (
+              <p className={styles.tally} role="status">
+                <span>{count(games.length, "juego nuevo", "juegos nuevos")}</span>
+                <i> · </i>
+                <span>{count(wishes.length, "deseo nuevo", "deseos nuevos")}</span>
+                <i> · </i>
+                <span>{count(owned.length, "ya lo tienes", "ya los tienes")}</span>
+                <i> · </i>
+                <span>{review.length} para revisar</span>
+              </p>
+            )}
+            <div className={styles.cells} aria-hidden>
+              {queue.length === 0 && Array.from({ length: EMPTY_CELLS }, (_, i) => <span key={i} className={styles.slot} />)}
+              {queue.slice(0, MAX_CELLS).map((item, i) => (
+                <span key={item.id} className={i < done ? styles.cellDone : styles.cell}>
+                  <CoverImg item={item} />
+                </span>
+              ))}
+              {queue.length > MAX_CELLS && <span className={styles.more}>+{queue.length - MAX_CELLS}</span>}
+            </div>
             <div
               className={styles.bar}
               role="progressbar"
@@ -285,11 +318,19 @@ export function GameTrackerImport() {
             <p className={styles.status} aria-live="polite">
               {copying ? `Copiando ${done} de ${queue.length}. No cierres esta pantalla.` : `${queue.length} para copiar`}
             </p>
+            {!copying && (
+              <>
+                <p className={styles.fine}>Los nuevos entran como Pendiente, con la carátula y la ficha del archivo.</p>
+                <p className={styles.fine}>
+                  <Link href="/ajustes?apartado=copia">Haz antes una copia de seguridad</Link>: si algo no te convence, podrás volver a como estaba.
+                </p>
+              </>
+            )}
             <button type="button" className={styles.go} disabled={copying || queue.length === 0} onClick={() => void copyAll()}>
               {copying ? "Copiando…" : "Copiar a la ludoteca"}
             </button>
           </section>
-        </>
+        </div>
       )}
 
       {phase === "hecho" && result && (
@@ -311,6 +352,20 @@ export function GameTrackerImport() {
       )}
     </div>
   );
+}
+
+/** Carátula del archivo; si falta o no carga, la inicial del título. */
+function CoverImg({ item, className }: { item: GtItem; className?: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!item.entry.coverUrl || broken) {
+    return (
+      <span className={`${styles.noIcon} ${className ?? ""}`} aria-hidden>
+        {item.entry.title[0]}
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element -- carátula del catálogo, pequeña y diferida
+  return <img className={className} src={item.entry.coverUrl} alt="" loading="lazy" onError={() => setBroken(true)} />;
 }
 
 /** Añadir a mano una copia que el archivo no dejaba adivinar. */
