@@ -177,6 +177,11 @@
   .page[data-apartado="si"] .menu {
     display: none;
   }
+  /* Primero la lista: todavía no hay nada elegido, así que nada va en dorado. */
+  .page[data-apartado="no"] .menu a[aria-current="page"] {
+    background: none;
+    color: var(--text);
+  }
   .back {
     display: inline-flex;
     align-items: center;

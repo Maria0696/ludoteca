@@ -15,10 +15,14 @@
   display: grid;
   gap: 16px;
 }
+/* El campo a lo ancho y «Crear» debajo: en la columna estrecha, el ejemplo se lee entero. */
 .newList {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+}
+.newList :global(.btn) {
+  justify-self: start;
 }
 .newList :global(.error) {
   color: var(--danger);
@@ -129,13 +133,6 @@
 }
 
 @media (max-width: 899px) {
-  /* El campo a lo ancho y «Crear» debajo: el ejemplo se lee entero. */
-  .newList {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .newList :global(.btn) {
-    justify-self: start;
-  }
   .layout {
     grid-template-columns: 1fr;
     gap: 24px;

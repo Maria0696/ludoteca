@@ -48,7 +48,8 @@
 .filtersInline {
   display: contents;
 }
-.filterBtn {
+/* Solo en el móvil; con la barra delante para ganar a la clase global .btn. */
+.toolbar .filterBtn {
   display: none;
 }
 .sheetFilters {
@@ -201,7 +202,7 @@
   .toolbar .filtersInline {
     display: none;
   }
-  .filterBtn {
+  .toolbar .filterBtn {
     display: inline-flex;
     flex: 1;
     min-height: 44px;

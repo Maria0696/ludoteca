@@ -85,3 +85,14 @@ export function contrastRatio(fg: string, bg: string): number {
   const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
   return (hi + 0.05) / (lo + 0.05);
 }
+
+/** Lo que sobra en un campo después de su texto de ejemplo: negativo si el ejemplo se corta. */
+export async function placeholderRoom(field: Locator): Promise<number> {
+  return field.evaluate((el) => {
+    const s = getComputedStyle(el);
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    ctx.font = `${s.fontSize} ${s.fontFamily}`;
+    const free = el.getBoundingClientRect().width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - parseFloat(s.borderLeftWidth) - parseFloat(s.borderRightWidth);
+    return free - ctx.measureText((el as HTMLInputElement).placeholder).width;
+  });
+}
