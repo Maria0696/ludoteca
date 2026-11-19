@@ -188,6 +188,13 @@
   .page {
     padding-top: 22px;
   }
+  /* En el móvil la respuesta va primero: la explicación ya está en cada propuesta y en el manual. */
+  .head {
+    margin-bottom: 16px;
+  }
+  .head p {
+    display: none;
+  }
   .form {
     display: none;
   }

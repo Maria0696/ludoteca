@@ -371,3 +371,13 @@ test("en el móvil, la barra del cambio en grupo queda encima de la barra inferi
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(bar);
 });
+
+test("en el móvil, «Jugar a este» de la primera propuesta se ve sin bajar", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/que-juego");
+  const play = page.getByRole("button", { name: "Jugar a este" }).first();
+  await expect(play).toBeInViewport({ ratio: 1 });
+  const nav = (await page.getByRole("navigation", { name: "Principal" }).last().boundingBox())!;
+  const b = (await play.boundingBox())!;
+  expect(b.y + b.height).toBeLessThanOrEqual(nav.y);
+});

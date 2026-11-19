@@ -361,3 +361,26 @@ test("«NUEVA PARTIDA» parpadea al llegar, no para siempre", async ({ page }) =
   expect(iterations).not.toBe("infinite");
   expect(Number(iterations)).toBeLessThanOrEqual(4);
 });
+
+test("Esc en un buscador no quita la selección del cambio en grupo", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  await pick(page, "Hades").check();
+  await page.getByRole("searchbox", { name: "Buscar por título" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("region", { name: "Cambio en grupo" })).toContainText("1 elegido");
+});
+
+test("al cerrar la barra del cambio en grupo, el foco vuelve a la tabla", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca?vista=lista");
+  await pick(page, "Hades").check();
+  await pick(page, "Celeste").check();
+  const bar = page.getByRole("region", { name: "Cambio en grupo" });
+  await bar.getByLabel("Cambiar estado a…").selectOption("pausado");
+  await bar.getByRole("button", { name: "Cambiar", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Elegir todos los que se ven" })).toBeFocused();
+  await pick(page, "Hades").check();
+  await page.getByRole("region", { name: "Cambio en grupo" }).getByRole("button", { name: "Quitar la selección" }).click();
+  await expect(page.getByRole("checkbox", { name: "Elegir todos los que se ven" })).toBeFocused();
+});

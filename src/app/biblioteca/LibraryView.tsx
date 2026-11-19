@@ -105,6 +105,13 @@ export function LibraryView() {
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   // El estado elegido en la barra solo se aplica con «Cambiar»: con el teclado, moverse por la lista no cambia nada.
   const [bulkStatus, setBulkStatus] = useState<GameStatus | "">("");
+  // Al cerrarse la barra, el foco vuelve a la tabla (la casilla de la cabecera), no al principio de la página.
+  const pickAllRef = useRef<HTMLInputElement>(null);
+  const clearPicked = () => {
+    setPicked(new Set());
+    setBulkStatus("");
+    requestAnimationFrame(() => pickAllRef.current?.focus());
+  };
   const visibleKey = visible.map((e) => e.game.id).join();
   const [pickedFor, setPickedFor] = useState(visibleKey);
   if (pickedFor !== visibleKey) {
@@ -123,7 +130,10 @@ export function LibraryView() {
   useEffect(() => {
     if (picked.size === 0) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !document.querySelector("dialog[open]")) setPicked(new Set());
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector("dialog[open]")) return;
+      // En un campo, Esc es de ese campo (vaciar la búsqueda, cerrar una lista).
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, select")) return;
+      setPicked(new Set());
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -375,13 +385,12 @@ export function LibraryView() {
                     onClick={() => {
                       if (!bulkStatus) return;
                       actions.setStatusMany([...picked], bulkStatus);
-                      setPicked(new Set());
-                      setBulkStatus("");
+                      clearPicked();
                     }}
                   >
                     Cambiar
                   </button>
-                  <button type="button" className="btn btn-quiet" onClick={() => setPicked(new Set())}>
+                  <button type="button" className="btn btn-quiet" onClick={clearPicked}>
                     <X aria-hidden />
                     Quitar la selección
                   </button>
@@ -396,6 +405,7 @@ export function LibraryView() {
                         aria-label="Elegir todos los que se ven"
                         checked={allPicked}
                         ref={(el) => {
+                          pickAllRef.current = el;
                           if (el) el.indeterminate = picked.size > 0 && !allPicked;
                         }}
                         onChange={(e) => setPicked(e.target.checked ? new Set(visible.map((v) => v.game.id)) : new Set())}

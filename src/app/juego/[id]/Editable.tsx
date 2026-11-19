@@ -33,6 +33,17 @@ export function Editable(props: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const cancelled = useRef(false);
   const returnFocus = useRef(false);
+  // «Guardado», un momento, tras cada cambio: el dato se guarda solo y así se sabe.
+  const [justSaved, setJustSaved] = useState(0);
+  useEffect(() => {
+    if (!justSaved) return;
+    const t = window.setTimeout(() => setJustSaved(0), 1600);
+    return () => window.clearTimeout(t);
+  }, [justSaved]);
+  const save = (v: string | number | null) => {
+    (props.onSave as (v: string | number | null) => void)(v);
+    setJustSaved((n) => n + 1);
+  };
 
   useEffect(() => {
     if (!editing && returnFocus.current) {
@@ -51,13 +62,13 @@ export function Editable(props: Props) {
     if (props.kind === "date") {
       const parsed = parseDmy(raw);
       if (!parsed.ok) return setError(parsed.error);
-      if (parsed.iso !== (props.value ?? null)) props.onSave(parsed.iso);
+      if (parsed.iso !== (props.value ?? null)) save(parsed.iso);
       return close(refocus);
     }
     if (props.kind === "number") {
       const n = parseDecimal(raw);
       if (n === null) {
-        if (props.value != null) props.onSave(null);
+        if (props.value != null) save(null);
         return close(refocus);
       }
       const { min = 0, max, step = 1, integer } = props;
@@ -65,39 +76,44 @@ export function Editable(props: Props) {
       if (n < min || (max != null && n > max)) return setError(`Tiene que estar entre ${min} y ${max}.`);
       if (integer && !Number.isInteger(n)) return setError("Escribe un número entero.");
       const rounded = step < 1 ? Math.round(n / step) * step : n;
-      if (rounded !== props.value) props.onSave(rounded);
+      if (rounded !== props.value) save(rounded);
       return close(refocus);
     }
     const text = raw.trim();
     const problem = text ? props.validate?.(text) : null;
     if (problem) return setError(problem);
-    if (text !== (props.value ?? "")) props.onSave(text || null);
+    if (text !== (props.value ?? "")) save(text || null);
     close(refocus);
   };
 
   if (!editing) {
     return (
-      <button
-        ref={buttonRef}
-        type="button"
-        className={display ? styles.value : quiet ? `${styles.value} ${styles.valueEmpty}` : styles.add}
-        aria-label={display ? `${label}: ${display}. Editar` : `${label}: añadir`}
-        onClick={() => {
-          cancelled.current = false;
-          if (props.kind === "date") setDateText(isoToDmy(props.value));
-          setEditing(true);
-        }}
-      >
-        {display ??
-          (quiet ? (
-            empty
-          ) : (
-            <>
-              <Plus aria-hidden />
-              {empty}
-            </>
-          ))}
-      </button>
+      <>
+        <button
+          ref={buttonRef}
+          type="button"
+          className={display ? styles.value : quiet ? `${styles.value} ${styles.valueEmpty}` : styles.add}
+          aria-label={display ? `${label}: ${display}. Editar` : `${label}: añadir`}
+          onClick={() => {
+            cancelled.current = false;
+            if (props.kind === "date") setDateText(isoToDmy(props.value));
+            setEditing(true);
+          }}
+        >
+          {display ??
+            (quiet ? (
+              empty
+            ) : (
+              <>
+                <Plus aria-hidden />
+                {empty}
+              </>
+            ))}
+        </button>
+        <span className={styles.saved} aria-live="polite">
+          {justSaved ? <span key={justSaved}>Guardado</span> : null}
+        </span>
+      </>
     );
   }
 
