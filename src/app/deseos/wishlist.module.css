@@ -45,6 +45,19 @@
   display: flex;
   gap: 6px;
 }
+.filtersInline {
+  display: contents;
+}
+.filterBtn {
+  display: none;
+}
+.sheetFilters {
+  display: grid;
+  gap: 16px;
+}
+.sheetFilters .select :global(.select) {
+  width: 100%;
+}
 .select :global(.select) {
   width: auto;
 }
@@ -183,6 +196,15 @@
   }
   .search {
     width: 100%;
+  }
+  /* En el móvil, como en la biblioteca: buscador y «Filtros»; lo demás, en la hoja. */
+  .toolbar .filtersInline {
+    display: none;
+  }
+  .filterBtn {
+    display: inline-flex;
+    flex: 1;
+    min-height: 44px;
   }
   .item {
     grid-template-columns: 64px minmax(0, 1fr);
