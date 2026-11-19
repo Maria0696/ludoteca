@@ -31,7 +31,7 @@ const tituloVisto = {
       localStorage: [
         { name: "ludoteca:titulo-visto", value: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()) },
         // Las pistas de la guardiana, ya vistas: cada prueba que las quiera las borra.
-        { name: "ludoteca:pistas-vistas", value: JSON.stringify(["mapa", "moneda", "datos"]) },
+        { name: "ludoteca:pistas-vistas", value: JSON.stringify(["mapa", "moneda", "datos", "quejuego", "steam"]) },
       ],
     },
   ],

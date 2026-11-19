@@ -1,0 +1,64 @@
+/* Pista de primera vez: la guardiana con una frase, en una ventana pequeña. */
+.hint {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 4px 24px;
+  padding: 12px 48px 12px 14px;
+  font-family: var(--font-term);
+  font-size: var(--size-body);
+  line-height: 1.2;
+  animation: rise 360ms var(--ease-out) backwards;
+}
+.hint p {
+  margin: 0;
+  color: var(--text);
+}
+.keeper {
+  width: 36px;
+  height: auto;
+  flex: none;
+  image-rendering: pixelated;
+}
+.link {
+  color: var(--gold);
+  white-space: nowrap;
+  text-underline-offset: 4px;
+}
+.close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.close svg {
+  width: 18px;
+  height: 18px;
+}
+.close:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .close {
+    width: 44px;
+    height: 44px;
+    top: 2px;
+    right: 2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}

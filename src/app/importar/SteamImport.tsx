@@ -2,6 +2,7 @@
 
 import { ChevronsRight } from "lucide-react";
 import Link from "next/link";
+import { GuideHint } from "@/components/ui/GuideHint";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CatalogGame } from "@/lib/catalog";
 import type { SteamGame, SteamLibraryResponse, SteamSheetsResponse } from "@/lib/steam";
@@ -204,6 +205,10 @@ export function SteamImport() {
           </div>
         </form>
       </header>
+
+      <div className={styles.guide}>
+        <GuideHint id="steam" />
+      </div>
 
       {problem && (
         <p className={styles.problem} role="alert">
