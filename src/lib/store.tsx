@@ -188,6 +188,19 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       if (status === "completado") next.finishedAt ??= today;
       return next;
     };
+    /**
+     * Deshacer un cambio de estado devuelve solo el estado y sus fechas, sobre el juego tal como está ahora:
+     * lo editado después se conserva, y un juego borrado entretanto no vuelve.
+     */
+    const undoStatus = (previous: Game[]) => {
+      const restored = previous.flatMap((old) => {
+        const now = findGame(old.id);
+        if (!now) return [];
+        const { status, startedAt, lastPlayedAt, finishedAt } = old;
+        return [{ ...now, status, startedAt, lastPlayedAt, finishedAt, updatedAt: nowIso() }];
+      });
+      if (restored.length) void saveGames(restored);
+    };
     const saveCopy = (copy: Copy) => {
       commit({ ...libRef.current, copies: replaceById(libRef.current.copies, copy) });
       return persist((r) => r.save({ copies: [copy] }));
@@ -233,7 +246,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         if (!previous || previous.status === status) return;
         void saveGame(withStatus(previous, status));
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
-          action: { label: "Deshacer", onClick: () => void saveGame({ ...previous, updatedAt: nowIso() }) },
+          action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
         });
       },
 
@@ -244,7 +257,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         void saveGames(previous.map((g) => withStatus(g, status)));
         const what = previous.length === 1 ? `«${previous[0].title}» pasa` : `${previous.length} juegos pasan`;
         toast(`${what} a ${STATUS_LABEL[status]}`, {
-          action: { label: "Deshacer", onClick: () => void saveGames(previous.map((g) => ({ ...g, updatedAt: nowIso() }))) },
+          action: { label: "Deshacer", onClick: () => undoStatus(previous) },
         });
       },
 

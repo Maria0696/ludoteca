@@ -1,8 +1,9 @@
 "use client";
 
-import { PackageCheck, Pencil, Plus, Search, Tag, Trash2 } from "lucide-react";
+import { PackageCheck, Pencil, Plus, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Cover } from "@/components/ui/Cover";
+import { Dialog } from "@/components/ui/Dialog";
 import { formatDate, formatMoney } from "@/lib/format";
 import { type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, normalizeTitle } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
@@ -28,6 +29,7 @@ export function WishlistView() {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [platform, setPlatform] = useState("");
   const [sort, setSort] = useState<Sort>("prioridad");
+  const [sheet, setSheet] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert"; wish: WishItem } | null>(null);
 
   const platforms = useMemo(() => [...new Set(library.wishlist.map((w) => w.platform).filter(Boolean) as string[])].sort(), [library.wishlist]);
@@ -53,6 +55,54 @@ export function WishlistView() {
   }, [library.wishlist, q, priorities, platform, sort]);
 
   const filtered = q || priorities.length || platform;
+  const activeFilters = priorities.length + (platform ? 1 : 0);
+  const reset = () => {
+    setQ("");
+    setPriorities([]);
+    setPlatform("");
+  };
+
+  // Prioridad, plataforma y orden: en la barra en el ordenador; en el móvil, en la hoja «Filtrar y ordenar», como en la biblioteca.
+  const filterControls = (
+    <>
+      <div className={styles.chips} role="group" aria-label="Prioridad">
+        {PRIORITIES.map((p) => (
+          <button
+            key={p}
+            type="button"
+            className="chip"
+            aria-pressed={priorities.includes(p)}
+            onClick={() => setPriorities((list) => (list.includes(p) ? list.filter((x) => x !== p) : [...list, p]))}
+          >
+            {PRIORITY_LABEL[p]}
+          </button>
+        ))}
+      </div>
+      {platforms.length > 0 && (
+        <label className={styles.select}>
+          <span className="sr-only">Plataforma</span>
+          <select className="select" value={platform} onChange={(e) => setPlatform(e.target.value)}>
+            <option value="">Todas las plataformas</option>
+            {platforms.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className={styles.select}>
+        <span className="sr-only">Ordenar</span>
+        <select className="select" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+          {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
+            <option key={s} value={s}>
+              {SORT_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
 
   return (
     <div className={styles.page}>
@@ -83,52 +133,13 @@ export function WishlistView() {
               <span className="sr-only">Buscar en la lista de deseos</span>
               <input className="input" type="search" placeholder="Buscar por título" value={q} onChange={(e) => setQ(e.target.value)} />
             </label>
-            <div className={styles.chips} role="group" aria-label="Prioridad">
-              {PRIORITIES.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className="chip"
-                  aria-pressed={priorities.includes(p)}
-                  onClick={() => setPriorities((list) => (list.includes(p) ? list.filter((x) => x !== p) : [...list, p]))}
-                >
-                  {PRIORITY_LABEL[p]}
-                </button>
-              ))}
-            </div>
-            {platforms.length > 0 && (
-              <label className={styles.select}>
-                <span className="sr-only">Plataforma</span>
-                <select className="select" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-                  <option value="">Todas las plataformas</option>
-                  {platforms.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <label className={styles.select}>
-              <span className="sr-only">Ordenar</span>
-              <select className="select" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-                {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
-                  <option key={s} value={s}>
-                    {SORT_LABEL[s]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className={styles.filtersInline}>{filterControls}</div>
+            <button type="button" className={`btn ${styles.filterBtn}`} onClick={() => setSheet(true)}>
+              <SlidersHorizontal aria-hidden />
+              {activeFilters ? `Filtros · ${activeFilters}` : "Filtros"}
+            </button>
             {filtered && (
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => {
-                  setQ("");
-                  setPriorities([]);
-                  setPlatform("");
-                }}
-              >
+              <button type="button" className="link-btn" onClick={reset}>
                 Restablecer
               </button>
             )}
@@ -210,6 +221,24 @@ export function WishlistView() {
       {dialog?.kind === "edit" && <WishEditor wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "price" && <PriceDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "convert" && <ConvertDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
+
+      <Dialog
+        open={sheet}
+        onClose={() => setSheet(false)}
+        title="Filtrar y ordenar"
+        footer={
+          <>
+            <button type="button" className="btn" onClick={reset}>
+              Restablecer
+            </button>
+            <button type="button" className="btn btn-ink" onClick={() => setSheet(false)}>
+              Ver {visible.length} {visible.length === 1 ? "deseo" : "deseos"}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.sheetFilters}>{filterControls}</div>
+      </Dialog>
     </div>
   );
 }

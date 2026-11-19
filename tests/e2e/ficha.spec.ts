@@ -503,3 +503,19 @@ test("al guardar un dato de la ficha, un «Guardado» breve lo confirma", async 
   await expect(saved).toBeVisible();
   await expect(saved).toHaveCount(0, { timeout: 4000 });
 });
+
+test("«Deshacer» un cambio de estado no se lleva lo que editaste después", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/biblioteca");
+  await cards(page).getByRole("link", { name: /Hades/ }).first().click();
+  await page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { name: "Pausado" }).click();
+  await page.getByRole("button", { name: /^Horas jugadas/ }).click();
+  await page.getByLabel("Horas jugadas").fill("99");
+  await page.getByLabel("Horas jugadas").press("Enter");
+  await expect(page.getByRole("button", { name: /^Horas jugadas: 99 h/ })).toBeVisible();
+  await page.getByRole("button", { name: "Deshacer" }).click();
+  await expect(page.getByRole("radiogroup", { name: "Estado" }).getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("button", { name: /^Horas jugadas: 99 h/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /^Horas jugadas: 99 h/ })).toBeVisible();
+});

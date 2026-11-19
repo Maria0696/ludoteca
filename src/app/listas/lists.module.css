@@ -129,6 +129,13 @@
 }
 
 @media (max-width: 899px) {
+  /* El campo a lo ancho y «Crear» debajo: el ejemplo se lee entero. */
+  .newList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .newList :global(.btn) {
+    justify-self: start;
+  }
   .layout {
     grid-template-columns: 1fr;
     gap: 24px;

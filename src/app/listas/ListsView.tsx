@@ -61,7 +61,7 @@ export function ListsView() {
             <input
               id="new-list"
               className="input"
-              placeholder="Nueva lista, p. ej. Partidas rápidas"
+              placeholder="P. ej. Partidas rápidas"
               value={name}
               aria-invalid={nameError ? true : undefined}
               aria-describedby={nameError ? "new-list-error" : undefined}

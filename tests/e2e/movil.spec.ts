@@ -381,3 +381,41 @@ test("en el móvil, «Jugar a este» de la primera propuesta se ve sin bajar", a
   const b = (await play.boundingBox())!;
   expect(b.y + b.height).toBeLessThanOrEqual(nav.y);
 });
+
+test("en el móvil, Deseos filtra con una hoja, como la biblioteca, y el primer deseo se ve antes", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/deseos");
+  const wishes = page.getByRole("region", { name: "Deseos" });
+  // Arriba solo el buscador y «Filtros»: los demás controles esperan en la hoja.
+  await expect(page.getByRole("group", { name: "Prioridad" })).toBeHidden();
+  const first = (await wishes.getByRole("listitem").first().boundingBox())!;
+  expect(first.y).toBeLessThan(420);
+  await page.getByRole("button", { name: /^Filtros/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Filtrar y ordenar" });
+  await sheet.getByRole("button", { name: "Alta" }).click();
+  await sheet.getByRole("button", { name: /^Ver \d+ deseos?$/ }).click();
+  await expect(sheet).toBeHidden();
+  for (const text of await wishes.getByRole("listitem").allInnerTexts()) expect(text).toContain("prioridad alta");
+  await expect(page.getByRole("button", { name: "Filtros · 1" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test("en el móvil, el campo de una lista nueva se lee entero", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/listas");
+  const field = page.getByLabel("Nombre de la nueva lista");
+  const room = await field.evaluate((el) => {
+    const s = getComputedStyle(el);
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    ctx.font = `${s.fontSize} ${s.fontFamily}`;
+    const free = el.getBoundingClientRect().width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - parseFloat(s.borderLeftWidth) - parseFloat(s.borderRightWidth);
+    return free - ctx.measureText((el as HTMLInputElement).placeholder).width;
+  });
+  expect(room).toBeGreaterThanOrEqual(0);
+});
+
+test("el manual deja su margen en el móvil", async ({ page }) => {
+  await openApp(page, "/manual?pagina=1");
+  const gap = await page.locator("main p").evaluateAll((els) => Math.min(...els.map((e) => window.innerWidth - e.getBoundingClientRect().right)));
+  expect(gap).toBeGreaterThanOrEqual(16);
+});
