@@ -533,6 +533,15 @@
   height: 22px;
   accent-color: var(--gold);
 }
+/* Carátula pequeña: distingue juegos de nombre parecido. */
+.thumb {
+  flex: none;
+  width: 36px;
+  height: 48px;
+  object-fit: cover;
+  background: var(--row-on);
+  outline: 1px solid var(--edge-dim);
+}
 .itemHead span {
   min-width: 0;
   overflow-wrap: anywhere;

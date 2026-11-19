@@ -211,9 +211,26 @@ test.describe("planificar", () => {
     expect(second.counts).toEqual({ juegos: 0, copias: 0, deseos: 0, saltados: 2 });
   });
 
+  test("si una tanda se cortó a medias, repetirla reescribe lo mismo en vez de duplicar", () => {
+    const items = classifyGameTracker(emptyLibrary(), [
+      entry({ title: "Ark", platforms: ["PC"], stores: ["Steam", "Epic Games"], formats: ["digital"] }),
+      entry({ title: "Fable", wish: true }),
+    ]);
+    const first = planGameTrackerImport(emptyLibrary(), items);
+    // La pantalla no llegó a enterarse de lo guardado: vuelve a planificar contra la biblioteca de antes.
+    const again = planGameTrackerImport(emptyLibrary(), items);
+    expect(again.games.map((g) => g.id)).toEqual(first.games.map((g) => g.id));
+    expect(again.copies.map((c) => c.id)).toEqual(first.copies.map((c) => c.id));
+    expect(again.wishlist.map((w) => w.id)).toEqual(first.wishlist.map((w) => w.id));
+    // Llegaron los juegos pero no sus copias: se completan, no se saltan.
+    const half: Library = { ...emptyLibrary(), games: first.games };
+    const resumed = planGameTrackerImport(half, items);
+    expect(resumed.copies.map((c) => c.id)).toEqual(first.copies.map((c) => c.id));
+  });
+
   test("las copias editadas en la revisión son las que se guardan", () => {
     const [kirby] = classifyGameTracker(emptyLibrary(), [entry({ title: "Kirby", platforms: ["Switch", "Switch 2"], formats: ["fisico", "digital"] })]);
-    const edited: GtItem = { ...kirby, copies: [copy("Switch", "fisico")] };
+    const edited: GtItem = { ...kirby, copies: [{ ...copy("Switch", "fisico"), id: "copia-1" }] };
     const plan = planGameTrackerImport(emptyLibrary(), [edited]);
     expect(plan.copies.map((c) => [c.platform, c.format])).toEqual([["Switch", "fisico"]]);
   });
@@ -239,7 +256,10 @@ test.describe("pantalla", () => {
     await expect(origin.getByRole("link", { name: "Game Tracker" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("heading", { level: 1, name: "Copiar desde Game Tracker" })).toBeVisible();
 
+    await page.route("https://images.example/**", (route) => route.fulfill({ status: 404 }));
     await page.getByLabel("Archivo de Game Tracker").setInputFiles(SAMPLE);
+    // La carátula ayuda a distinguir juegos con nombres parecidos.
+    await expect(page.getByRole("region", { name: /^Juegos nuevos/ }).locator("img")).toHaveCount(1);
     await expect(page.getByRole("status").filter({ hasText: "juegos nuevos" })).toHaveText("7 juegos nuevos · 1 deseo nuevo · 2 ya los tienes · 1 para revisar");
 
     const review = page.getByRole("region", { name: "Para revisar" });
@@ -319,7 +339,9 @@ test.describe("tienda", () => {
     await expect(shelf(page, "PC")).toHaveCount(0);
     await expect(page.locator("main").getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" })).toHaveCount(2);
 
-    await page.getByRole("group", { name: "Tienda" }).getByRole("button", { name: /^Steam/ }).click();
+    const steam = page.getByRole("group", { name: "Tienda" }).getByRole("button", { name: /^Steam/ });
+    await expect(steam).toContainText("2");
+    await steam.click();
     await expect(page).toHaveURL(/tienda=Steam/);
     const main = page.locator("main");
     await expect(main.getByRole("listitem").filter({ hasText: "Final Fantasy X/X-2 HD Remaster" }).first()).toBeVisible();

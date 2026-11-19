@@ -163,12 +163,19 @@ export function planCopies(entry: GtEntry): { copies: PlannedCopy[]; doubtful: b
 /** nuevo: entra · dudoso: entra, pero conviene revisar sus copias · ya: está en la Ludoteca o repetido en el archivo. */
 export type GtState = "nuevo" | "dudoso" | "ya";
 
+/** Copia con su identificador definitivo: repetir una tanda reescribe la misma fila, no crea otra. */
+export interface ItemCopy extends PlannedCopy {
+  id: string;
+}
+
 export interface GtItem {
   /** Estable dentro de una lectura: la pantalla guarda selección y copias por él. */
   id: string;
+  /** Identificador definitivo del juego o del deseo que se creará. */
+  targetId: string;
   entry: GtEntry;
   state: GtState;
-  copies: PlannedCopy[];
+  copies: ItemCopy[];
 }
 
 export interface GtCounts {
@@ -213,13 +220,15 @@ export function classifyGameTracker(library: Library, entries: GtEntry[]): GtIte
     const { copies, doubtful } = entry.wish ? { copies: [], doubtful: false } : planCopies(entry);
     const state: GtState = known.has(entry) ? "ya" : doubtful ? "dudoso" : "nuevo";
     known.remember(entry);
-    return { id: `gt-${i}`, entry, state, copies };
+    return { id: `gt-${i}`, targetId: newId(), entry, state, copies: copies.map((c) => ({ ...c, id: newId() })) };
   });
 }
 
 /**
- * Lo que se guarda de los elegidos. Vuelve a mirar la biblioteca actual, así
- * que repetir una tanda (o el archivo entero) no duplica nada.
+ * Lo que se guarda de los elegidos. Vuelve a mirar la biblioteca actual y usa
+ * los identificadores fijados al leer el archivo: repetir una tanda que se
+ * cortó a medias reescribe las mismas filas (o completa las copias que
+ * faltaban) en vez de crear otras.
  */
 export function planGameTrackerImport(library: Library, items: GtItem[]): { games: Game[]; copies: Copy[]; wishlist: WishItem[]; counts: GtCounts } {
   const known = new Known(library);
@@ -228,16 +237,32 @@ export function planGameTrackerImport(library: Library, items: GtItem[]): { game
   const wishlist: WishItem[] = [];
   const counts: GtCounts = { juegos: 0, copias: 0, deseos: 0, saltados: 0 };
   const stamp = nowIso();
+  const landedGames = new Set(library.games.map((g) => g.id));
+  const landedCopies = new Set(library.copies.map((c) => c.id));
+  const landedWishes = new Set(library.wishlist.map((w) => w.id));
+  const toCopy = (gameId: string, c: ItemCopy) => ({ ...createCopy(gameId, { platform: c.platform, format: c.format, store: c.store }), id: c.id });
 
-  for (const { entry, copies: planned } of items) {
-    if (known.has(entry)) {
+  for (const { entry, targetId, copies: planned } of items) {
+    if (landedGames.has(targetId)) {
+      // Un intento anterior guardó el juego: solo faltan, si acaso, sus copias.
+      const missing = planned.filter((c) => !landedCopies.has(c.id));
+      known.remember(entry);
+      if (!missing.length) {
+        counts.saltados++;
+        continue;
+      }
+      for (const c of missing) copies.push(toCopy(targetId, c));
+      counts.copias += missing.length;
+      continue;
+    }
+    if (landedWishes.has(targetId) || known.has(entry)) {
       counts.saltados++;
       continue;
     }
     known.remember(entry);
     if (entry.wish) {
       wishlist.push({
-        id: newId(),
+        id: targetId,
         title: entry.title,
         coverUrl: entry.coverUrl,
         igdbId: entry.igdbId,
@@ -267,10 +292,11 @@ export function planGameTrackerImport(library: Library, items: GtItem[]): { game
         releaseDate: entry.releaseDate,
         criticRating: entry.criticRating,
       }),
+      id: targetId,
       createdAt: entry.createdAt,
     };
     games.push(game);
-    for (const c of planned) copies.push(createCopy(game.id, { platform: c.platform, format: c.format, store: c.store }));
+    for (const c of planned) copies.push(toCopy(game.id, c));
     counts.juegos++;
     counts.copias += planned.length;
   }

@@ -479,13 +479,18 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const repo = repoRef.current;
         if (!repo) throw new Error("La biblioteca aún no está lista.");
         const plan = planGameTrackerImport(libRef.current, items);
-        if (plan.games.length || plan.wishlist.length) await repo.save({ games: plan.games, copies: plan.copies, wishlist: plan.wishlist });
+        if (plan.games.length || plan.copies.length || plan.wishlist.length) await repo.save({ games: plan.games, copies: plan.copies, wishlist: plan.wishlist });
         const before = libRef.current;
+        // Por identificador: al repetir una tanda cortada, lo reescrito sustituye a lo que ya hubiera.
+        const merge = <T extends { id: string }>(current: T[], added: T[]) => {
+          const ids = new Set(added.map((x) => x.id));
+          return [...current.filter((x) => !ids.has(x.id)), ...added];
+        };
         commit({
           ...before,
-          games: [...before.games, ...plan.games],
-          copies: [...before.copies, ...plan.copies],
-          wishlist: [...before.wishlist, ...plan.wishlist],
+          games: merge(before.games, plan.games),
+          copies: merge(before.copies, plan.copies),
+          wishlist: merge(before.wishlist, plan.wishlist),
         });
         return plan.counts;
       },

@@ -3,8 +3,8 @@
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { type GtCounts, type GtItem, type PlannedCopy, classifyGameTracker, parseGameTracker } from "@/lib/gametracker-import";
-import { DEFAULT_PLATFORMS, FORMAT_LABEL, FORMATS, type Format, normalizeTitle } from "@/lib/model";
+import { type GtCounts, type GtItem, type ItemCopy, type PlannedCopy, classifyGameTracker, parseGameTracker } from "@/lib/gametracker-import";
+import { DEFAULT_PLATFORMS, FORMAT_LABEL, FORMATS, type Format, newId, normalizeTitle } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import { OriginNav } from "./OriginNav";
 import styles from "./importar.module.css";
@@ -89,7 +89,7 @@ export function GameTrackerImport() {
       if (!next.delete(id)) next.add(id);
       return next;
     });
-  const setCopies = (id: string, change: (copies: PlannedCopy[]) => PlannedCopy[]) =>
+  const setCopies = (id: string, change: (copies: ItemCopy[]) => ItemCopy[]) =>
     setItems((current) => current.map((i) => (i.id === id ? { ...i, copies: change(i.copies) } : i)));
   const setAll = (list: GtItem[], on: boolean) =>
     setSelected((current) => {
@@ -100,6 +100,14 @@ export function GameTrackerImport() {
       }
       return next;
     });
+
+  const cover = (item: GtItem) =>
+    item.entry.coverUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element -- carátula del catálogo, pequeña y diferida
+      <img className={styles.thumb} src={item.entry.coverUrl} alt="" width={36} height={48} loading="lazy" />
+    ) : (
+      <span className={styles.thumb} aria-hidden />
+    );
 
   const pick = (item: GtItem) => (
     <input
@@ -170,6 +178,7 @@ export function GameTrackerImport() {
                   <li key={item.id} className={styles.item}>
                     <label className={styles.itemHead}>
                       {pick(item)}
+                      {cover(item)}
                       <span>{item.entry.title}</span>
                     </label>
                     <ul className={styles.copies}>
@@ -214,6 +223,7 @@ export function GameTrackerImport() {
                   <li key={item.id} className={styles.item}>
                     <label className={styles.itemHead}>
                       {pick(item)}
+                      {cover(item)}
                       <span>
                         {item.entry.title}
                         <small>{item.copies.map(copyLabel).join(", ") || "Sin copia"}</small>
@@ -235,6 +245,7 @@ export function GameTrackerImport() {
                   <li key={item.id} className={styles.item}>
                     <label className={styles.itemHead}>
                       {pick(item)}
+                      {cover(item)}
                       <span>
                         {item.entry.title}
                         {item.entry.platforms[0] && <small>{item.entry.platforms[0]}</small>}
@@ -303,7 +314,7 @@ export function GameTrackerImport() {
 }
 
 /** Añadir a mano una copia que el archivo no dejaba adivinar. */
-function AddCopy({ title, disabled, onAdd }: { title: string; disabled: boolean; onAdd: (copy: PlannedCopy) => void }) {
+function AddCopy({ title, disabled, onAdd }: { title: string; disabled: boolean; onAdd: (copy: ItemCopy) => void }) {
   const [platform, setPlatform] = useState(DEFAULT_PLATFORMS[0]);
   const [format, setFormat] = useState<Format>("fisico");
   return (
@@ -320,7 +331,7 @@ function AddCopy({ title, disabled, onAdd }: { title: string; disabled: boolean;
           </option>
         ))}
       </select>
-      <button type="button" aria-label={`Añadir copia a «${title}»`} disabled={disabled} onClick={() => onAdd({ platform, format, store: null })}>
+      <button type="button" aria-label={`Añadir copia a «${title}»`} disabled={disabled} onClick={() => onAdd({ id: newId(), platform, format, store: null })}>
         Añadir copia
       </button>
     </div>

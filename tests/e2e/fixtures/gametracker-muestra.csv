@@ -1,6 +1,6 @@
 createdAt;updatedAt;id;externalId;source;title;alternativeNames;externalLink;cover;artworks;externalRating;userRating;firstReleaseDate;gameModes;playerPerspectives;releaseStatus;summary;availablePlatforms;userPlatforms;genres;developers;publishers;spaces;tags;videos;formats;location;storageUnit;section
 2026-03-06;;;113112;igdb;Hades;;;;;;;;;;;;;Nintendo Switch;;;;Propiedad;;;DIGITAL;;;
-2026-03-06;;;10239;igdb;Ark: Survival Evolved;;;;;;;;;;;"Sobrevive en una isla; con dinosaurios.
+2026-03-06;;;10239;igdb;Ark: Survival Evolved;;;https://images.example/ark.png;;;;;;;;"Sobrevive en una isla; con dinosaurios.
 Y con ""amigos"".";;PC (Microsoft Windows);"Adventure;Shooter";;;Propiedad;"Epic Games;Steam";;DIGITAL;;;
 2026-03-06;;;11156;igdb;Horizon Zero Dawn;;;;;;;;;;;;;PlayStation 4;;;;Propiedad;;;"PHYSICAL;DIGITAL";;;
 2026-03-06;;;14144;igdb;Final Fantasy X/X-2 HD Remaster;;;;;;;;;;;;;"PlayStation 3;PC (Microsoft Windows);PlayStation 4";;;;Propiedad;Steam;;"DIGITAL;PHYSICAL";;;

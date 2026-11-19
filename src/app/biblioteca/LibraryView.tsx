@@ -177,7 +177,7 @@ export function LibraryView() {
         <div className={styles.filterGroup} role="group" aria-label="Tienda">
           {facets.stores.map((st) => (
             <button key={st.value} type="button" className={styles.chip} aria-pressed={filters.stores.includes(st.value)} onClick={() => toggleIn("tienda", st.value)}>
-              {st.value}
+              {st.value} <small>{st.count}</small>
             </button>
           ))}
         </div>
