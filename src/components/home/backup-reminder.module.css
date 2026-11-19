@@ -8,7 +8,7 @@
   min-width: 0;
 }
 .text strong {
-  color: #fff;
+  color: var(--white);
   font-weight: 600;
 }
 .actions {

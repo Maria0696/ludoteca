@@ -20,7 +20,7 @@
   margin: 0;
 }
 .noticeClose:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--white);
   outline-offset: 2px;
 }
 @media (pointer: coarse) {
@@ -62,7 +62,7 @@
 .welcomeBody > p {
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 22px;
+  font-size: var(--size-lead);
   line-height: 1.2;
   max-width: 52ch;
   text-wrap: pretty;
@@ -74,7 +74,7 @@
   margin-top: 6px;
 }
 .welcomeBody > .welcomeNote {
-  font-size: 19px;
+  font-size: var(--size-meta);
 }
 .welcomeNotice {
   margin-top: 8px;
@@ -95,7 +95,7 @@
     width: 72px;
   }
   .welcomeBody :global(.screen-title) {
-    font-size: 20px;
+    font-size: var(--size-label);
   }
   .actions,
   .actions :global(.btn) {

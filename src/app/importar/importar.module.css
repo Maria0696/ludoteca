@@ -16,7 +16,7 @@
   background: radial-gradient(120% 90% at 20% 0, #2b57b8, #0b1a4e 70%);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
 }
@@ -56,10 +56,10 @@
 }
 .top h1 {
   margin: 0;
-  color: #fff;
+  color: var(--white);
   font: 400 clamp(20px, 2.4vw, 28px) / 1.35 var(--ttl);
   color: var(--gold);
-  text-shadow: 3px 3px 0 #000;
+  text-shadow: 3px 3px 0 var(--black);
   text-wrap: balance;
 }
 .profile {
@@ -70,7 +70,7 @@
 }
 .profile label {
   color: var(--dim);
-  font-size: 19px;
+  font-size: var(--size-meta);
 }
 .profile div {
   display: flex;
@@ -111,7 +111,7 @@
   padding: 12px 14px;
   border: 2px solid var(--gold);
   background: var(--panel);
-  color: #fff;
+  color: var(--white);
 }
 .intro {
   display: grid;
@@ -147,7 +147,7 @@
   align-items: baseline;
   justify-content: space-between;
   margin: 0 0 10px;
-  color: #fff;
+  color: var(--white);
   font: 400 15px / 1.4 var(--ttl);
 }
 .card h2 small {
@@ -210,7 +210,7 @@
 }
 .row[aria-pressed="true"] {
   background: var(--row-on);
-  color: #fff;
+  color: var(--white);
 }
 .row:hover:not(:disabled) {
   outline: 1px solid var(--edge);
@@ -230,7 +230,7 @@
 .rowName small {
   display: block;
   color: var(--gold);
-  font-size: 18px;
+  font-size: var(--size-note);
 }
 .rowHours {
   white-space: nowrap;
@@ -241,7 +241,7 @@
   width: 100%;
   aspect-ratio: 1;
   background: var(--edge-dim);
-  color: #fff;
+  color: var(--white);
 }
 
 .arrow {
@@ -305,7 +305,7 @@
   display: grid;
   place-items: center;
   color: var(--dim);
-  font-size: 18px;
+  font-size: var(--size-note);
   outline: 1px solid var(--edge-dim);
 }
 
@@ -328,7 +328,7 @@
 }
 .fine {
   color: var(--dim);
-  font-size: 19px;
+  font-size: var(--size-meta);
 }
 .go {
   display: block;
@@ -360,7 +360,7 @@
   padding: clamp(20px, 3vw, 30px);
   border: 2px solid var(--edge);
   background: var(--panel);
-  font-size: 21px;
+  font-size: var(--size-body);
 }
 .done h2 {
   margin: 0 0 12px;

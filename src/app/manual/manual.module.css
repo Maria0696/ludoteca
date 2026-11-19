@@ -40,7 +40,7 @@
 }
 .text h2 {
   font-family: var(--font-pixel);
-  font-size: 18px;
+  font-size: var(--size-note);
   font-weight: 400;
   line-height: 1.4;
   color: var(--gold);
@@ -79,7 +79,7 @@
 }
 .copies figcaption {
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   color: var(--muted);
 }
 .states {
@@ -96,7 +96,7 @@
   padding: 0;
   list-style: none;
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   color: var(--muted);
 }
 .stages li {
@@ -129,14 +129,14 @@
   gap: 6px;
   padding: 14px 22px 12px;
   background: #ffe45c;
-  color: #1b1400;
+  color: var(--gold-ink);
   box-shadow: 0 6px 0 #b8901f;
   font-family: var(--font-pixel);
   font-size: 15px;
 }
 .coin small {
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
 }
 .session {
   display: flex;
@@ -149,7 +149,7 @@
   background: var(--window);
   box-shadow: var(--pixel-frame-soft);
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
 }
 .session span[data-on] {
   background: var(--paper);
@@ -170,7 +170,7 @@
 .pager p {
   white-space: nowrap;
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   color: var(--muted);
 }
 .index {
@@ -189,7 +189,7 @@
   box-shadow: var(--pixel-frame-soft);
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 19px;
+  font-size: var(--size-meta);
   cursor: pointer;
 }
 .index button[aria-current="page"] {
@@ -200,7 +200,7 @@
 @media (hover: hover) and (pointer: fine) {
   .index button:not([aria-current="page"]):hover {
     background: var(--hover);
-    color: #fff;
+    color: var(--white);
   }
 }
 
@@ -222,7 +222,7 @@
     width: 96px;
   }
   .text {
-    font-size: 21px;
+    font-size: var(--size-body);
   }
   .text h2 {
     font-size: 15px;

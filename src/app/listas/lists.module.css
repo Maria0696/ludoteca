@@ -23,7 +23,7 @@
 .newList :global(.error) {
   color: var(--danger);
   font-family: var(--font-term);
-  font-size: 19px;
+  font-size: var(--size-meta);
 }
 .lists {
   display: grid;
@@ -43,7 +43,7 @@
   box-shadow: var(--pixel-frame-soft);
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.05;
   transition: background-color 180ms ease;
   text-align: left;
@@ -64,7 +64,7 @@
   color: var(--frame-soft);
 }
 .lists small {
-  font-size: 18px;
+  font-size: var(--size-note);
   color: var(--muted);
 }
 .main {
@@ -113,7 +113,7 @@
 .pickerList li {
   border-bottom: 2px solid var(--line);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
 }
 .pickerList :global(.check) {
   min-height: 52px;

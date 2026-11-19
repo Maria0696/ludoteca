@@ -10,6 +10,9 @@ colors:
   papel: "#f3ead2"
   lavanda: "#c9cdf0"
   lavanda-tenue: "#9a9cc4"
+  blanco: "#ffffff"
+  negro: "#000000"
+  campo: "#0a0b1c"
   oro: "#ffd76a"
   tinta-de-oro: "#1b1400"
   peligro: "#ff6b6b"
@@ -30,12 +33,27 @@ typography:
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.5
+  lead:
+    fontFamily: "VT323, Courier New, monospace"
+    fontSize: "22px"
+    fontWeight: 400
+    lineHeight: 1.1
   body:
     fontFamily: "VT323, Courier New, monospace"
     fontSize: "21px"
     fontWeight: 400
     lineHeight: 1.2
   label:
+    fontFamily: "VT323, Courier New, monospace"
+    fontSize: "20px"
+    fontWeight: 400
+    lineHeight: 1.15
+  meta:
+    fontFamily: "VT323, Courier New, monospace"
+    fontSize: "19px"
+    fontWeight: 400
+    lineHeight: 1.15
+  note:
     fontFamily: "VT323, Courier New, monospace"
     fontSize: "18px"
     fontWeight: 400
@@ -79,7 +97,7 @@ components:
     rounded: "{rounded.none}"
     height: "38px"
   input:
-    backgroundColor: "#0a0b1c"
+    backgroundColor: "{colors.campo}"
     textColor: "{colors.papel}"
     typography: "{typography.body}"
     rounded: "{rounded.none}"
@@ -125,6 +143,9 @@ Una noche morada con papel cálido encima, un oro escaso y cinco neones de estad
 - **Papel** (`papel`): el texto, el marco de las ventanas y lo elegido en los grupos de opciones (fondo papel con texto de ventana).
 - **Lavanda** (`lavanda`): texto secundario y explicaciones; **lavanda tenue** solo para texto de ejemplo en campos.
 - **Peligro** (`peligro` sobre `peligro-fondo`): borrar y eliminar, nada más.
+- **Blanco** (`blanco`, `--white`): texto destacado sobre el neón y el anillo de foco del teclado.
+- **Negro** (`negro`, `--black`): las sombras de píxel sin desenfoque (títulos, cajas).
+- **Campo** (`campo`, `--field`): el fondo de los campos de texto, más oscuro que la ventana.
 
 ### Estados
 - **Pendiente** (`estado-pendiente`) · «NUEVA PARTIDA»
@@ -150,12 +171,18 @@ Una noche morada con papel cálido encima, un oro escaso y cinco neones de estad
 ### Hierarchy
 - **Display** (400, 28 px; 20 px en el móvil; 1,3): el título de cada pantalla, en oro con sombra negra de 3 px. Equilibrado (`text-wrap: balance`).
 - **Title** (400, 13–16 px; 1,5): el título de cada ventana y de cada diálogo, en oro.
-- **Body** (400, 21 px; 1,2): todo lo que se lee: texto, botones, campos, filas.
-- **Label** (400, 18–20 px): notas, metadatos y etiquetas de campo. Nunca por debajo de 18 px.
+- **Escala de lectura** (VT323, 400), cada tamaño con su token en `globals.css`:
+  - **Lead** (22 px, `--size-lead`): destinos de la barra superior y encabezados dentro de una ventana.
+  - **Body** (21 px, `--size-body`): todo lo que se lee: texto, botones, campos, filas.
+  - **Label** (20 px, `--size-label`): etiquetas de campo y de cifra, estados.
+  - **Meta** (19 px, `--size-meta`): datos secundarios y pistas.
+  - **Note** (18 px, `--size-note`): notas y metadatos; el mínimo.
 - **Figure** (400, 40–56 px; 1): cifras grandes de Estadísticas. Una cifra nunca se parte (`white-space: nowrap`).
 
 ### Named Rules
 **The 18-Pixel Floor Rule.** Nada en VT323 por debajo de 18 px. Si no cabe, se reorganiza; no se encoge.
+
+**The Token Rule.** Un tamaño de lectura o un color de la carcasa se escribe con su token (`var(--size-body)`, `var(--paper)`, `var(--white)`), nunca a mano. Los mundos propios (el menú del inicio, «Entrar», la escena del cofre, las bahías de Steam) pueden tener sus variables locales.
 
 **The Accent Rule.** Press Start 2P con tilde nunca se pone en mayúsculas forzadas: se escribe tal cual («Añadir a la lista de deseos», «Último aviso»).
 

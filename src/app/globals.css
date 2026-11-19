@@ -28,6 +28,19 @@
   --danger-bg: #3a1a22;
   --ok: #5dff8b;
 
+  /* Blanco y negro de pantalla: texto destacado, anillo de foco y sombras de píxel. */
+  --white: #fff;
+  --black: #000;
+  /* Fondo de los campos de texto, más oscuro que la ventana. */
+  --field: #0a0b1c;
+
+  /* Escala de lectura en VT323: nunca por debajo de 18 px. */
+  --size-note: 18px;
+  --size-meta: 19px;
+  --size-label: 20px;
+  --size-body: 21px;
+  --size-lead: 22px;
+
   --st-pendiente: #ffe94d;
   --st-jugando: #5dff8b;
   --st-pausado: #ffb13d;
@@ -114,11 +127,11 @@ a {
 
 ::selection {
   background: #ffd76a55;
-  color: #fff;
+  color: var(--white);
 }
 
 :focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--white);
   outline-offset: 3px;
 }
 
@@ -162,7 +175,7 @@ a {
   box-shadow: var(--pixel-frame-soft);
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   font-weight: 400;
   line-height: 1;
   white-space: nowrap;
@@ -207,7 +220,7 @@ a {
 .btn-sm {
   height: 34px;
   padding: 0 12px;
-  font-size: 20px;
+  font-size: var(--size-label);
 }
 .btn-lg {
   height: 52px;
@@ -220,7 +233,7 @@ a {
   padding: 0;
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   text-decoration: underline;
   text-underline-offset: 4px;
   cursor: pointer;
@@ -271,7 +284,7 @@ a {
   box-shadow: var(--pixel-frame-soft);
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   font-weight: 400;
   line-height: 1;
   white-space: nowrap;
@@ -289,7 +302,7 @@ a {
 }
 .tab small,
 .chip small {
-  font-size: 18px;
+  font-size: var(--size-note);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -303,13 +316,13 @@ a {
 }
 .chip[aria-pressed="true"] small,
 .tab[aria-selected="true"] small {
-  color: #4a4a7a;
+  color: var(--frame-soft);
 }
 @media (hover: hover) and (pointer: fine) {
   .chip:not([aria-pressed="true"]):not(.is-on):hover,
   .tab:not([aria-selected="true"]):not([aria-current="page"]):hover {
     background: var(--hover);
-    color: #fff;
+    color: var(--white);
   }
 }
 .tabs {
@@ -341,17 +354,17 @@ a {
 .field > label,
 .field > .label {
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.1;
 }
 .field .hint {
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
   color: var(--muted);
 }
 .field .error {
   font-family: var(--font-term);
-  font-size: 19px;
+  font-size: var(--size-meta);
   color: var(--danger);
 }
 /* Campos: fondo oscuro, borde suave y borde dorado al enfocarlos. Letra de terminal a 21 px en todas las anchuras. */
@@ -363,10 +376,10 @@ a {
   padding: 0 12px;
   border: 2px solid var(--control);
   border-radius: 0;
-  background: #0a0b1c;
+  background: var(--field);
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   transition: border-color 160ms ease, background-color 160ms ease;
 }
 .textarea {
@@ -398,7 +411,7 @@ a {
 .input:focus-visible,
 .select:focus-visible,
 .textarea:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--white);
   outline-offset: 2px;
   border-color: var(--gold);
 }
@@ -427,7 +440,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 .date-input-pick:focus-within {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--white);
   outline-offset: 0;
 }
 .date-input-pick input {
@@ -467,7 +480,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text);
   cursor: pointer;
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -486,7 +499,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (hover: hover) and (pointer: fine) {
   .segmented button:not([aria-pressed="true"]):not([aria-checked="true"]):hover {
     background: var(--hover);
-    color: #fff;
+    color: var(--white);
   }
 }
 .segmented svg {
@@ -504,7 +517,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 12px;
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   min-height: 40px;
   cursor: pointer;
 }
@@ -537,12 +550,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   justify-content: flex-end;
   gap: 6px;
   padding: 12px;
-  background: linear-gradient(160deg, #2a2c55, #12101f);
+  background: linear-gradient(160deg, #2a2c55, var(--window));
 }
 .cover-fallback strong {
   font-family: var(--font-term);
   font-weight: 400;
-  font-size: 22px;
+  font-size: var(--size-lead);
   line-height: 1;
   overflow-wrap: anywhere;
   display: -webkit-box;
@@ -552,7 +565,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .cover-fallback span {
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
   color: var(--muted);
 }
 
@@ -566,7 +579,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-wrap: wrap;
   row-gap: 2px;
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   font-weight: 400;
   line-height: 1;
   color: var(--muted);
@@ -617,7 +630,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--raised);
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 18px;
+  font-size: var(--size-note);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -633,7 +646,7 @@ dialog.sheet {
   border-radius: 0;
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--pixel-frame), 0 40px 100px -20px #000;
+  box-shadow: var(--pixel-frame), 0 40px 100px -20px var(--black);
   opacity: 1;
   transform: none;
   transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), overlay 220ms allow-discrete,
@@ -682,7 +695,7 @@ dialog.sheet:not([open]) {
   display: grid;
   gap: 20px;
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.2;
 }
 .sheet-foot {
@@ -702,7 +715,7 @@ dialog.sheet:not([open]) {
     max-height: 92dvh;
     margin: auto 0 0;
     border-radius: 0;
-    box-shadow: 0 -4px 0 var(--paper), 0 -30px 80px -20px #000;
+    box-shadow: 0 -4px 0 var(--paper), 0 -30px 80px -20px var(--black);
     transition: transform 300ms var(--ease-drawer), overlay 300ms allow-discrete, display 300ms allow-discrete;
   }
   dialog.sheet:not([open]) {
@@ -730,7 +743,7 @@ dialog.sheet:not([open]) {
   border-radius: 0;
   background: var(--raised);
   font-family: var(--font-term);
-  font-size: 20px;
+  font-size: var(--size-label);
   line-height: 1.2;
   color: var(--text);
 }
@@ -741,7 +754,7 @@ dialog.sheet:not([open]) {
   margin-top: 2px;
 }
 .notice a {
-  color: #fff;
+  color: var(--white);
 }
 .notice.is-error {
   background: var(--danger-bg);
@@ -773,7 +786,7 @@ dialog.sheet:not([open]) {
 .empty p {
   color: var(--muted);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   line-height: 1.2;
   max-width: 48ch;
 }
@@ -800,7 +813,7 @@ dialog.sheet:not([open]) {
   font-weight: 400;
   line-height: 1.3;
   color: var(--gold);
-  text-shadow: 3px 3px 0 #000;
+  text-shadow: 3px 3px 0 var(--black);
   text-wrap: balance;
 }
 /* Ventana de sección: una por sección; las filas de dentro se separan con líneas, no con marcos. */
@@ -832,7 +845,7 @@ dialog.sheet:not([open]) {
   min-height: 44px;
   color: var(--text);
   font-family: var(--font-term);
-  font-size: 21px;
+  font-size: var(--size-body);
   text-decoration: none;
 }
 .back-link svg {
@@ -847,7 +860,7 @@ dialog.sheet:not([open]) {
 }
 @media (max-width: 899px) {
   .screen-title {
-    font-size: 20px;
+    font-size: var(--size-label);
   }
 }
 
