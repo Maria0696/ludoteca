@@ -758,6 +758,10 @@
     flex: 1;
     min-width: 0;
   }
+  /* Mientras se ve la barra fija, la tabla deja su sitio debajo: la última fila no queda tapada. */
+  .bulk ~ .table {
+    margin-bottom: 140px;
+  }
   .page {
     padding-top: 20px;
   }
