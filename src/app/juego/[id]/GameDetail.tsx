@@ -125,7 +125,7 @@ export function GameDetail({ id }: { id: string }) {
         selected={selected}
         onSelect={selectStage}
         line={keeperLine(game)}
-        hint={pista ? { text: PISTAS[pista], page: PISTA_PAGINA[pista] } : null}
+        hint={pista ? { text: PISTAS[pista], page: PISTA_PAGINA[pista] ?? 1 } : null}
         onCloseHint={() => setPista(null)}
         hopSignal={hopSignal}
       />

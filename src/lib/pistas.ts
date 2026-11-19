@@ -4,17 +4,19 @@
  * repetirla en cada visita.
  */
 
-export type PistaId = "mapa" | "moneda" | "datos";
+export type PistaId = "mapa" | "moneda" | "datos" | "quejuego" | "steam";
 
 /** Cortas: caben en un bocadillo junto a la guardiana. */
 export const PISTAS: Record<PistaId, string> = {
   mapa: "Cada casilla es un nivel de tu partida. ¡Toca una!",
   moneda: "¡Moneda echada! Apunto que has jugado hoy.",
   datos: "Todo en la ficha se cambia tocándolo, y se guarda solo.",
+  quejuego: "Dime cuánto tiempo tienes y con quién juegas: te propongo juegos que tienes a mano. Cada propuesta explica por qué.",
+  steam: "Puedes copiar de Steam cuantas veces quieras: lo que ya tienes no se duplica nada, y tus horas solo suben.",
 };
 
 /** La página del manual de instrucciones que lo cuenta con calma. */
-export const PISTA_PAGINA: Record<PistaId, number> = { mapa: 3, datos: 3, moneda: 4 };
+export const PISTA_PAGINA: Partial<Record<PistaId, number>> = { mapa: 3, datos: 3, moneda: 4, quejuego: 6 };
 
 export const PISTAS_KEY = "ludoteca:pistas-vistas";
 

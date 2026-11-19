@@ -525,3 +525,27 @@ test("las sugerencias del catálogo al añadir, sin esquinas redondeadas", async
   );
   expect(rounded).toEqual([]);
 });
+
+for (const [ruta, nombre, texto] of [
+  ["/que-juego", "¿A qué juego?", "Cada propuesta explica por qué"],
+  ["/importar", "Importar de Steam", "no se duplica nada"],
+] as const) {
+  test(`la guardiana explica ${nombre} la primera vez, y no vuelve tras cerrarla`, async ({ page }) => {
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("pistas-preparadas")) {
+        localStorage.setItem("ludoteca:pistas-vistas", JSON.stringify(["mapa", "moneda", "datos"]));
+        sessionStorage.setItem("pistas-preparadas", "1");
+      }
+    });
+    await loadDemo(page);
+    await page.goto(ruta);
+    const hint = page.getByRole("status", { name: "Pista de la guardiana" });
+    await expect(hint).toContainText(texto);
+    await expectCarcasaText(hint);
+    await hint.getByRole("button", { name: "Cerrar la pista" }).click();
+    await expect(hint).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("status", { name: "Pista de la guardiana" })).toHaveCount(0);
+  });
+}

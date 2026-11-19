@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useId, useMemo, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
+import { GuideHint } from "@/components/ui/GuideHint";
 import { Cover } from "@/components/ui/Cover";
 import { StatusMark } from "@/components/ui/StatusMark";
 import { copiesSummary } from "@/lib/format";
@@ -77,6 +78,8 @@ export function PickerView() {
         <h1 className="screen-title">¿A qué juego?</h1>
         <p>Solo con juegos de tu biblioteca que tienes disponibles. Las reglas se explican en cada propuesta.</p>
       </header>
+
+      <GuideHint id="quejuego" />
 
       <div className={styles.layout}>
         <form className={`window ${styles.form}`} onSubmit={(e) => e.preventDefault()} aria-labelledby="h-sesion">

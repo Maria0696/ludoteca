@@ -68,6 +68,10 @@
   flex: 1 1 280px;
   max-width: 460px;
 }
+.guide {
+  max-width: 1080px;
+  margin: 0 auto;
+}
 .profile label {
   color: var(--dim);
   font-size: var(--size-meta);
@@ -391,6 +395,18 @@
 }
 
 @media (max-width: 760px) {
+  /* El campo del perfil a lo ancho y «Buscar» debajo: la dirección se lee entera. */
+  .profile {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .profile div {
+    flex-direction: column;
+  }
+  .profile button {
+    min-height: 44px;
+    align-self: flex-start;
+  }
   .bays {
     grid-template-columns: minmax(0, 1fr);
   }

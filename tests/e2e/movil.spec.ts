@@ -469,3 +469,18 @@ test("en el móvil, «Ficha técnica» y «Más datos» empiezan plegados y se a
   await more.getByRole("button", { name: "Mostrar Más datos" }).click();
   await expect(more.getByRole("button", { name: /Eliminar/ })).toBeVisible();
 });
+
+test("en el móvil, el campo del perfil de Steam va a lo ancho y se lee entero", async ({ page }) => {
+  await openApp(page, "/importar");
+  const field = page.getByLabel("Tu perfil de Steam");
+  const room = await field.evaluate((el) => {
+    const s = getComputedStyle(el);
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    ctx.font = `${s.fontSize} ${s.fontFamily}`;
+    const free = el.getBoundingClientRect().width - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - parseFloat(s.borderLeftWidth) - parseFloat(s.borderRightWidth);
+    return free - ctx.measureText((el as HTMLInputElement).placeholder).width;
+  });
+  expect(room).toBeGreaterThanOrEqual(0);
+  const button = (await page.getByRole("button", { name: "Buscar", exact: true }).boundingBox())!;
+  expect(Math.round(button.height)).toBeGreaterThanOrEqual(44);
+});
