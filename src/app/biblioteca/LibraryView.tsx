@@ -295,7 +295,8 @@ export function LibraryView() {
           </button>
         )}
         <span className={styles.count} aria-live="polite">
-          {visible.length === entries.length ? `${visible.length} títulos` : `${visible.length} de ${entries.length} títulos`}
+          {/* Sin filtros, el recuento ya está en la cabecera: aquí solo cuando filtra. */}
+          {visible.length === entries.length ? "" : `${visible.length} de ${entries.length} títulos`}
         </span>
       </div>
 

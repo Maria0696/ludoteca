@@ -416,7 +416,7 @@
   height: 26px;
   margin-right: 6px;
   padding: 0 6px;
-  border-radius: 5px;
+  border-radius: 0;
   background: #fff;
   color: var(--ink);
   font: inherit;

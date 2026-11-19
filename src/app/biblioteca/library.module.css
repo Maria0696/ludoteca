@@ -438,8 +438,9 @@
   text-shadow: 0 0 6px var(--sc);
   pointer-events: none;
 }
+/* Parpadea al llegar, como un «PRESS START», y se queda quieto: un parpadeo sin fin cansa. */
 .badge[data-status="pendiente"] {
-  animation: blink 1.2s steps(1) infinite;
+  animation: blink 1.2s steps(1) 3;
 }
 .cabMeta {
   display: flex;
