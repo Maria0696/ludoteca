@@ -43,10 +43,10 @@ test("las recomendaciones respetan filtros y disponibilidad", async ({ page }) =
   await loadDemo(page);
   await page.goto("/que-juego");
 
-  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("PS5");
-  await page.getByRole("radio", { name: "Empezar algo nuevo" }).click();
-  await page.getByRole("radio", { name: "Acompañada" }).click();
-  await page.getByRole("radio", { name: "1 h" }).click();
+  await page.getByRole("combobox", { name: "Plataforma", exact: true }).selectOption({ label: "PS5" });
+  await page.getByRole("combobox", { name: "Partida", exact: true }).selectOption({ label: "Nueva" });
+  await page.getByRole("combobox", { name: "Compañía", exact: true }).selectOption({ label: "Acompañada" });
+  await page.getByRole("combobox", { name: "Tiempo", exact: true }).selectOption({ label: "1 h" });
 
   const picks = page.locator("ol > li");
   await expect(picks.first()).toContainText("It Takes Two");
@@ -62,15 +62,15 @@ test("las recomendaciones respetan filtros y disponibilidad", async ({ page }) =
   await expect(page.getByRole("button", { name: /Recuperar descartados/ }).first()).toBeVisible();
 
   // Una copia prestada no se recomienda: Red Dead Redemption 2 (PS4) está prestado en los datos de demostración.
-  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("PS4");
-  await page.getByRole("radio", { name: "Continuar una partida" }).click();
-  await page.getByRole("radio", { name: "Sola" }).click();
+  await page.getByRole("combobox", { name: "Plataforma", exact: true }).selectOption({ label: "PS4" });
+  await page.getByRole("combobox", { name: "Partida", exact: true }).selectOption({ label: "Continuar" });
+  await page.getByRole("combobox", { name: "Compañía", exact: true }).selectOption({ label: "Sola" });
   await expect(page.getByText("Red Dead Redemption 2")).toHaveCount(0);
   await expect(page.getByText(/tienen la copia prestada/)).toBeVisible();
 
   // Sin datos de sesión explica la limitación en vez de inventar.
-  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("");
-  await page.getByRole("radio", { name: "Me da igual" }).click();
+  await page.getByRole("combobox", { name: "Plataforma", exact: true }).selectOption({ label: "Cualquiera" });
+  await page.getByRole("combobox", { name: "Partida", exact: true }).selectOption({ label: "Me da igual" });
   await expect(page.getByText(/candidatos/).first()).toBeVisible();
 });
 

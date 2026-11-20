@@ -144,8 +144,23 @@ test("¿A qué juego? en el móvil: las propuestas primero y la sesión en una h
   const sheet = page.getByRole("dialog", { name: "Tu sesión" });
   await expect(sheet).toBeVisible();
   await expectCarcasaText(sheet);
-  await sheet.getByRole("radio", { name: "Acompañada" }).click();
-  await sheet.getByRole("radio", { name: "2 h" }).click();
+  await sheet.getByRole("combobox", { name: "Compañía", exact: true }).selectOption({ label: "Acompañada" });
+  // El valor más largo cabe entre las flechas sin cortarse.
+  const mood = sheet.getByRole("combobox", { name: "Experiencia", exact: true });
+  await mood.selectOption({ label: "Partida rápida" });
+  const room = await mood.evaluate((el) => {
+    const select = el as HTMLSelectElement;
+    const s = getComputedStyle(select);
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    ctx.font = `${s.fontSize} ${s.fontFamily}`;
+    return select.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight) - ctx.measureText(select.options[select.selectedIndex].text).width;
+  });
+  expect(room).toBeGreaterThanOrEqual(0);
+  await mood.selectOption({ label: "Cualquiera" });
+  // Las flechas, a un toque del pulgar: de «1 h» a «2 h».
+  const next = sheet.getByRole("button", { name: "Tiempo: siguiente" });
+  expect((await next.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  await next.click();
   await sheet.getByRole("button", { name: /^Ver \d+ propuestas?$/ }).click();
   await expect(sheet).toBeHidden();
   await expect(results.getByText("2 h · Cualquier plataforma · Acompañada")).toBeVisible();

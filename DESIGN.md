@@ -227,7 +227,13 @@ Todo es rectangular: radio 0 en botones, campos, chips, ventanas, diálogos y ca
 ### Chips (grupos de opciones)
 - **Style:** superficie alzada con marco suave, 38 px de alto, VT323.
 - **State:** lo elegido pasa a fondo papel con texto de ventana, sin marco. Los grupos son `radiogroup` con nombre.
-- **Variante ligera (la sesión de ¿A qué juego?):** cuando una ventana apila muchas preguntas, las opciones van como texto lavanda sin caja, como en el menú de un juego. La elegida lleva marco de papel interior y fondo alzado, para no confundirse con el foco de teclado (solo contorno). Una lista larga, como las plataformas, va en un desplegable.
+
+### Menú de opciones (la sesión de ¿A qué juego?)
+- **Cuándo:** una ventana que pregunta varias cosas a la vez, cada una con un valor. Se lee como los ajustes de un juego, no como un formulario.
+- **Forma:** una fila por pregunta, de 52 px, separada por líneas de 2 px que llegan al borde de la ventana. La pregunta va a la izquierda, en lavanda; a la derecha, `◀ valor ▶`, con el valor en blanco y centrado.
+- **Uso:** las flechas pasan al valor anterior o al siguiente y dan la vuelta. El valor es un desplegable nativo que se lee como texto, así que también se elige de la lista (a un toque, también desde el teclado y el lector de pantalla).
+- **Estados:** al pasar el ratón o enfocar, la fila se alza y las flechas pasan a papel. El foco del desplegable es un contorno blanco.
+- **Textos cortos:** los valores caben entre las flechas a 390 px, así que se acortan solo en esta fila («Continuar», «Nueva»).
 
 ### Cards / Containers (ventanas)
 - **Corner Style:** sin radio (0).

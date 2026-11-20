@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Info, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Info, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useId, useMemo, useState } from "react";
@@ -21,10 +21,11 @@ const TIMES: { value: number | null; label: string }[] = [
   { value: 120, label: "2 h" },
   { value: null, label: "Sin prisa" },
 ];
-const INTENTS: { value: Intent; label: string }[] = [
-  { value: "cualquiera", label: "Me da igual" },
-  { value: "continuar", label: "Continuar una partida" },
-  { value: "nuevo", label: "Empezar algo nuevo" },
+/** `label` para el resumen de la sesión; `short`, para que quepa en la fila del menú. */
+const INTENTS: { value: Intent; label: string; short: string }[] = [
+  { value: "cualquiera", label: "Me da igual", short: "Me da igual" },
+  { value: "continuar", label: "Continuar una partida", short: "Continuar" },
+  { value: "nuevo", label: "Empezar algo nuevo", short: "Nueva" },
 ];
 const COMPANY: { value: Company; label: string }[] = [
   { value: "solo", label: "Sola" },
@@ -216,69 +217,54 @@ function SessionChoices({
   platforms: string[];
   set: <K extends keyof RecommendInput>(k: K, v: RecommendInput[K]) => void;
 }) {
-  // Un id por desplegable: la misma pregunta vive en el panel y en la hoja.
-  const platformId = useId();
+  // Como el menú de opciones de un juego: una fila por pregunta, sin cajas.
   return (
-    <>
-      <Choice label="Tiempo para esta sesión">
-        {TIMES.map((t) => (
-          <button key={t.label} type="button" role="radio" aria-checked={input.minutes === t.value} onClick={() => set("minutes", t.value)}>
-            {t.label}
-          </button>
-        ))}
-      </Choice>
-      {/* Con muchas consolas, una fila de botones pesaba más que todo lo demás: un desplegable, como el género en la biblioteca. */}
-      <div className="field">
-        <label className="label" htmlFor={platformId}>
-          Plataforma
-        </label>
-        <select id={platformId} className="select" value={input.platform ?? ""} onChange={(e) => set("platform", e.target.value || null)}>
-          <option value="">Cualquiera</option>
-          {platforms.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Choice label="Partida">
-        {INTENTS.map((i) => (
-          <button key={i.value} type="button" role="radio" aria-checked={input.intent === i.value} onClick={() => set("intent", i.value)}>
-            {i.label}
-          </button>
-        ))}
-      </Choice>
-      <Choice label="Compañía">
-        {COMPANY.map((c) => (
-          <button key={c.value} type="button" role="radio" aria-checked={input.company === c.value} onClick={() => set("company", c.value)}>
-            {c.label}
-          </button>
-        ))}
-      </Choice>
-      <Choice label="Experiencia">
-        <button type="button" role="radio" aria-checked={input.mood === null} onClick={() => set("mood", null)}>
-          Cualquiera
-        </button>
-        {MOODS.map((m) => (
-          <button key={m} type="button" role="radio" aria-checked={input.mood === m} onClick={() => set("mood", m)}>
-            {MOOD_LABEL[m]}
-          </button>
-        ))}
-      </Choice>
-    </>
+    <div className={styles.menu}>
+      <OptionRow label="Tiempo" options={TIMES} value={input.minutes} onChange={(v) => set("minutes", v)} />
+      <OptionRow
+        label="Plataforma"
+        options={[{ value: null, label: "Cualquiera" }, ...platforms.map((p) => ({ value: p, label: p }))]}
+        value={input.platform}
+        onChange={(v) => set("platform", v)}
+      />
+      <OptionRow label="Partida" options={INTENTS.map((i) => ({ value: i.value, label: i.short }))} value={input.intent} onChange={(v) => set("intent", v)} />
+      <OptionRow label="Compañía" options={COMPANY} value={input.company} onChange={(v) => set("company", v)} />
+      <OptionRow
+        label="Experiencia"
+        options={[{ value: null, label: "Cualquiera" }, ...MOODS.map((m) => ({ value: m, label: MOOD_LABEL[m] }))]}
+        value={input.mood}
+        onChange={(v) => set("mood", v)}
+      />
+    </div>
   );
 }
 
-function Choice({ label, children }: { label: string; children: React.ReactNode }) {
-  // Un id por grupo: la misma pregunta vive en el panel y en la hoja.
+/**
+ * Una opción del menú: ◀ valor ▶. Las flechas pasan a la anterior o la siguiente y dan la vuelta, como en un juego;
+ * el valor es un desplegable, para ir directa a la que quieras sin pulsar diez veces.
+ */
+function OptionRow<T>({ label, options, value, onChange }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  // Un id por fila: la misma pregunta vive en el panel y en la hoja.
   const id = useId();
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const step = (delta: number) => onChange(options[(index + delta + options.length) % options.length].value);
   return (
-    <div className="field">
-      <span className="label" id={id}>
-        {label}
-      </span>
-      <div className={`segmented ${styles.options}`} role="radiogroup" aria-labelledby={id}>
-        {children}
+    <div className={styles.option}>
+      <label htmlFor={id}>{label}</label>
+      <div className={styles.stepper}>
+        <button type="button" aria-label={`${label}: anterior`} onClick={() => step(-1)}>
+          <ChevronLeft aria-hidden />
+        </button>
+        <select id={id} value={index} onChange={(e) => onChange(options[Number(e.target.value)].value)}>
+          {options.map((o, i) => (
+            <option key={o.label} value={i}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <button type="button" aria-label={`${label}: siguiente`} onClick={() => step(1)}>
+          <ChevronRight aria-hidden />
+        </button>
       </div>
     </div>
   );
