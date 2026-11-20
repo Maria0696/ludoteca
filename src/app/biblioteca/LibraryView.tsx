@@ -27,7 +27,7 @@ import { formatHours } from "@/lib/recommend";
 import { isDirection, nearest } from "@/lib/spatial-nav";
 import { useLibrary } from "@/lib/store";
 import { ARCADE_STATUS } from "@/components/ui/StatusMark";
-import { platformColor } from "./arcade";
+import { platformColor, platformFamilies } from "./arcade";
 import { Cabinet } from "./Cabinet";
 import styles from "./library.module.css";
 import { Chosen, HiScore } from "./Scoreboard";
@@ -153,60 +153,62 @@ export function LibraryView() {
 
   if (library.games.length === 0) return <FirstRun />;
 
+  // Cada grupo de botones lleva su rótulo a la vista; la tienda, que solo existe en PC, va delante.
   const filterControls = (
     <>
-      <div className={styles.filterGroup} role="group" aria-label="Estado">
+      {tab === "PC" && facets.stores.length > 0 && (
+        <FilterGroup name="Tienda">
+          {facets.stores.map((st) => (
+            <button key={st.value} type="button" className={styles.chip} aria-pressed={filters.stores.includes(st.value)} onClick={() => toggleIn("tienda", st.value)}>
+              {st.value} <small>{st.count}</small>
+            </button>
+          ))}
+        </FilterGroup>
+      )}
+      <FilterGroup name="Estado">
         {GAME_STATUSES.map((s) => (
           <button key={s} type="button" className={styles.chip} aria-pressed={filters.statuses.includes(s)} onClick={() => toggleIn("estado", s)}>
             <i className={styles.led} style={led(ARCADE_STATUS[s].color)} aria-hidden />
             {STATUS_LABEL[s]}
           </button>
         ))}
-      </div>
-      <div className={styles.filterGroup} role="group" aria-label="Formato">
+      </FilterGroup>
+      <FilterGroup name="Formato">
         {(["fisico", "digital"] as const).map((f) => (
           <button key={f} type="button" className={styles.chip} aria-pressed={filters.formats.includes(f)} onClick={() => toggleIn("formato", f)}>
             {f === "fisico" ? "Físico" : "Digital"}
           </button>
         ))}
+      </FilterGroup>
+      <FilterGroup name="Favoritos">
         <button type="button" className={styles.chip} aria-pressed={filters.favorites} onClick={() => setParams({ favoritos: filters.favorites ? null : "1" })}>
           <Star aria-hidden />
-          Favoritos
+          Solo favoritos
         </button>
-      </div>
-      {tab === "PC" && facets.stores.length > 0 && (
-        <div className={styles.filterGroup} role="group" aria-label="Tienda">
-          {facets.stores.map((st) => (
-            <button key={st.value} type="button" className={styles.chip} aria-pressed={filters.stores.includes(st.value)} onClick={() => toggleIn("tienda", st.value)}>
-              {st.value} <small>{st.count}</small>
-            </button>
-          ))}
-        </div>
-      )}
-      {facets.genres.length > 0 && (
-        <label className={styles.genre}>
-          <span className="sr-only">Género</span>
-          <select
-            className="select"
-            value=""
-            onChange={(e) => e.target.value && toggleIn("genero", e.target.value)}
-          >
-            <option value="">{filters.genres.length ? `Género · ${filters.genres.length}` : "Género"}</option>
-            {facets.genres
-              .filter((g) => !filters.genres.includes(g.value))
-              .map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.value} ({g.count})
-                </option>
-              ))}
-          </select>
-        </label>
-      )}
+      </FilterGroup>
     </>
+  );
+
+  // El género es un desplegable, como el orden: va con ellos en la barra de búsqueda.
+  const genreControl = facets.genres.length > 0 && (
+    <label className={`${styles.sort} ${styles.genre}`}>
+      <span className="sr-only">Género</span>
+      <select className="select" value="" onChange={(e) => e.target.value && toggleIn("genero", e.target.value)}>
+        <option value="">{filters.genres.length ? `Género · ${filters.genres.length}` : "Género"}</option>
+        {facets.genres
+          .filter((g) => !filters.genres.includes(g.value))
+          .map((g) => (
+            <option key={g.value} value={g.value}>
+              {g.value} ({g.count})
+            </option>
+          ))}
+      </select>
+    </label>
   );
 
   const orderControls = (
     <>
+      {genreControl}
       <label className={styles.sort}>
         <span className="sr-only">Ordenar</span>
         <select className="select" value={sort} onChange={(e) => setParams({ orden: e.target.value === "titulo" ? null : e.target.value })}>
@@ -239,6 +241,11 @@ export function LibraryView() {
           {library.copies.length === 1 ? "copia" : "copias"}
         </p>
         <div className={styles.headActions}>
+          {/* Mis listas no es una plataforma: va aquí, con las demás cosas de la biblioteca. */}
+          <Link href="/listas" className={`${styles.chip} ${styles.listsLink}`}>
+            <i className={styles.led} style={led("#ffe94d")} aria-hidden />
+            Mis listas <small>{library.lists.length}</small>
+          </Link>
           <Link href="/importar" className={styles.chip}>
             Importar…
           </Link>
@@ -255,7 +262,7 @@ export function LibraryView() {
         </div>
       </header>
 
-      <div className={styles.toolbar}>
+      <div className={styles.toolbar} role="search">
         <label className={styles.search}>
           <Search aria-hidden />
           <span className="sr-only">Buscar por título</span>
@@ -278,33 +285,46 @@ export function LibraryView() {
       </div>
 
       <div className={styles.plats}>
-        <div role="tablist" aria-label="Plataforma" style={{ display: "contents" }}>
-          <button type="button" role="tab" className={styles.plat} style={led("#ffffff")} aria-selected={!tab} onClick={() => setParams({ plataforma: null, tienda: null })}>
-            <i aria-hidden />
-            Todas <small>{entries.length}</small>
-          </button>
-          {facets.platforms.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              role="tab"
-              className={styles.plat}
-              style={led(platformColor(p.value))}
-              aria-selected={tab === p.value}
-              onClick={() => setParams({ plataforma: p.value, tienda: null })}
-            >
-              <i aria-hidden />
-              {p.value} <small>{p.count}</small>
-            </button>
-          ))}
+        <div className={styles.platsClip}>
+          {/* Por familias, cada una junta y separada de la siguiente por una raya. */}
+          <div className={styles.platsRow}>
+            <div role="tablist" aria-label="Plataforma" className={styles.tablist}>
+              <div role="presentation" className={styles.platFamily}>
+                <button type="button" role="tab" className={styles.plat} style={led("#ffffff")} aria-selected={!tab} onClick={() => setParams({ plataforma: null, tienda: null })}>
+                  <i aria-hidden />
+                  Todas <small>{entries.length}</small>
+                </button>
+              </div>
+              {platformFamilies(facets.platforms).map((family) => (
+                <div key={family.name} role="presentation" className={styles.platFamily}>
+                  {family.items.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      role="tab"
+                      className={styles.plat}
+                      style={led(platformColor(p.value))}
+                      aria-selected={tab === p.value}
+                      onClick={() => setParams({ plataforma: p.value, tienda: null })}
+                    >
+                      <i aria-hidden />
+                      {p.value} <small>{p.count}</small>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className={`${styles.platFamily} ${styles.listsFamily}`}>
+              <Link href="/listas" className={styles.plat} style={led("#ffe94d")}>
+                <i aria-hidden />
+                Mis listas <small>{library.lists.length}</small>
+              </Link>
+            </div>
+          </div>
         </div>
-        <Link href="/listas" className={styles.plat} style={led("#ffe94d")}>
-          <i aria-hidden />
-          Mis listas <small>{library.lists.length}</small>
-        </Link>
       </div>
 
-      <div className={styles.filters}>
+      <section className={styles.filters} aria-label="Filtros">
         <div className={styles.filtersInline}>{filterControls}</div>
         {filters.genres.map((g) => (
           <button key={g} type="button" className={`${styles.chip} is-on`} aria-pressed onClick={() => toggleIn("genero", g)} aria-label={`Quitar el filtro de género ${g}`}>
@@ -320,7 +340,7 @@ export function LibraryView() {
           {/* Sin filtros, el recuento ya está en la cabecera: aquí solo cuando filtra. */}
           {visible.length === entries.length ? "" : `${visible.length} de ${entries.length} títulos`}
         </span>
-      </div>
+      </section>
 
       <div className={styles.arena}>
         <div className={styles.main}>
@@ -518,6 +538,18 @@ export function LibraryView() {
           {filterControls}
         </div>
       </Dialog>
+    </div>
+  );
+}
+
+/** Un grupo de filtros: su rótulo a la vista encima y sus botones debajo. */
+function FilterGroup({ name, children }: { name: string; children: React.ReactNode }) {
+  return (
+    <div className={styles.filterGroup} role="group" aria-label={name}>
+      <span className={styles.groupLabel} aria-hidden>
+        {name}
+      </span>
+      <div className={styles.groupChips}>{children}</div>
     </div>
   );
 }
