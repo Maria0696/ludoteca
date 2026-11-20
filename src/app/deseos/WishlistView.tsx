@@ -167,46 +167,57 @@ export function WishlistView() {
                       </span>
                       {w.notes && <p className={styles.notes}>{w.notes}</p>}
                     </div>
-                    <dl className={styles.prices}>
-                      <div>
-                        <dt>Objetivo</dt>
-                        <dd className="num">{w.targetPrice != null ? formatMoney(w.targetPrice) : "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Último visto</dt>
-                        <dd className="num">
-                          {p ? formatMoney(p.amount) : "—"}
-                          {p && (
-                            <small>
-                              {p.store ? `${p.store}, ` : ""}
-                              {formatDate(p.date)}
-                            </small>
-                          )}
-                          {diff != null && (
-                            <small className={diff <= 0 ? styles.good : undefined}>
-                              {diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}
-                            </small>
-                          )}
-                        </dd>
-                      </div>
-                    </dl>
+                    {/* Un solo bloque de precio: lo último visto con su veredicto y, debajo, dónde y el objetivo. */}
+                    <div className={styles.price}>
+                      {p ? (
+                        <>
+                          <span className={styles.priceLabel}>Último precio</span>
+                          <p className={styles.priceLine}>
+                            <span className="num">{formatMoney(p.amount)}</span>
+                            {diff != null && (
+                              <span className={diff <= 0 ? `${styles.verdict} ${styles.good}` : styles.verdict}>
+                                {diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}
+                              </span>
+                            )}
+                          </p>
+                          <p className={styles.priceMeta}>{[p.store, formatDate(p.date)].filter(Boolean).join(" · ")}</p>
+                          {w.targetPrice != null && <p className={styles.priceMeta}>Objetivo {formatMoney(w.targetPrice)}</p>}
+                        </>
+                      ) : w.targetPrice != null ? (
+                        <>
+                          <span className={styles.priceLabel}>Objetivo</span>
+                          <p className={styles.priceLine}>
+                            <span className="num">{formatMoney(w.targetPrice)}</span>
+                          </p>
+                          <p className={styles.priceMeta}>Aún no has apuntado ningún precio</p>
+                        </>
+                      ) : (
+                        <>
+                          <span className={styles.priceLabel}>Precio</span>
+                          <p className={styles.priceMeta}>Sin objetivo ni precios todavía</p>
+                        </>
+                      )}
+                    </div>
+                    {/* La acción principal, enmarcada; las demás, calladas debajo. */}
                     <div className={styles.actions}>
                       <button type="button" className="btn btn-sm" onClick={() => setDialog({ kind: "convert", wish: w })}>
                         <PackageCheck aria-hidden />
                         Ya lo tengo
                       </button>
-                      <button type="button" className="btn btn-sm" onClick={() => setDialog({ kind: "price", wish: w })}>
-                        <Tag aria-hidden />
-                        Precio
-                      </button>
-                      <button type="button" className="btn btn-sm" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
-                        <Pencil aria-hidden />
-                        Editar
-                      </button>
-                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
-                        <Trash2 aria-hidden />
-                        Quitar
-                      </button>
+                      <div className={styles.secondary}>
+                        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
+                          <Tag aria-hidden />
+                          Precio
+                        </button>
+                        <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
+                          <Pencil aria-hidden />
+                          Editar
+                        </button>
+                        <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
+                          <Trash2 aria-hidden />
+                          Quitar
+                        </button>
+                      </div>
                     </div>
                   </li>
                 );
