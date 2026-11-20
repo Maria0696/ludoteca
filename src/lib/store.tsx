@@ -41,6 +41,8 @@ interface Actions {
   setStatus(id: string, status: GameStatus): void;
   /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
   setStatusMany(ids: string[], status: GameStatus): void;
+  /** Marca o quita el 100 %; marcarlo también lo pasa a Completado, en un solo guardado. */
+  setCompleted100(id: string, done: boolean): void;
   markPlayedToday(id: string): void;
   deleteGame(id: string): void;
   /** Vacía la biblioteca; si no lo consigue del todo, avisa con un error. */
@@ -251,6 +253,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
           action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
         });
+      },
+
+      setCompleted100(id, done) {
+        const previous = findGame(id);
+        if (!previous) return;
+        // Al 100 % es que lo has terminado; quitarlo no lo devuelve a otro estado.
+        const finishing = done && previous.status !== "completado";
+        const next = finishing ? withStatus(previous, "completado") : { ...previous, updatedAt: nowIso() };
+        void saveGame({ ...next, completed100: done });
+        if (finishing) {
+          toast(`«${previous.title}» pasa a ${STATUS_LABEL.completado}`, {
+            action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
+          });
+        }
       },
 
       setStatusMany(ids, status) {

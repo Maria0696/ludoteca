@@ -109,7 +109,7 @@ export function GameDetail({ id }: { id: string }) {
 
   const toggle100 = () => {
     if (!game.completed100) setCelebrating(true);
-    update({ completed100: !game.completed100 });
+    actions.setCompleted100(game.id, !game.completed100);
   };
 
   const selectStage = (stage: number) => {

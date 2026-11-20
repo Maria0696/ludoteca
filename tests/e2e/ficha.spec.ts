@@ -73,6 +73,30 @@ test("jugar hoy supera niveles y el 100 % da un trofeo que se conserva", async (
   await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toHaveCount(0);
 });
 
+test("marcar el 100 % pasa el juego a Completado; quitarlo no le cambia el estado", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
+  await cards(page).getByRole("link", { name: /Tunic/ }).click();
+  // Con carga, la ficha puede tardar en llegar: se espera a su título antes de tocar nada.
+  await expect(page.getByRole("heading", { level: 1, name: "Tunic" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("button", { name: "100 %", exact: true }).click();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Tunic» pasa a Completado")).toBeVisible();
+  // Se guarda junto: tras recargar sigue al 100 % y completado, con su nivel «Terminado».
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("button", { name: "Terminado, conseguido" })).toBeVisible();
+
+  // Quitar el 100 % no lo devuelve a otro estado: sigue terminado.
+  await page.getByRole("button", { name: "Al 100 %", exact: true }).click();
+  await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toHaveCount(0);
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+});
+
 test("el nombre y los estados van en una sola línea, y los recuadros igualados", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "The Legend of Zelda: Tears of the Kingdom", platform: "Switch", format: "Físico" });
