@@ -112,7 +112,7 @@ function Warnings({ onClose }: { onClose: () => void }) {
           <p>
             Se borrarán <strong>{games}</strong> y <strong>{copies}</strong>, con sus horas, notas, valoraciones, fechas y datos de compra.
           </p>
-          <p>Tus listas seguirán existiendo, pero vacías. Tu lista de deseos no se toca.</p>
+          <p>Tu lista de deseos no se toca.</p>
         </>
       )}
 

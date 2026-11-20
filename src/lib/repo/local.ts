@@ -61,7 +61,8 @@ export class LocalRepository implements Repository {
 
   async load(): Promise<Library> {
     const stored = await read(await this.getDb());
-    this.data = { ...emptyLibrary(), ...stored };
+    // Solo lo que la app usa: lo que quede de versiones anteriores (como las listas) se deja atrás.
+    this.data = { games: stored?.games ?? [], copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [] };
     return structuredClone(this.data);
   }
 
@@ -79,7 +80,6 @@ export class LocalRepository implements Repository {
       games: upsert(d.games, changes.games),
       copies: upsert(d.copies, changes.copies),
       wishlist: upsert(d.wishlist, changes.wishlist),
-      lists: upsert(d.lists, changes.lists),
     }));
   }
 
@@ -88,7 +88,6 @@ export class LocalRepository implements Repository {
       ...d,
       games: d.games.filter((g) => g.id !== id),
       copies: d.copies.filter((c) => c.gameId !== id),
-      lists: d.lists.map((l) => (l.gameIds.includes(id) ? { ...l, gameIds: l.gameIds.filter((g) => g !== id) } : l)),
     }));
   }
 
@@ -100,12 +99,8 @@ export class LocalRepository implements Repository {
     return this.commit((d) => ({ ...d, wishlist: d.wishlist.filter((w) => w.id !== id) }));
   }
 
-  deleteList(id: string) {
-    return this.commit((d) => ({ ...d, lists: d.lists.filter((l) => l.id !== id) }));
-  }
-
   deleteAllGames() {
-    return this.commit((d) => ({ ...d, games: [], copies: [], lists: d.lists.map((l) => ({ ...l, gameIds: [] })) }));
+    return this.commit((d) => ({ ...d, games: [], copies: [] }));
   }
 
   deleteDemo() {
@@ -115,9 +110,6 @@ export class LocalRepository implements Repository {
         games: d.games.filter((g) => !g.demo),
         copies: d.copies.filter((c) => !c.demo && !demoGames.has(c.gameId)),
         wishlist: d.wishlist.filter((w) => !w.demo),
-        lists: d.lists
-          .filter((l) => !l.demo)
-          .map((l) => ({ ...l, gameIds: l.gameIds.filter((id) => !demoGames.has(id)) })),
       };
     });
   }

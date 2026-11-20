@@ -1,6 +1,6 @@
 # Ludoteca
 
-Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, listas propias, «¿A qué juego?» y estadísticas. Next.js 16 + TypeScript, pensada para Vercel (plan Hobby) y Supabase (plan gratuito).
+Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, «¿A qué juego?» y estadísticas. Next.js 16 + TypeScript, pensada para Vercel (plan Hobby) y Supabase (plan gratuito).
 
 ## Qué incluye la primera versión
 
@@ -11,7 +11,7 @@ Tu biblioteca personal de videojuegos: colección, copias, lista de deseos, list
 - **¿A qué juego?**: reglas explicables, sin IA. Respeta la plataforma, la disponibilidad (las copias prestadas no cuentan), la partida (nueva o continuar), la compañía y el tipo de experiencia. Compara tu tiempo con lo que dura una sesión, no con el juego entero. Explica cada propuesta y los datos que faltan. Puedes descartar y pedir otras.
 - **Inicio**: el menú principal de un juego, con «Pulsa Start» una vez al día: partidas guardadas con lo que juegas, pendientes, modos para «¿A qué juego?», novedades y récords.
 - **Estadísticas**: títulos, copias, estados, plataformas, formatos, terminados este año, horas y gasto, indicando cuándo faltan datos.
-- **Listas propias**, **copia de seguridad JSON** (importar valida el archivo y te deja decidir cada coincidencia). En modo local (desarrollo y pruebas) hay además **datos de demostración** marcados y retirables de una vez, ilustrados con obras de dominio público cuyos créditos están en Ajustes.
+- **Copia de seguridad JSON** (importar valida el archivo y te deja decidir cada coincidencia). En modo local (desarrollo y pruebas) hay además **datos de demostración** marcados y retirables de una vez, ilustrados con obras de dominio público cuyos créditos están en Ajustes.
 - **Diseño «Sala de proyección»**: oscuro y cinematográfico, con el arte del juego a pantalla completa, pósters que reaccionan al ratón y transiciones; respeta la preferencia de movimiento reducido. Detalles en [DESIGN.md](DESIGN.md).
 - **Deshacer** al cambiar un estado o eliminar algo; confirmación antes de borrar un juego.
 
@@ -139,7 +139,7 @@ Si una pantalla falla, la app muestra un aviso en español con «Volver a intent
 ## Estructura
 
 - `src/lib`: modelo, recomendaciones, estadísticas, filtros, copia de seguridad y almacenamiento (local en IndexedDB o Supabase).
-- `src/app`: pantallas (`/`, `/biblioteca`, `/juego/[id]`, `/deseos`, `/que-juego`, `/estadisticas`, `/listas`, `/ajustes`, `/entrar`) y la ruta del catálogo.
+- `src/app`: pantallas (`/`, `/biblioteca`, `/juego/[id]`, `/deseos`, `/que-juego`, `/estadisticas`, `/ajustes`, `/entrar`) y la ruta del catálogo.
 - `src/components`: armazón, carátulas, alta de juegos y campos.
 - `supabase/migrations`: esquema y seguridad de la base de datos.
 - `PRODUCT.md` y `DESIGN.md`: producto y sistema visual.

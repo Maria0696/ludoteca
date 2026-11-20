@@ -8,7 +8,6 @@ import { formatDate, formatMoney, formatNumber, relativeDay } from "@/lib/format
 import {
   type Copy,
   type Game,
-  type GameList,
   FORMAT_LABEL,
   MODE_LABEL,
   MOOD_LABEL,
@@ -449,16 +448,12 @@ const splitList = (v: string | null) => [...new Set((v ?? "").split(",").map((s)
 
 export function MorePanel({
   game,
-  lists,
   update,
-  onToggleList,
   onChangeCover,
   onDelete,
 }: {
   game: Game;
-  lists: GameList[];
   update: Update;
-  onToggleList: (listId: string) => void;
   onChangeCover: () => void;
   onDelete: () => void;
 }) {
@@ -487,18 +482,6 @@ export function MorePanel({
           </span>
         </div>
       </div>
-      {lists.length > 0 && (
-        <div className={styles.field}>
-          <span className={styles.label}>Listas</span>
-          <div className={styles.chips} role="group" aria-label="Listas">
-            {lists.map((l) => (
-              <button key={l.id} type="button" className={styles.chip} aria-pressed={l.gameIds.includes(game.id)} onClick={() => onToggleList(l.id)}>
-                {l.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
       <div className={styles.moreActions}>
         <button type="button" className={styles.action} onClick={onChangeCover}>
           <ImageUp aria-hidden />

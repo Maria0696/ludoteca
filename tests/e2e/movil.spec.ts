@@ -1,6 +1,6 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp, placeholderRoom } from "./helpers";
+import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
 
@@ -52,7 +52,7 @@ test("Estadísticas, ¿A qué juego? y Ajustes caben en el móvil", async ({ pag
   await expectCarcasaText(page.locator("main"));
 });
 
-test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
+test("Deseos cabe en el móvil", async ({ page }) => {
   await loadDemo(page);
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
@@ -71,23 +71,6 @@ test("Deseos y Mis listas caben en el móvil", async ({ page }) => {
   const actionHeights = await page.getByRole("region", { name: "Deseos" }).getByRole("button").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
   for (const h of actionHeights) expect(h).toBeGreaterThanOrEqual(44);
 
-  // Mis listas: dos tarjetas por fila, como en el resto de rejillas del móvil.
-  await page.goto("/listas");
-  const tops = await page.locator("main li").filter({ has: page.getByRole("link") }).evaluateAll((els) => els.slice(0, 2).map((e) => Math.round(e.getBoundingClientRect().top)));
-  expect(tops[0]).toBe(tops[1]);
-
-  // Nombres largos: la fila de listas se desplaza sin desbordar la página y cada nombre se parte en líneas.
-  for (const name of ["Para jugar con mi pareja los domingos por la tarde", "Pendientes de terminar antes del verano", "Regalos que me gustaría recibir"]) {
-    await page.getByLabel("Nombre de la nueva lista").fill(name);
-    await page.getByRole("button", { name: "Crear" }).click();
-  }
-  const lists = page.getByRole("list", { name: "Listas" });
-  await expect(lists.getByRole("button")).toHaveCount(6);
-  expect(await overflow()).toBeLessThanOrEqual(0);
-  expect(await lists.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
-  const longest = lists.getByRole("button", { name: /domingos por la tarde/ });
-  expect(await longest.evaluate((el) => el.getBoundingClientRect().width)).toBeLessThanOrEqual(270);
-  expect(await longest.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
 });
 
@@ -265,12 +248,8 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
     return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
   });
   expect(lines).toBe(1);
-  // Mis listas no cabe en la cabecera del móvil: cierra la fila de plataformas, una sola vez.
-  const lists = page.getByRole("link", { name: /^Mis listas/ });
-  await expect(lists).toHaveCount(1);
-  await lists.scrollIntoViewIfNeeded();
-  await expect(lists).toBeInViewport({ ratio: 0.9 });
-  await expect(page.getByRole("tablist", { name: "Plataforma" }).getByRole("link")).toHaveCount(0);
+  // Sin «Mis listas»: la fila de plataformas solo tiene plataformas.
+  await expect(page.getByRole("link", { name: /Mis listas/ })).toHaveCount(0);
   // «Importar…» sale de la cabecera en el móvil; Steam sigue en Ajustes.
   await expect(head.getByRole("link", { name: "Importar…" })).toBeHidden();
   await page.goto("/ajustes?apartado=steam");
@@ -411,12 +390,6 @@ test("en el móvil, Deseos filtra con una hoja, como la biblioteca, y el primer 
   for (const text of await wishes.getByRole("listitem").allInnerTexts()) expect(text).toContain("prioridad alta");
   await expect(page.getByRole("button", { name: "Filtros · 1" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
-});
-
-test("en el móvil, el campo de una lista nueva se lee entero", async ({ page }) => {
-  await loadDemo(page);
-  await page.goto("/listas");
-  expect(await placeholderRoom(page.getByLabel("Nombre de la nueva lista"))).toBeGreaterThanOrEqual(0);
 });
 
 test("el manual deja su margen en el móvil", async ({ page }) => {

@@ -222,17 +222,16 @@ test("eliminar un juego pide confirmación y se puede deshacer", async ({ page }
   await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
 });
 
-test("listas personales", async ({ page }) => {
+test("no hay listas personales: ni enlace en la biblioteca, ni apartado en la ficha, ni pantalla", async ({ page }) => {
   await loadDemo(page);
+  await page.goto("/biblioteca");
+  await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Mis listas/ })).toHaveCount(0);
+  await page.getByRole("link", { name: /Hades/ }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Hades" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Listas" })).toHaveCount(0);
   await page.goto("/listas");
-  await page.getByLabel("Nombre de la nueva lista").fill("Para el verano");
-  await page.getByRole("button", { name: "Crear" }).click();
-  await page.getByRole("button", { name: "Añadir juegos" }).click();
-  await page.getByRole("dialog").getByLabel("Hades").check();
-  await page.getByRole("dialog").getByRole("button", { name: "Hecho" }).click();
-  await expect(page.getByRole("list").getByRole("link", { name: /Hades/ })).toBeVisible();
-  await page.reload();
-  await expect(page.getByRole("button", { name: /Para el verano\s*1/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Esta página no está en tu ludoteca" })).toBeVisible();
 });
 
 test("«Elegido» enseña solo los datos que hay, sin filas de «---»", async ({ page }) => {
@@ -386,7 +385,7 @@ test("al cerrar la barra del cambio en grupo, el foco vuelve a la tabla", async 
   await expect(page.getByRole("checkbox", { name: "Elegir todos los que se ven" })).toBeFocused();
 });
 
-test("las plataformas van por familias, Mis listas sale de la fila y cada filtro lleva su rótulo", async ({ page }) => {
+test("las plataformas van por familias y cada filtro lleva su rótulo", async ({ page }) => {
   test.setTimeout(90_000);
   await loadDemo(page);
   await addGame(page, { title: "Halo Infinite", platform: "Xbox Series" });
@@ -394,8 +393,6 @@ test("las plataformas van por familias, Mis listas sale de la fila y cada filtro
   // PC primero; luego PlayStation, Xbox, Nintendo y las demás, cada familia junta y de la más nueva a la más antigua.
   const tabs = page.getByRole("tablist", { name: "Plataforma" }).getByRole("tab");
   await expect(tabs).toHaveText([/^Todas/, /^PC/, /^PS5/, /^PS4/, /^Xbox Series/, /^Switch/, /^Meta Quest/]);
-  // Mis listas no es una plataforma: va en la cabecera, junto a Importar.
-  await expect(page.locator("main header").getByRole("link", { name: /^Mis listas/ })).toBeVisible();
   // Cada grupo de botones dice a la vista qué filtra.
   const filters = page.getByRole("region", { name: "Filtros" });
   for (const name of ["Estado", "Formato", "Favoritos"]) {

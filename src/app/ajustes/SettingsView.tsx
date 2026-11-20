@@ -145,7 +145,7 @@ export function SettingsView() {
               <div className={styles.label}>
                 <h2 id="h-copia">Copia de seguridad</h2>
                 <p>
-                  Un archivo JSON con juegos, copias, deseos y listas. Guarda uno de vez en cuando: si algo se borrara por error, es la forma de
+                  Un archivo JSON con juegos, copias y deseos. Guarda uno de vez en cuando: si algo se borrara por error, es la forma de
                   recuperarlo. Al importar, nada se sobrescribe sin que lo decidas.
                 </p>
               </div>
@@ -323,7 +323,7 @@ export function SettingsView() {
           </>
         }
       >
-        <p>Se eliminan los juegos, copias, deseos y listas de demostración. {ownGamesKept(realCount)}</p>
+        <p>Se eliminan los juegos, copias y deseos de demostración. {ownGamesKept(realCount)}</p>
       </Dialog>
 
 
@@ -354,7 +354,7 @@ function ImportDialog({ plan, onClose }: { plan: ImportPlan; onClose: () => void
   const [decisions, setDecisions] = useState<Record<string, Resolution>>({});
   const [busy, setBusy] = useState(false);
   const n = plan.newCounts;
-  const nothing = n.games + n.copies + n.wishlist + n.lists === 0 && plan.conflicts.length === 0;
+  const nothing = n.games + n.copies + n.wishlist === 0 && plan.conflicts.length === 0;
   const setAll = (r: Resolution) => setDecisions(Object.fromEntries(plan.conflicts.map((c) => [c.key, r])));
 
   return (
@@ -377,7 +377,7 @@ function ImportDialog({ plan, onClose }: { plan: ImportPlan; onClose: () => void
                 const changes = resolveImport(plan, decisions);
                 await actions.applyChanges(changes);
                 toast(
-                  `Importado: ${summary({ games: changes.games.length, copies: changes.copies.length, wishlist: changes.wishlist.length, lists: changes.lists.length })}`,
+                  `Importado: ${summary({ games: changes.games.length, copies: changes.copies.length, wishlist: changes.wishlist.length })}`,
                 );
                 onClose();
               } catch (e) {

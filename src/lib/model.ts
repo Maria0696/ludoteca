@@ -155,29 +155,18 @@ export const wishSchema = z.object({
   demo: z.boolean().optional(),
 });
 
-export const listSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().trim().min(1, "Ponle un nombre a la lista").max(80),
-  gameIds: z.array(z.string()).default([]),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-  demo: z.boolean().optional(),
-});
-
 export type Game = z.infer<typeof gameSchema>;
 export type Copy = z.infer<typeof copySchema>;
 export type PriceRecord = z.infer<typeof priceRecordSchema>;
 export type WishItem = z.infer<typeof wishSchema>;
-export type GameList = z.infer<typeof listSchema>;
 
 export interface Library {
   games: Game[];
   copies: Copy[];
   wishlist: WishItem[];
-  lists: GameList[];
 }
 
-export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], lists: [] });
+export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [] });
 
 export function newId(): string {
   return crypto.randomUUID();

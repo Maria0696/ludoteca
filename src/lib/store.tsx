@@ -6,7 +6,6 @@ import { createDemoLibrary } from "./demo";
 import {
   type Copy,
   type Game,
-  type GameList,
   type GameStatus,
   type Library,
   type NewCopyInput,
@@ -59,10 +58,6 @@ interface Actions {
   deleteWish(id: string): void;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
-  addList(name: string): GameList;
-  renameList(id: string, name: string): void;
-  deleteList(id: string): void;
-  toggleInList(listId: string, gameId: string): void;
   applyChanges(changes: Changes): Promise<void>;
   /** Guarda un grupo de juegos de Steam; si falla, avisa con un error y no cambia nada. */
   importSteam(items: SteamImportItem[]): Promise<SteamImportCounts>;
@@ -222,10 +217,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       commit({ ...libRef.current, wishlist: replaceById(libRef.current.wishlist, wish) });
       return persist((r) => r.save({ wishlist: [wish] }));
     };
-    const saveList = (list: GameList) => {
-      commit({ ...libRef.current, lists: replaceById(libRef.current.lists, list) });
-      return persist((r) => r.save({ lists: [list] }));
-    };
     const findGame = (id: string) => libRef.current.games.find((g) => g.id === id);
 
     const a: Actions = {
@@ -343,12 +334,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const game = before.games.find((g) => g.id === id);
         if (!game) return;
         const copies = before.copies.filter((c) => c.gameId === id);
-        const lists = before.lists.filter((l) => l.gameIds.includes(id));
         commit({
           ...before,
           games: before.games.filter((g) => g.id !== id),
           copies: before.copies.filter((c) => c.gameId !== id),
-          lists: before.lists.map((l) => (l.gameIds.includes(id) ? { ...l, gameIds: l.gameIds.filter((g) => g !== id) } : l)),
         });
         void persist((r) => r.deleteGame(id));
         toast(`«${game.title}» eliminado de la biblioteca`, {
@@ -357,9 +346,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             label: "Deshacer",
             onClick: () => {
               const now = libRef.current;
-              const restoredLists = now.lists.map((l) => lists.find((o) => o.id === l.id) ?? l);
-              commit({ ...now, games: [...now.games, game], copies: [...now.copies, ...copies], lists: restoredLists });
-              void persist((r) => r.save({ games: [game], copies, lists }));
+              commit({ ...now, games: [...now.games, game], copies: [...now.copies, ...copies] });
+              void persist((r) => r.save({ games: [game], copies }));
             },
           },
         });
@@ -480,36 +468,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           await r.deleteWish(id);
         });
         return game;
-      },
-
-      addList(name) {
-        const stamp = nowIso();
-        const list: GameList = { id: newId(), name: name.trim(), gameIds: [], createdAt: stamp, updatedAt: stamp };
-        void saveList(list);
-        return list;
-      },
-
-      renameList(id, name) {
-        const list = libRef.current.lists.find((l) => l.id === id);
-        if (list) void saveList({ ...list, name: name.trim(), updatedAt: nowIso() });
-      },
-
-      deleteList(id) {
-        const list = libRef.current.lists.find((l) => l.id === id);
-        if (!list) return;
-        commit({ ...libRef.current, lists: libRef.current.lists.filter((l) => l.id !== id) });
-        void persist((r) => r.deleteList(id));
-        toast(`Lista «${list.name}» eliminada`, {
-          description: "Los juegos siguen en tu biblioteca.",
-          action: { label: "Deshacer", onClick: () => void saveList(list) },
-        });
-      },
-
-      toggleInList(listId, gameId) {
-        const list = libRef.current.lists.find((l) => l.id === listId);
-        if (!list) return;
-        const gameIds = list.gameIds.includes(gameId) ? list.gameIds.filter((g) => g !== gameId) : [...list.gameIds, gameId];
-        void saveList({ ...list, gameIds, updatedAt: nowIso() });
       },
 
       async applyChanges(changes) {

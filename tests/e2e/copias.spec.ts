@@ -37,7 +37,7 @@ test("el inicio recuerda hacer una copia y deja de hacerlo al exportarla", async
   const downloadPromise = page.waitForEvent("download");
   await reminder(page).getByRole("button", { name: "Exportar copia" }).click();
   expect((await downloadPromise).suggestedFilename()).toMatch(/^ludoteca-\d{4}-\d{2}-\d{2}\.json$/);
-  await expect(page.getByText("Copia exportada: 1 juego, 1 copia, 0 deseos y 0 listas")).toBeVisible();
+  await expect(page.getByText("Copia exportada: 1 juego, 1 copia y 0 deseos")).toBeVisible();
   await expect(reminder(page)).toHaveCount(0);
 
   await openApp(page, "/ajustes?apartado=copia");

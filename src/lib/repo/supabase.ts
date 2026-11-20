@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Copy, Game, GameList, Library, WishItem } from "../model";
+import type { Copy, Game, Library, WishItem } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -33,10 +33,6 @@ const wishCols: [keyof WishItem, string][] = [
   ["prices", "prices"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
-const listCols: [keyof GameList, string][] = [
-  ["id", "id"], ["name", "name"], ["gameIds", "game_ids"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
-];
-
 const NUMERIC = new Set(["rating", "hours_played", "length_hours", "price_paid", "target_price"]);
 
 function toRow<T>(item: T, cols: [keyof T, string][]): Row {
@@ -64,18 +60,16 @@ export class SupabaseRepository implements Repository {
   constructor(private readonly db: SupabaseClient) {}
 
   async load(): Promise<Library> {
-    const [games, copies, wishlist, lists] = await Promise.all([
+    const [games, copies, wishlist] = await Promise.all([
       this.db.from("games").select("*"),
       this.db.from("copies").select("*"),
       this.db.from("wishlist").select("*"),
-      this.db.from("lists").select("*"),
     ]);
-    for (const r of [games, copies, wishlist, lists]) if (r.error) throw new Error(r.error.message);
+    for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     return {
       games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
-      lists: (lists.data ?? []).map((r) => fromRow<GameList>(r, listCols)),
     };
   }
 
@@ -85,7 +79,6 @@ export class SupabaseRepository implements Repository {
     await Promise.all([
       changes.copies?.length ? this.upsert("copies", changes.copies.map((c) => toRow(c, copyCols))) : null,
       changes.wishlist?.length ? this.upsert("wishlist", changes.wishlist.map((w) => toRow(w, wishCols))) : null,
-      changes.lists?.length ? this.upsert("lists", changes.lists.map((l) => toRow(l, listCols))) : null,
     ]);
   }
 
@@ -99,18 +92,8 @@ export class SupabaseRepository implements Repository {
     if (error) throw new Error(error.message);
   }
 
-  async deleteGame(id: string) {
-    await this.remove("games", "id", id);
-    // Quita el juego de las listas que lo incluían.
-    const { data, error } = await this.db.from("lists").select("*").contains("game_ids", [id]);
-    if (error) throw new Error(error.message);
-    if (data?.length) {
-      const lists = data.map((r) => fromRow<GameList>(r, listCols));
-      await this.upsert(
-        "lists",
-        lists.map((l) => toRow({ ...l, gameIds: l.gameIds.filter((g) => g !== id) }, listCols)),
-      );
-    }
+  deleteGame(id: string) {
+    return this.remove("games", "id", id);
   }
 
   deleteCopy(id: string) {
@@ -119,22 +102,16 @@ export class SupabaseRepository implements Repository {
   deleteWish(id: string) {
     return this.remove("wishlist", "id", id);
   }
-  deleteList(id: string) {
-    return this.remove("lists", "id", id);
-  }
 
   async deleteAllGames() {
     // Las copias se borran en cascada con su juego. Supabase exige un filtro para borrar.
     const games = await this.db.from("games").delete().not("id", "is", null);
     if (games.error) throw new Error(games.error.message);
-    const lists = await this.db.from("lists").update({ game_ids: [] }).not("id", "is", null);
-    if (lists.error) throw new Error(lists.error.message);
   }
 
   async deleteDemo() {
     await this.remove("copies", "demo", true);
     await this.remove("games", "demo", true);
     await this.remove("wishlist", "demo", true);
-    await this.remove("lists", "demo", true);
   }
 }
