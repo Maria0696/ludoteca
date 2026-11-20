@@ -34,10 +34,10 @@ test("Estadísticas, ¿A qué juego? y Ajustes caben en el móvil", async ({ pag
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
   await page.goto("/estadisticas");
-  await expect(page.getByRole("region", { name: "En cifras" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Marcador" })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
   // Las cifras grandes caben en su celda.
-  const spill = await page.getByRole("region", { name: "En cifras" }).locator("dd").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+  const spill = await page.getByRole("region", { name: "Marcador" }).locator("dd").evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
   for (const s of spill) expect(s).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
 

@@ -133,14 +133,21 @@ test("la utilidad de la carcasa detecta letra antigua y texto pequeño", async (
   await expect(expectCarcasaText(page.locator("main"))).rejects.toThrow(/Albert[\s\S]*VT323 14px/);
 });
 
-test("Estadísticas en la carcasa: título en píxeles, una ventana por sección y todo legible", async ({ page }) => {
+test("Estadísticas en la carcasa: título en píxeles, una ventana por sección, filas parejas y todo legible", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/estadisticas");
   const [family] = await font(page.getByRole("heading", { level: 1, name: "Estadísticas" }));
   expect(family).toMatch(/Press.Start.2P/i);
-  for (const name of ["En cifras", "Copias por plataforma", "Títulos por estado", "Formato de las copias", "Horas y gasto registrados"]) {
+  const sections = ["Marcador", "Tu estantería", "Superados mes a mes", "Joyas por jugar", "De dónde vienen", "Géneros", "Nota en Metacritic", "Año de salida", "Horas y gasto"];
+  for (const name of sections) {
     expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
   }
+  // Las ventanas de una misma fila miden lo mismo: ninguna se queda corta a media altura.
+  const boxes = await Promise.all(sections.map((name) => page.getByRole("region", { name }).boundingBox()));
+  const rows = new Map<number, number[]>();
+  for (const b of boxes) rows.set(Math.round(b!.y), [...(rows.get(Math.round(b!.y)) ?? []), b!.height]);
+  expect([...rows.values()].some((h) => h.length > 1)).toBe(true);
+  for (const heights of rows.values()) expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
   await expectCarcasaText(page.locator("main"));
 });
 
@@ -157,8 +164,8 @@ test("Estadísticas: las cifras grandes no se parten ni se salen a ningún ancho
   await expect(page.getByText("12.345,67 €").first()).toBeVisible();
 
   await page.goto("/estadisticas");
-  const registro = page.getByRole("region", { name: "Horas y gasto registrados" });
-  await expect(registro.getByText("12.345,67 €")).toBeVisible();
+  await expect(page.getByText("12.345,67 €")).toBeVisible();
+  await expect(page.getByText("12.345 h")).toBeVisible();
   for (const width of [390, 920, 1000, 1100, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     // Cada cifra en una sola línea y dentro de su celda.
