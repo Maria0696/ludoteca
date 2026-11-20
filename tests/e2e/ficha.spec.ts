@@ -90,6 +90,8 @@ test("marcar el 100 % pasa el juego a Completado; quitarlo no le cambia el estad
   await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toBeVisible();
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
   await expect(page.getByRole("button", { name: "Terminado, conseguido" })).toBeVisible();
+  // Terminado implica empezado: «Empieza la aventura» también queda marcada.
+  await expect(page.getByRole("region", { name: "Misiones" }).getByRole("checkbox", { name: "Empieza la aventura" })).toHaveAttribute("aria-checked", "true");
 
   // Quitar el 100 % no lo devuelve a otro estado: sigue terminado.
   await page.getByRole("button", { name: "Al 100 %", exact: true }).click();
@@ -97,7 +99,7 @@ test("marcar el 100 % pasa el juego a Completado; quitarlo no le cambia el estad
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
 });
 
-test("anotar la fecha de «Termina la historia» pasa el juego a Completado con esa fecha", async ({ page }) => {
+test("anotar la fecha de «Termina la historia» pasa el juego a Completado con esa fecha y marca el inicio", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "PC" });
   await cards(page).getByRole("link", { name: /Celeste/ }).click();
@@ -115,15 +117,20 @@ test("anotar la fecha de «Termina la historia» pasa el juego a Completado con 
   await page.reload();
   await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  // Sin fecha de inicio, empieza el mismo día que termina: no se puede empezar después.
+  const started = quests.getByRole("checkbox", { name: "Empieza la aventura" });
+  await expect(started).toHaveAttribute("aria-checked", "true");
+  await expect(quests.getByRole("button", { name: "Empezado: 3 oct 2025. Editar" })).toBeVisible();
 
-  // Desmarcar su casilla borra la fecha; sin empezar, vuelve a Pendiente.
+  // Desmarcar su casilla borra la fecha de fin; el inicio se queda, así que vuelve a Jugando.
   const finished = quests.getByRole("checkbox", { name: "Termina la historia" });
   await expect(finished).toHaveAttribute("aria-checked", "true");
   await finished.click();
   await expect(finished).toHaveAttribute("aria-checked", "false");
   await expect(quests.getByRole("button", { name: "Terminado: añadir" })).toBeVisible();
-  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByText("«Celeste» vuelve a Pendiente")).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Celeste» vuelve a Jugando")).toBeVisible();
+  await expect(started).toHaveAttribute("aria-checked", "true");
 });
 
 test("las casillas de empezar y terminar se marcan y desmarcan; las de datos son solo indicadores", async ({ page }) => {
@@ -138,13 +145,21 @@ test("las casillas de empezar y terminar se marcan y desmarcan; las de datos son
   const started = quests.getByRole("checkbox", { name: "Empieza la aventura" });
   const finished = quests.getByRole("checkbox", { name: "Termina la historia" });
 
-  // Marcar «Empieza la aventura» anota hoy; desmarcarla la borra.
+  // Marcar «Empieza la aventura» anota hoy y lo pone en Jugando; desmarcarla la borra y vuelve a Pendiente.
   await started.click();
   await expect(started).toHaveAttribute("aria-checked", "true");
   await expect(quests.getByRole("button", { name: "Empezado: añadir" })).toHaveCount(0);
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Tunic» pasa a Jugando")).toBeVisible();
   await started.click();
   await expect(started).toHaveAttribute("aria-checked", "false");
   await expect(quests.getByRole("button", { name: "Empezado: añadir" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+  // Escribir la fecha de inicio hace lo mismo que marcar la casilla.
+  await quests.getByRole("button", { name: "Empezado: añadir" }).click();
+  await quests.getByLabel("Empezado", { exact: true }).fill("1/10/2025");
+  await quests.getByLabel("Empezado", { exact: true }).press("Enter");
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
 
   await page.getByRole("button", { name: /He jugado hoy/ }).click();
   await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");

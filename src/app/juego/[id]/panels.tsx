@@ -93,6 +93,7 @@ export function Quests({
   onAddCopy,
   onToggle100,
   onFinish,
+  onStart,
 }: {
   game: Game;
   copies: Copy[];
@@ -102,6 +103,8 @@ export function Quests({
   onToggle100: () => void;
   /** Anotar la fecha de fin también lo pasa a Completado. */
   onFinish: (date: string | null) => void;
+  /** Anotar la fecha de inicio también lo pone en Jugando. */
+  onStart: (date: string | null) => void;
 }) {
   const percent = progressPercent(game);
   const platforms = [...new Set(copies.map((c) => c.platform))];
@@ -128,9 +131,9 @@ export function Quests({
             stage={2}
             done={Boolean(game.startedAt)}
             title="Empieza la aventura"
-            onToggle={() => update({ startedAt: game.startedAt ? null : todayIso() })}
+            onToggle={() => onStart(game.startedAt ? null : todayIso())}
           >
-            <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={(v) => update({ startedAt: v })} />
+            <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={onStart} />
           </Objective>
           <Objective
             {...shared}

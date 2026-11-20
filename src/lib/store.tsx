@@ -45,6 +45,8 @@ interface Actions {
   setCompleted100(id: string, done: boolean): void;
   /** Anota o borra la fecha de fin; anotarla también lo pasa a Completado, en un solo guardado. */
   setFinishedAt(id: string, date: string | null): void;
+  /** Anota o borra la fecha de inicio; de Pendiente pasa a Jugando y, al borrarla, vuelve a Pendiente. */
+  setStartedAt(id: string, date: string | null): void;
   markPlayedToday(id: string): void;
   deleteGame(id: string): void;
   /** Vacía la biblioteca; si no lo consigue del todo, avisa con un error. */
@@ -192,7 +194,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         next.startedAt ??= today;
         next.lastPlayedAt = today;
       }
-      if (status === "completado") next.finishedAt ??= today;
+      if (status === "completado") {
+        next.finishedAt ??= today;
+        // Terminado implica empezado: sin fecha de inicio, empieza el día que termina.
+        next.startedAt ??= next.finishedAt;
+      }
       return next;
     };
     /**
@@ -274,20 +280,36 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setFinishedAt(id, date) {
         const previous = findGame(id);
         if (!previous) return;
-        // Terminar la historia es completarlo. Borrar la fecha lo descompleta: vuelve a Jugando si lo
-        // habías empezado y si no a Pendiente; al 100 % sigue completado, porque el trofeo dice que lo terminaste.
+        // Terminar la historia es completarlo, y también empezarlo: sin inicio, empieza el día que termina.
+        // Borrar la fecha lo descompleta: vuelve a Jugando si «Empieza la aventura» está marcada y si no a
+        // Pendiente; al 100 % sigue completado, porque el trofeo dice que lo terminaste.
         const finishing = Boolean(date) && previous.status !== "completado";
         const unfinishing = !date && previous.status === "completado" && !previous.completed100;
-        const backTo: GameStatus = previous.startedAt || previous.hoursPlayed || previous.lastPlayedAt ? "jugando" : "pendiente";
+        const backTo: GameStatus = previous.startedAt ? "jugando" : "pendiente";
         const next = finishing
           ? withStatus(previous, "completado")
           : unfinishing
             ? { ...previous, status: backTo, updatedAt: nowIso() }
             : { ...previous, updatedAt: nowIso() };
-        void saveGame({ ...next, finishedAt: date });
+        void saveGame({ ...next, finishedAt: date, startedAt: date ? (previous.startedAt ?? date) : next.startedAt });
         if (finishing || unfinishing) {
           const message = finishing ? `«${previous.title}» pasa a ${STATUS_LABEL.completado}` : `«${previous.title}» vuelve a ${STATUS_LABEL[backTo]}`;
           toast(message, { action: { label: "Deshacer", onClick: () => undoStatus([previous]) } });
+        }
+      },
+
+      setStartedAt(id, date) {
+        const previous = findGame(id);
+        if (!previous) return;
+        // Empezar la aventura es ponerse a jugar; borrar el inicio de un juego en marcha lo devuelve a Pendiente.
+        // Abandonado o Completado no cambian: dicen más que la fecha.
+        const to: GameStatus | null =
+          date && previous.status === "pendiente" ? "jugando" : !date && (previous.status === "jugando" || previous.status === "pausado") ? "pendiente" : null;
+        void saveGame({ ...previous, ...(to ? { status: to } : {}), startedAt: date, updatedAt: nowIso() });
+        if (to) {
+          toast(`«${previous.title}» ${to === "jugando" ? "pasa a" : "vuelve a"} ${STATUS_LABEL[to]}`, {
+            action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
+          });
         }
       },
 
