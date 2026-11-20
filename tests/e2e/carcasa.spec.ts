@@ -188,6 +188,21 @@ test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el ar
   const picks = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) });
   for (const shadow of await picks.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(shadow).toBe("none");
   await expect(picks.first().locator("img[aria-hidden]")).toHaveCount(1); // el arte difuminado se conserva
+  // La sesión, como el menú de opciones de un juego: una fila por pregunta, sin cajas; el valor cambia con las flechas o eligiéndolo.
+  const session = page.getByRole("form", { name: "Tu sesión" });
+  await expect(session.getByRole("radio")).toHaveCount(0);
+  const values: [string, string][] = [["Tiempo", "1 h"], ["Plataforma", "Cualquiera"], ["Partida", "Me da igual"], ["Compañía", "Sola"], ["Experiencia", "Cualquiera"]];
+  for (const [name, value] of values) await expect(session.getByRole("combobox", { name, exact: true }).locator("option:checked")).toHaveText(value);
+  const time = session.getByRole("combobox", { name: "Tiempo", exact: true });
+  expect(await time.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe("0px");
+  await session.getByRole("button", { name: "Tiempo: siguiente" }).click();
+  await expect(time.locator("option:checked")).toHaveText("2 h");
+  // Da la vuelta, como en un juego: tras «Sin prisa» vuelve «15 min».
+  await session.getByRole("button", { name: "Tiempo: siguiente" }).click();
+  await session.getByRole("button", { name: "Tiempo: siguiente" }).click();
+  await expect(time.locator("option:checked")).toHaveText("15 min");
+  await session.getByRole("button", { name: "Tiempo: anterior" }).click();
+  await expect(time.locator("option:checked")).toHaveText("Sin prisa");
   // En el ordenador la sesión está a la vista: el resumen con «Ajustar» es solo del móvil.
   await expect(page.getByRole("button", { name: "Ajustar la sesión" })).toBeHidden();
   await expectCarcasaText(page.locator("main"));

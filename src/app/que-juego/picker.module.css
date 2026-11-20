@@ -68,6 +68,101 @@
   display: grid;
   gap: 22px;
 }
+/* La sesión como el menú de opciones de un juego: una fila por pregunta con ◀ valor ▶, separadas por líneas
+   que llegan al borde de la ventana (20 px de relleno en el panel, 22 px en la hoja). */
+.menu {
+  --bleed: 20px;
+  display: grid;
+  margin: 0 calc(-1 * var(--bleed)) calc(-1 * var(--bleed));
+  font-family: var(--font-term);
+}
+/* En la hoja, la cabecera y el pie ya trazan su línea: el menú llega a ellas sin repetirla. */
+.sheetChoices .menu {
+  --bleed: 22px;
+  margin-top: calc(-1 * var(--bleed));
+}
+.sheetChoices .option:first-child {
+  border-top: 0;
+}
+.option {
+  display: grid;
+  /* La columna justa para «Experiencia»: el resto, para que el valor más largo quepa entre las flechas. */
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 calc(var(--bleed) - 8px) 0 var(--bleed);
+  border-top: 2px solid var(--line);
+  transition: background-color 160ms ease;
+}
+.option:hover,
+.option:focus-within {
+  background: var(--raised);
+}
+.option label {
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+.stepper {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+}
+.stepper button {
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.option:hover .stepper button,
+.option:focus-within .stepper button {
+  color: var(--paper);
+}
+.stepper button:hover {
+  color: var(--white);
+}
+.stepper button:active {
+  transform: translateY(2px);
+}
+.stepper button svg {
+  width: 18px;
+  height: 18px;
+}
+/* El valor: un desplegable que se lee como texto, centrado entre las flechas. */
+.stepper select {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--white);
+  font-size: var(--size-body);
+  text-align: center;
+  text-align-last: center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.stepper select option {
+  background: var(--window);
+  color: var(--text);
+  text-align: left;
+}
+.stepper select:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: -2px;
+}
+@media (max-width: 899px) {
+  .stepper {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+}
 .resultsActions {
   display: flex;
   gap: 6px;
