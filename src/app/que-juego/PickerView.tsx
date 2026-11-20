@@ -216,6 +216,8 @@ function SessionChoices({
   platforms: string[];
   set: <K extends keyof RecommendInput>(k: K, v: RecommendInput[K]) => void;
 }) {
+  // Un id por desplegable: la misma pregunta vive en el panel y en la hoja.
+  const platformId = useId();
   return (
     <>
       <Choice label="Tiempo para esta sesión">
@@ -225,16 +227,20 @@ function SessionChoices({
           </button>
         ))}
       </Choice>
-      <Choice label="Plataforma">
-        <button type="button" role="radio" aria-checked={input.platform === null} onClick={() => set("platform", null)}>
-          Cualquiera
-        </button>
-        {platforms.map((p) => (
-          <button key={p} type="button" role="radio" aria-checked={input.platform === p} onClick={() => set("platform", p)}>
-            {p}
-          </button>
-        ))}
-      </Choice>
+      {/* Con muchas consolas, una fila de botones pesaba más que todo lo demás: un desplegable, como el género en la biblioteca. */}
+      <div className="field">
+        <label className="label" htmlFor={platformId}>
+          Plataforma
+        </label>
+        <select id={platformId} className="select" value={input.platform ?? ""} onChange={(e) => set("platform", e.target.value || null)}>
+          <option value="">Cualquiera</option>
+          {platforms.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </div>
       <Choice label="Partida">
         {INTENTS.map((i) => (
           <button key={i.value} type="button" role="radio" aria-checked={input.intent === i.value} onClick={() => set("intent", i.value)}>
@@ -271,7 +277,7 @@ function Choice({ label, children }: { label: string; children: React.ReactNode 
       <span className="label" id={id}>
         {label}
       </span>
-      <div className="segmented" role="radiogroup" aria-labelledby={id}>
+      <div className={`segmented ${styles.options}`} role="radiogroup" aria-labelledby={id}>
         {children}
       </div>
     </div>

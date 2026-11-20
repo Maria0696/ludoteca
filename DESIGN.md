@@ -227,6 +227,7 @@ Todo es rectangular: radio 0 en botones, campos, chips, ventanas, diálogos y ca
 ### Chips (grupos de opciones)
 - **Style:** superficie alzada con marco suave, 38 px de alto, VT323.
 - **State:** lo elegido pasa a fondo papel con texto de ventana, sin marco. Los grupos son `radiogroup` con nombre.
+- **Variante ligera (la sesión de ¿A qué juego?):** cuando una ventana apila muchas preguntas, las opciones van como texto lavanda sin caja, como en el menú de un juego. La elegida lleva marco de papel interior y fondo alzado, para no confundirse con el foco de teclado (solo contorno). Una lista larga, como las plataformas, va en un desplegable.
 
 ### Cards / Containers (ventanas)
 - **Corner Style:** sin radio (0).

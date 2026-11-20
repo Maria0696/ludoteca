@@ -43,7 +43,7 @@ test("las recomendaciones respetan filtros y disponibilidad", async ({ page }) =
   await loadDemo(page);
   await page.goto("/que-juego");
 
-  await page.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: "PS5" }).click();
+  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("PS5");
   await page.getByRole("radio", { name: "Empezar algo nuevo" }).click();
   await page.getByRole("radio", { name: "Acompañada" }).click();
   await page.getByRole("radio", { name: "1 h" }).click();
@@ -62,14 +62,14 @@ test("las recomendaciones respetan filtros y disponibilidad", async ({ page }) =
   await expect(page.getByRole("button", { name: /Recuperar descartados/ }).first()).toBeVisible();
 
   // Una copia prestada no se recomienda: Red Dead Redemption 2 (PS4) está prestado en los datos de demostración.
-  await page.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: "PS4" }).click();
+  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("PS4");
   await page.getByRole("radio", { name: "Continuar una partida" }).click();
   await page.getByRole("radio", { name: "Sola" }).click();
   await expect(page.getByText("Red Dead Redemption 2")).toHaveCount(0);
   await expect(page.getByText(/tienen la copia prestada/)).toBeVisible();
 
   // Sin datos de sesión explica la limitación en vez de inventar.
-  await page.getByRole("radiogroup", { name: "Plataforma" }).getByRole("radio", { name: "Cualquiera" }).click();
+  await page.getByRole("combobox", { name: "Plataforma" }).selectOption("");
   await page.getByRole("radio", { name: "Me da igual" }).click();
   await expect(page.getByText(/candidatos/).first()).toBeVisible();
 });

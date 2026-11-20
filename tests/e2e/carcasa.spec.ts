@@ -188,6 +188,14 @@ test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el ar
   const picks = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) });
   for (const shadow of await picks.evaluateAll((els) => els.map((e) => getComputedStyle(e).boxShadow))) expect(shadow).toBe("none");
   await expect(picks.first().locator("img[aria-hidden]")).toHaveCount(1); // el arte difuminado se conserva
+  // La sesión, ligera: las opciones son texto sin caja, solo la elegida lleva marco de papel y la plataforma es un desplegable.
+  const session = page.getByRole("form", { name: "Tu sesión" });
+  const looks = (name: string) =>
+    session.getByRole("radio", { name, exact: true }).evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).boxShadow]);
+  expect(await looks("30 min")).toEqual(["rgba(0, 0, 0, 0)", "none"]);
+  expect((await looks("1 h"))[1]).toContain("rgb(243, 234, 210)");
+  await expect(session.getByRole("combobox", { name: "Plataforma" })).toHaveValue("");
+  await expect(session.getByRole("radio")).toHaveCount(5 + 3 + 2 + 6);
   // En el ordenador la sesión está a la vista: el resumen con «Ajustar» es solo del móvil.
   await expect(page.getByRole("button", { name: "Ajustar la sesión" })).toBeHidden();
   await expectCarcasaText(page.locator("main"));

@@ -68,6 +68,24 @@
   display: grid;
   gap: 22px;
 }
+/* Las opciones de la sesión, como en el menú de un juego: texto sin caja y solo la elegida enmarcada en papel.
+   El margen negativo alinea el texto de la primera con la pregunta. */
+:global(.segmented).options {
+  gap: 4px;
+  margin-inline: -10px;
+}
+:global(.segmented).options button {
+  padding: 0 10px;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+}
+/* Marco de papel y fondo alzado: el foco de teclado es solo un contorno, así no se confunden. */
+:global(.segmented).options button[aria-checked="true"] {
+  background: var(--raised);
+  box-shadow: inset 0 0 0 2px var(--paper);
+  color: var(--paper);
+}
 .resultsActions {
   display: flex;
   gap: 6px;
