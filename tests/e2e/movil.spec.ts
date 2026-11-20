@@ -265,6 +265,12 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
     return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
   });
   expect(lines).toBe(1);
+  // Mis listas no cabe en la cabecera del móvil: cierra la fila de plataformas, una sola vez.
+  const lists = page.getByRole("link", { name: /^Mis listas/ });
+  await expect(lists).toHaveCount(1);
+  await lists.scrollIntoViewIfNeeded();
+  await expect(lists).toBeInViewport({ ratio: 0.9 });
+  await expect(page.getByRole("tablist", { name: "Plataforma" }).getByRole("link")).toHaveCount(0);
   // «Importar…» sale de la cabecera en el móvil; Steam sigue en Ajustes.
   await expect(head.getByRole("link", { name: "Importar…" })).toBeHidden();
   await page.goto("/ajustes?apartado=steam");

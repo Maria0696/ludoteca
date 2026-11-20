@@ -88,6 +88,10 @@
   display: flex;
   gap: 4px;
 }
+.listsLink small {
+  color: var(--soft);
+  font-size: var(--size-meta);
+}
 
 /* Botones de la recreativa: marco de neón, letra de terminal. */
 .chip {
@@ -145,6 +149,7 @@
 /* Buscar y ordenar --------------------------------------------------------- */
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 0 var(--gutter) 16px;
@@ -185,7 +190,10 @@
   box-shadow: 0 0 12px #3ff2ff55;
 }
 .sort {
-  width: 260px;
+  width: 240px;
+}
+.genre {
+  width: 220px;
 }
 .filterBtn {
   display: none;
@@ -199,21 +207,51 @@
 
 /* Plataformas: botones de recreativa con su luz ----------------------------- */
 .plats {
-  display: flex;
-  align-items: center;
-  gap: 6px 20px;
   padding: 0 var(--gutter);
+}
+/* La raya de delante de cada familia queda fuera, a la izquierda: la que empieza una línea no se ve. */
+.platsClip {
   overflow-x: auto;
   scrollbar-width: none;
 }
-.plats::-webkit-scrollbar {
+.platsClip::-webkit-scrollbar {
   display: none;
 }
-/* En el ordenador no hay deslizar a ciegas: lo que no cabe pasa a otra línea. */
+.platsRow {
+  display: flex;
+  align-items: center;
+  gap: 4px 0;
+  margin-left: -42px;
+  padding: 4px 6px 4px 0;
+}
+.platFamily {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0 18px;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 2px solid var(--frame);
+}
+.tablist {
+  display: contents;
+}
+/* En el ordenador, Mis listas va en la cabecera. */
+.platFamily.listsFamily {
+  display: none;
+}
+/* En el ordenador no hay deslizar a ciegas: lo que no cabe pasa a otra línea, cada familia entera. */
 @media (min-width: 900px) {
-  .plats {
+  .platsClip {
+    overflow: hidden;
+  }
+  .platsRow {
     flex-wrap: wrap;
-    overflow: visible;
+  }
+  .platFamily {
+    flex-wrap: wrap;
+    min-width: 0;
+    flex-shrink: 1;
   }
 }
 .plat {
@@ -263,23 +301,29 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 12px var(--gutter) 0;
+  gap: 12px 32px;
+  align-items: flex-end;
+  padding: 16px var(--gutter) 0;
 }
 .filtersInline {
   display: contents;
 }
+/* Cada grupo: su rótulo encima y sus botones debajo. */
 .filterGroup {
+  display: grid;
+  gap: 6px;
+}
+.groupLabel {
+  color: #8a7fb0;
+  font-family: var(--term);
+  font-size: var(--size-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.groupChips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding-right: 10px;
-}
-.genre :global(.select) {
-  width: auto;
-  height: 36px;
-  padding-left: 12px;
 }
 .reset {
   min-height: 36px;
@@ -726,9 +770,8 @@
   display: grid;
   gap: 16px;
 }
-.sheetFilters .genre :global(.select) {
-  width: 100%;
-  height: 44px;
+.sheetFilters .chip {
+  min-height: 44px;
 }
 
 @keyframes blink {
@@ -806,8 +849,12 @@
     margin-left: 0;
   }
   /* Importar de Steam sigue en Ajustes: en el móvil no ocupa una fila de la cabecera. */
+  /* Mis listas, en el móvil, cierra la fila de plataformas: en la cabecera no cabe. */
   .headActions > .chip {
     display: none;
+  }
+  .platFamily.listsFamily {
+    display: flex;
   }
   .viewToggle span {
     position: absolute;
@@ -845,6 +892,14 @@
   }
   .filtersInline {
     display: none;
+  }
+  /* En el móvil, la raya entre familias con menos aire: caben más plataformas a la vista. */
+  .platsRow {
+    margin-left: -26px;
+  }
+  .platFamily {
+    margin-left: 12px;
+    padding-left: 12px;
   }
   .arena {
     padding-top: 20px;

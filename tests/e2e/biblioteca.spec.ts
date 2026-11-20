@@ -385,3 +385,22 @@ test("al cerrar la barra del cambio en grupo, el foco vuelve a la tabla", async 
   await page.getByRole("region", { name: "Cambio en grupo" }).getByRole("button", { name: "Quitar la selección" }).click();
   await expect(page.getByRole("checkbox", { name: "Elegir todos los que se ven" })).toBeFocused();
 });
+
+test("las plataformas van por familias, Mis listas sale de la fila y cada filtro lleva su rótulo", async ({ page }) => {
+  test.setTimeout(90_000);
+  await loadDemo(page);
+  await addGame(page, { title: "Halo Infinite", platform: "Xbox Series" });
+  await addGame(page, { title: "Beat Saber", platform: "Meta Quest" });
+  // PC primero; luego PlayStation, Xbox, Nintendo y las demás, cada familia junta y de la más nueva a la más antigua.
+  const tabs = page.getByRole("tablist", { name: "Plataforma" }).getByRole("tab");
+  await expect(tabs).toHaveText([/^Todas/, /^PC/, /^PS5/, /^PS4/, /^Xbox Series/, /^Switch/, /^Meta Quest/]);
+  // Mis listas no es una plataforma: va en la cabecera, junto a Importar.
+  await expect(page.locator("main header").getByRole("link", { name: /^Mis listas/ })).toBeVisible();
+  // Cada grupo de botones dice a la vista qué filtra.
+  const filters = page.getByRole("region", { name: "Filtros" });
+  for (const name of ["Estado", "Formato", "Favoritos"]) {
+    await expect(filters.getByRole("group", { name }).getByText(name, { exact: true })).toBeVisible();
+  }
+  // El género, desplegable como el orden, va con ellos en la barra de búsqueda.
+  await expect(page.getByRole("search").getByRole("combobox", { name: "Género" })).toBeVisible();
+});
