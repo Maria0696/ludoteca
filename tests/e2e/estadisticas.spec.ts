@@ -54,6 +54,7 @@ test("de dónde vienen, géneros, nota y año de salida", async ({ page }) => {
   await expect(families.locator("dd[data-count]")).toHaveText(["6", "8", "10"]);
   await expect(families).toContainText("Steam 4 · GOG 1");
   await expect(families).toContainText("PS5 6 · PS4 2");
+  await expect(families).toContainText("11 físicas y 13 digitales · 1 prestada");
 
   // Géneros como clasificación: con puesto y enlace a la biblioteca filtrada.
   const genres = page.getByRole("region", { name: "Géneros" }).getByRole("listitem");
@@ -63,9 +64,9 @@ test("de dónde vienen, géneros, nota y año de salida", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Nota en Metacritic" })).toContainText(/Media \d+(,\d)? en 22 juegos con nota/);
   await expect(page.getByRole("region", { name: "Año de salida" })).toContainText("El más antiguo: Stardew Valley (2016).");
 
-  // Las horas y el gasto, que casi nunca están completos, en una línea que dice cuántos tienen el dato.
-  const noted = page.locator("p", { hasText: /^Lo anotado a mano:/ });
-  await expect(noted).toBeVisible();
-  await expect(noted).toContainText(/h jugadas en \d+ juegos/);
-  await expect(noted).toContainText(/en \d+ copias compradas con precio/);
+  // Las horas y el gasto, en su ventana, con cuánto falta por anotar.
+  const ledger = page.getByRole("region", { name: "Horas y gasto" });
+  await expect(ledger).toContainText("14 de 22 juegos con horas");
+  await expect(ledger).toContainText("22 de 22 copias compradas con precio");
+  await expect(page.getByText(/^Lo anotado a mano/)).toHaveCount(0);
 });

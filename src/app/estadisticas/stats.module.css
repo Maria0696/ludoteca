@@ -319,21 +319,52 @@
   color: var(--white);
 }
 
-/* Lo anotado a mano: horas, gasto y formato, con cuántos tienen el dato. */
-.footline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 22px;
-  padding: 14px 0 8px;
-  border-top: 2px solid var(--line);
+/* Horas y gasto: el total y, con una barra, cuánto falta por anotar. */
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ledger > div {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+  padding: 4px 20px;
+  border-left: 2px solid var(--line);
+}
+.ledger > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.ledger dt {
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+.ledger dd {
+  margin-top: 8px;
+  color: var(--white);
+  font-size: 48px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.coverage {
+  display: grid;
+  gap: 6px;
   color: var(--muted);
   font-size: var(--size-meta);
-  line-height: 1.2;
 }
-.footline b {
-  color: var(--white);
-  font-weight: 400;
-  white-space: nowrap;
+.meter {
+  display: block;
+  max-width: 320px;
+  height: 8px;
+  background: var(--raised);
+  box-shadow: var(--pixel-frame-soft);
+}
+.meter i {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--paper);
 }
 
 @media (max-width: 1200px) {
@@ -360,8 +391,17 @@
     padding-left: 0;
     border-left: 0;
   }
-  .board dd {
+  .board dd,
+  .ledger dd {
     font-size: 44px;
+  }
+  .ledger {
+    grid-template-columns: 1fr;
+    row-gap: 18px;
+  }
+  .ledger > div {
+    padding-left: 0;
+    border-left: 0;
   }
   /* Cuadros más pequeños: con cientos de juegos, la estantería no ocupa dos pantallas. */
   .waffle,

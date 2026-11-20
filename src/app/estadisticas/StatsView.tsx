@@ -221,6 +221,10 @@ export function StatsView() {
               );
             })}
           </dl>
+          <p className={styles.note}>
+            {count(s.copiesByFormat.fisico, "física", "físicas")} y {count(s.copiesByFormat.digital, "digital", "digitales")}
+            {s.lentOut > 0 ? ` · ${count(s.lentOut, "prestada", "prestadas")}` : ""}
+          </p>
         </section>
 
         <section className={`window ${styles.panel}`} aria-labelledby="h-generos">
@@ -298,28 +302,43 @@ export function StatsView() {
         </section>
       </div>
 
-      <p className={styles.footline}>
-        <span>Lo anotado a mano:</span>{" "}
-        <span>
-          <b className="num">{formatNumber(s.hours.total)} h</b> jugadas en {count(s.hours.withData, "juego", "juegos")}
-        </span>{" "}
-        <span>
-          <b className="num">{formatMoney(s.spend.total)}</b> en {count(s.spend.withData, "copia comprada", "copias compradas")} con precio
-        </span>{" "}
-        <span>
-          <b className="num">{formatNumber(s.copiesByFormat.fisico)}</b> físicas y <b className="num">{formatNumber(s.copiesByFormat.digital)}</b> digitales
+      <section className={`window ${styles.panel}`} aria-labelledby="h-registro">
+        <h2 id="h-registro">Horas y gasto</h2>
+        <div className={styles.ledger}>
+          <Ledger
+            label="Horas jugadas"
+            value={`${formatNumber(s.hours.total)} h`}
+            have={s.hours.withData}
+            of={s.titles}
+            what={s.titles === 1 ? "juego con horas" : "juegos con horas"}
+          />
+          <Ledger
+            label="Gasto"
+            value={formatMoney(s.spend.total)}
+            have={s.spend.withData}
+            of={s.spend.withData + s.spend.missing}
+            what={s.spend.withData + s.spend.missing === 1 ? "copia comprada con precio" : "copias compradas con precio"}
+          />
+        </div>
+        <p className={styles.note}>Se suman a medida que las anotas en la ficha de cada juego. El gasto no incluye copias prestadas ni de suscripción.</p>
+      </section>
+    </div>
+  );
+}
+
+/** Una cifra que casi nunca está completa: el total y cuántos registros lo tienen anotado. */
+function Ledger({ label, value, have, of, what }: { label: string; value: string; have: number; of: number; what: string }) {
+  return (
+    <div>
+      <dl>
+        <dt>{label}</dt>
+        <dd className="num">{value}</dd>
+      </dl>
+      <p className={styles.coverage}>
+        <span className={styles.meter} aria-hidden>
+          <i style={{ width: `${of ? (have / of) * 100 : 0}%` }} />
         </span>
-        {s.lentOut > 0 && (
-          <>
-            {" "}
-            <span>
-              <b className="num">{formatNumber(s.lentOut)}</b> {s.lentOut === 1 ? "prestada" : "prestadas"}
-            </span>
-          </>
-        )}{" "}
-        <span>
-          <b className="num">{formatNumber(s.wishlist)}</b> en la lista de deseos
-        </span>
+        {formatNumber(have)} de {formatNumber(of)} {what}
       </p>
     </div>
   );

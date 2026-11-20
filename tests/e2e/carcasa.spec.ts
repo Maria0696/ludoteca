@@ -138,7 +138,7 @@ test("Estadísticas en la carcasa: título en píxeles, una ventana por sección
   await page.goto("/estadisticas");
   const [family] = await font(page.getByRole("heading", { level: 1, name: "Estadísticas" }));
   expect(family).toMatch(/Press.Start.2P/i);
-  const sections = ["Marcador", "Tu estantería", "Superados mes a mes", "Joyas por jugar", "De dónde vienen", "Géneros", "Nota en Metacritic", "Año de salida"];
+  const sections = ["Marcador", "Tu estantería", "Superados mes a mes", "Joyas por jugar", "De dónde vienen", "Géneros", "Nota en Metacritic", "Año de salida", "Horas y gasto"];
   for (const name of sections) {
     expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
   }
