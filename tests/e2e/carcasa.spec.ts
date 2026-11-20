@@ -289,6 +289,33 @@ test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", as
   }
 });
 
+test("Deseos: el precio es una etiqueta bajo el título y solo «Ya lo tengo» va enmarcado", async ({ page }) => {
+  await loadDemo(page);
+  await page.goto("/deseos");
+  const row = (title: string) => page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: title });
+  // Con precio: la etiqueta con la cifra y su veredicto, debajo del título; al lado, tienda, fecha y objetivo.
+  const silksong = row("Hollow Knight: Silksong");
+  const tag = silksong.getByText("19,50 €", { exact: true });
+  await expect(silksong.getByText("4,50 € por encima", { exact: true })).toBeVisible();
+  const title = (await silksong.getByText("Hollow Knight: Silksong", { exact: true }).boundingBox())!;
+  const tagBox = (await tag.boundingBox())!;
+  expect(tagBox.y).toBeGreaterThan(title.y);
+  expect(tagBox.x - title.x).toBeLessThan(30);
+  const meta = silksong.getByText(/Nintendo eShop/);
+  await expect(meta).toHaveText(/^Nintendo eShop · .+ · objetivo 15,00\s€$/);
+  // Sin precio visto: la etiqueta dice el objetivo.
+  await expect(row("Okami HD").getByText("Objetivo 12,00 €", { exact: true })).toBeVisible();
+  await expect(row("Okami HD")).toContainText("sin precio visto");
+  // Sin precio ni objetivo: nada que leer, ni rayas ni frases de relleno.
+  await expect(row("Pentiment")).not.toContainText("€");
+  await expect(row("Pentiment")).not.toContainText("—");
+  await expect(row("Pentiment")).not.toContainText("todavía");
+  // Una sola acción enmarcada; las demás, calladas y con su nombre.
+  const background = (name: string | RegExp) => silksong.getByRole("button", { name }).evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(await background("Ya lo tengo")).not.toBe("rgba(0, 0, 0, 0)");
+  for (const name of [/^Precio/, /^Editar/, /^Quitar/]) expect(await background(name)).toBe("rgba(0, 0, 0, 0)");
+});
+
 test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura", async ({ page }) => {
   await openApp(page, "/deseos");
   await page.getByRole("button", { name: "Añadir el primer deseo" }).click();
