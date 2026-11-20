@@ -215,21 +215,21 @@ test("¿A qué juego? en la carcasa: sesión y propuestas en ventanas, con el ar
   await expectCarcasaText(page.locator("main"));
 });
 
-test("Ajustes en la carcasa: una ventana por ajuste y diálogos legibles", async ({ page }) => {
+test("Ajustes en la carcasa: una ventana por apartado y diálogos legibles", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");
   const [family] = await font(page.getByRole("heading", { level: 1, name: "Ajustes" }));
   expect(family).toMatch(/Press.Start.2P/i);
-  for (const [apartado, name] of [["datos", "Dónde se guardan tus datos"], ["copia", "Copia de seguridad"], ["eliminar", "Eliminar todos los juegos"]]) {
+  for (const [apartado, name] of [["cuenta", "Cuenta"], ["partida", "Partida guardada"], ["pantalla", "Pantalla"], ["borrar", "Borrar todo"]]) {
     await openAjustes(page, apartado);
     expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
     await expectCarcasaText(page.locator("main"));
   }
-  await openAjustes(page, "creditos");
+  await openAjustes(page, "demostracion");
   await page.getByText(/Ver las \d+ obras/).click(); // créditos desplegados
   await expectCarcasaText(page.locator("main"));
   // Los avisos de eliminar todo, en la carcasa.
-  await openAjustes(page, "eliminar");
+  await openAjustes(page, "borrar");
   await page.getByRole("button", { name: "Eliminar todos los juegos" }).click();
   const dialog = page.getByRole("dialog");
   await expectCarcasaText(dialog);
@@ -359,7 +359,7 @@ test("la app habla español: sin rótulos en inglés ni jerga técnica", async (
   await page.goto("/biblioteca");
   await expect(page.getByRole("region", { name: "Elegido" }).getByRole("link", { name: /Ver ficha/ })).toBeVisible();
   // Ajustes sin nombres de variables ni de servicios por dentro.
-  for (const apartado of ["copia", "datos", "demostracion", "catalogo", "steam", "creditos", "eliminar"]) {
+  for (const apartado of ["partida", "traer", "pantalla", "ayuda", "cuenta", "demostracion", "borrar"]) {
     await openAjustes(page, apartado);
     await expect(page.locator("main")).not.toHaveText(/README|IGDB_CLIENT|Twitch|Supabase/);
   }
@@ -421,30 +421,20 @@ test("en la ficha, el punto del estado elegido se ve sobre el blanco", async ({ 
   expect(ring).toContain("rgb(18, 16, 31)");
 });
 
-test("Ajustes es un menú de opciones: un apartado a la vez, como en un juego", async ({ page }) => {
+test("Ajustes como los de una consola: iconos de píxeles en una columna y el panel cabe sin desplazarse", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");
-  const menu = page.getByRole("navigation", { name: "Apartados de Ajustes" });
-  await expect(menu.getByRole("link")).toHaveText([
-    "Copia de seguridad", "Dónde se guardan tus datos", "Datos de demostración", "Catálogo de carátulas",
-    "Steam", "Imágenes de demostración", "Eliminar todos los juegos", "Manual de instrucciones",
-  ]);
-  // Sin elegir, el primero; solo una ventana a la vista.
-  await expect(menu.getByRole("link", { name: "Copia de seguridad" })).toHaveAttribute("aria-current", "page");
-  await expect(page.locator("main section.window")).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "Copia de seguridad" })).toBeVisible();
-  // Elegir otro lo cambia y deja el enlace en la dirección.
-  await menu.getByRole("link", { name: "Steam" }).click();
-  await expect(page).toHaveURL(/\?apartado=steam$/);
-  await expect(page.getByRole("region", { name: "Steam" })).toBeVisible();
-  await expect(page.locator("main section.window")).toHaveCount(1);
-  await expect(menu.getByRole("link", { name: "Steam" })).toHaveAttribute("aria-current", "page");
-  // El menú y su apartado caben en la pantalla, sin desplazarse.
+  const tiles = page.getByRole("navigation", { name: "Apartados de Ajustes" });
+  // Cada apartado lleva su icono de píxeles, y el elegido se ve en dorado.
+  for (const img of await tiles.locator("img").all()) expect(await img.evaluate((el) => getComputedStyle(el).imageRendering)).toBe("pixelated");
+  const current = tiles.locator('[aria-current="page"]');
+  expect(await current.evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(255, 215, 106)");
+  // Borrar todo va aparte y en rojo, nunca en dorado.
+  await page.goto("/ajustes?apartado=borrar");
+  expect(await tiles.locator('[aria-current="page"]').evaluate((el) => getComputedStyle(el).boxShadow)).not.toContain("rgb(255, 215, 106)");
   expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(0);
-  await expect(menu.getByRole("link", { name: "Manual de instrucciones" })).toHaveAttribute("href", "/manual");
   await expectCarcasaText(page.locator("main"));
 });
-
 test("el manual de instrucciones se lee página a página, como el librito de un juego", async ({ page }) => {
   await openApp(page, "/manual");
   const [family] = await font(page.getByRole("heading", { level: 1, name: "Manual de instrucciones" }));

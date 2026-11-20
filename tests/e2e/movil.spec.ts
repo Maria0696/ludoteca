@@ -265,10 +265,10 @@ test("en el móvil, la cabecera de la biblioteca es corta y los juegos empiezan 
   expect(lines).toBe(1);
   // Sin «Mis listas»: la fila de plataformas solo tiene plataformas.
   await expect(page.getByRole("link", { name: /Mis listas/ })).toHaveCount(0);
-  // «Importar…» sale de la cabecera en el móvil; Steam sigue en Ajustes.
+  // «Importar…» sale de la cabecera en el móvil; se llega desde Ajustes, en «Traer juegos».
   await expect(head.getByRole("link", { name: "Importar…" })).toBeHidden();
-  await page.goto("/ajustes?apartado=steam");
-  const steam = page.getByRole("region", { name: "Steam" }).getByRole("link", { name: "Importar de Steam" });
+  await page.goto("/ajustes?apartado=traer");
+  const steam = page.getByRole("region", { name: "Traer juegos" }).getByRole("link", { name: /^Steam/ });
   await expect(steam).toBeVisible();
   await expect(steam).toHaveAttribute("href", "/importar?origen=steam");
 });
@@ -332,24 +332,19 @@ test("en el móvil, el bocadillo de la guardiana no tapa las casillas del mapa",
   }
 });
 
-test("en el móvil, Ajustes es primero la lista de apartados y luego el elegido", async ({ page }) => {
+test("en el móvil, Ajustes son iconos de dos en dos y el panel del elegido justo debajo", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/ajustes");
-  const menu = page.getByRole("navigation", { name: "Apartados de Ajustes" });
-  await expect(menu).toBeVisible();
-  await expect(page.locator("main section.window:visible")).toHaveCount(0);
-  // Sin apartado elegido, ninguno va en dorado: el dorado es «elegido».
-  for (const link of await menu.getByRole("link").all()) {
-    expect(await link.evaluate((el) => getComputedStyle(el).backgroundColor), await link.innerText()).not.toBe("rgb(255, 215, 106)");
-  }
-  for (const link of await menu.getByRole("link").all()) expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
-  await menu.getByRole("link", { name: "Copia de seguridad" }).click();
-  await expect(page.getByRole("region", { name: "Copia de seguridad" })).toBeVisible();
-  await expect(menu).toBeHidden();
+  const tiles = page.getByRole("navigation", { name: "Apartados de Ajustes" });
+  const links = tiles.getByRole("link");
+  const [first, second] = await Promise.all([links.nth(0).boundingBox(), links.nth(1).boundingBox()]);
+  expect(Math.round(first!.y)).toBe(Math.round(second!.y));
+  for (const link of await links.all()) expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
+  await tiles.getByRole("link", { name: /^Cuenta/ }).click();
+  await expect(page).toHaveURL(/\?apartado=cuenta$/);
+  await expect(page.getByRole("heading", { level: 2, name: "Cuenta" })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(page.locator("main"));
-  await page.getByRole("link", { name: "Todos los ajustes" }).click();
-  await expect(menu).toBeVisible();
 });
 
 test("el manual cabe en el móvil en todas sus páginas", async ({ page }) => {

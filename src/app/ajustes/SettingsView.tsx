@@ -1,49 +1,83 @@
 "use client";
 
-import { BookOpen, ChevronLeft, Cloud, Download, HardDrive, LogOut, Upload } from "lucide-react";
+import { BookOpen, Download, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { manualPageCount } from "@/app/manual/ManualView";
 import { Dialog } from "@/components/ui/Dialog";
-import { type ImportPlan, type Resolution, parseBackup, planImport, resolveImport } from "@/lib/backup";
-import { backupSummary as summary, downloadBackup } from "@/lib/backup-download";
-import { describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
+import { OptionRow } from "@/components/ui/OptionRow";
+import { downloadBackup } from "@/lib/backup-download";
+import { REMIND_CHOICES, REMIND_KEY, type RemindChoice, describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
 import { DEMO_ART } from "@/lib/demo-art";
+import { useLocalChoice } from "@/lib/local-choice";
+import { PISTAS_MODES, PISTAS_MODE_KEY, type PistasMode } from "@/lib/pistas";
 import { useLibrary } from "@/lib/store";
+import { TITLE_MODES, TITLE_MODE_KEY, type TitleMode } from "@/lib/title-screen";
 import { DeleteAllGames } from "./DeleteAllGames";
+import { SETTINGS_ICON_URL, type SettingsIcon } from "./icons";
 import styles from "./settings.module.css";
 
+type Slug = SettingsIcon;
+
+/** Los nombres de los apartados de antes siguen llevando a su sitio. */
+const OLD_SLUGS: Record<string, Slug> = { copia: "partida", datos: "cuenta", catalogo: "ayuda", steam: "traer", creditos: "demostracion", eliminar: "borrar" };
+
+const TITLE_LABEL: Record<TitleMode, string> = { siempre: "Siempre", diaria: "Una vez al día", nunca: "Nunca" };
+const TITLE_STATUS: Record<TitleMode, string> = { siempre: "Título siempre", diaria: "Título una vez al día", nunca: "Sin pantalla de título" };
+const PISTAS_LABEL: Record<PistasMode, string> = { activadas: "Activadas", desactivadas: "Desactivadas" };
+const REMIND_LABEL: Record<RemindChoice, string> = { "7": "Cada semana", "14": "Cada 2 semanas", "30": "Cada mes", nunca: "Nunca" };
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** La copia en pocas palabras, para el icono: «Copia de hoy», «Copia de hace 3 días»… */
+function backupShort(days: number | null | undefined): string {
+  if (days === undefined) return "Copia de seguridad";
+  if (days === null) return "Sin copia todavía";
+  if (days === 0) return "Copia de hoy";
+  if (days === 1) return "Copia de ayer";
+  return `Copia de hace ${days} días`;
+}
+
+/*
+ * Ajustes como los de una consola: una columna de iconos de píxeles, cada uno con su estado debajo,
+ * y el panel del elegido al lado. En el móvil, los iconos van de dos en dos y el panel queda debajo.
+ */
 export function SettingsView() {
   const router = useRouter();
+  const params = useSearchParams();
   const { library, mode, actions } = useLibrary();
+  const backup = useBackupStatus();
+  const [titleMode, setTitleMode] = useLocalChoice<TitleMode>(TITLE_MODE_KEY, "diaria", TITLE_MODES);
+  const [pistas, setPistas] = useLocalChoice<PistasMode>(PISTAS_MODE_KEY, "activadas", PISTAS_MODES);
+  const [remind, setRemind] = useLocalChoice<RemindChoice>(REMIND_KEY, "30", REMIND_CHOICES);
   const [includeDemo, setIncludeDemo] = useState(false);
-  const [plan, setPlan] = useState<ImportPlan | null>(null);
-  const [importErrors, setImportErrors] = useState<string[] | null>(null);
   const [confirmDemo, setConfirmDemo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [catalog, setCatalog] = useState<"comprobando" | "si" | "no">("comprobando");
-  const fileRef = useRef<HTMLInputElement>(null);
-  const backup = useBackupStatus();
+  const [email, setEmail] = useState<string | null>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   const demoCount = library.games.filter((g) => g.demo).length + library.wishlist.filter((w) => w.demo).length;
   const realCount = library.games.filter((g) => !g.demo).length;
   // En tu biblioteca real no se ofrece; solo aparecería para retirar datos que hubieran quedado.
   const showDemo = mode === "local" || demoCount > 0;
+  const games = library.games.length;
 
-  // Menú de opciones, como en un juego: un apartado a la vez, enlazable con ?apartado=.
-  const params = useSearchParams();
-  const items = [
-    { slug: "copia", label: "Copia de seguridad" },
-    { slug: "datos", label: "Dónde se guardan tus datos" },
-    ...(showDemo ? [{ slug: "demostracion", label: "Datos de demostración" }] : []),
-    { slug: "catalogo", label: "Catálogo de carátulas" },
-    { slug: "steam", label: "Steam" },
-    ...(showDemo ? [{ slug: "creditos", label: "Imágenes de demostración" }] : []),
-    { slug: "eliminar", label: "Eliminar todos los juegos" },
+  const sections: { slug: Slug; label: string; status: string; danger?: boolean }[] = [
+    { slug: "partida", label: "Partida guardada", status: backupShort(backup?.daysSinceBackup) },
+    { slug: "traer", label: "Traer juegos", status: "De Steam o un archivo" },
+    { slug: "pantalla", label: "Pantalla", status: TITLE_STATUS[titleMode] },
+    { slug: "ayuda", label: "Ayuda", status: `Manual de ${manualPageCount()} páginas` },
+    { slug: "cuenta", label: "Cuenta", status: mode === "local" ? "Modo local" : "Sincronizada" },
+    ...(showDemo ? [{ slug: "demostracion" as const, label: "Demostración", status: demoCount > 0 ? count(demoCount, "elemento", "elementos") : "Sin cargar" }] : []),
+    { slug: "borrar", label: "Borrar todo", status: games > 0 ? count(games, "juego", "juegos") : "Biblioteca vacía", danger: true },
   ];
-  const asked = items.find((i) => i.slug === params.get("apartado"))?.slug;
-  const current = asked ?? items[0].slug;
+  const raw = params.get("apartado") ?? "";
+  const asked = sections.find((s) => s.slug === (OLD_SLUGS[raw] ?? raw))?.slug;
+  const current = asked ?? sections[0].slug;
+  const section = sections.find((s) => s.slug === current)!;
 
   useEffect(() => {
     fetch("/api/catalogo/estado")
@@ -52,252 +86,230 @@ export function SettingsView() {
       .catch(() => setCatalog("no"));
   }, []);
 
-  function exportBackup() {
-    toast(`Copia exportada: ${downloadBackup(library, { includeDemo })}`);
-  }
+  useEffect(() => {
+    if (mode !== "supabase") return;
+    void import("@/lib/supabase/client").then(({ getBrowserSupabase }) =>
+      getBrowserSupabase()
+        .auth.getUser()
+        .then(({ data }) => setEmail(data.user?.email ?? null)),
+    );
+  }, [mode]);
 
-  async function readFile(file: File) {
-    setImportErrors(null);
-    const result = parseBackup(await file.text());
-    if (!result.ok) {
-      setImportErrors(result.errors);
-      return;
-    }
-    setPlan(planImport(library, result.backup));
+  // En el móvil el panel queda bajo los iconos: al elegir uno, se baja hasta él.
+  useEffect(() => {
+    if (asked && window.matchMedia("(max-width: 899px)").matches) panelRef.current?.scrollIntoView({ block: "start" });
+  }, [asked]);
+
+  async function leave() {
+    const { getBrowserSupabase } = await import("@/lib/supabase/client");
+    await getBrowserSupabase().auth.signOut();
+    router.replace("/entrar?adios=1");
+    router.refresh();
   }
 
   return (
-    <div className={styles.page} data-apartado={asked ? "si" : "no"}>
-      <h1 className={`screen-title ${styles.title}`}>Ajustes</h1>
+    <div className={styles.page}>
+      <h1 className="screen-title">Ajustes</h1>
 
-      <div className={styles.options}>
-        <nav className={`window ${styles.menu}`} aria-label="Apartados de Ajustes">
+      <div className={styles.console}>
+        <nav className={`window ${styles.tiles}`} aria-label="Apartados de Ajustes">
           <ul>
-            {items.map((item) => (
-              <li key={item.slug}>
-                <Link href={`/ajustes?apartado=${item.slug}`} scroll={false} aria-current={current === item.slug ? "page" : undefined}>
-                  {item.label}
+            {sections.map((s) => (
+              <li key={s.slug} data-danger={s.danger || undefined}>
+                <Link href={`/ajustes?apartado=${s.slug}`} scroll={false} aria-current={current === s.slug ? "page" : undefined} className={styles.tile}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio, como la guardiana */}
+                  <img src={SETTINGS_ICON_URL[s.slug]} alt="" width={48} height={48} />
+                  <span>
+                    <b>{s.label}</b>
+                    <small>{s.status}</small>
+                  </span>
                 </Link>
               </li>
             ))}
-            <li className={styles.menuManual}>
-              <Link href="/manual">
-                <BookOpen aria-hidden />
-                Manual de instrucciones
-              </Link>
-            </li>
           </ul>
         </nav>
 
-        <div className={styles.current}>
-          <Link href="/ajustes" className={styles.back} scroll={false}>
-            <ChevronLeft aria-hidden />
-            Todos los ajustes
-          </Link>
+        <section ref={panelRef} className={`window ${styles.panel}`} data-danger={section.danger || undefined} aria-labelledby="h-apartado">
+          <header className={styles.head}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio, como la guardiana */}
+            <img src={SETTINGS_ICON_URL[current]} alt="" width={64} height={64} />
+            <div>
+              <h2 id="h-apartado">{section.label}</h2>
+              <p>{LEADS[current](mode)}</p>
+            </div>
+          </header>
 
-          {current === "datos" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-datos">
-              <div className={styles.label}>
-                <h2 id="h-datos">Dónde se guardan tus datos</h2>
-                <p>Cómo se almacena tu biblioteca en este dispositivo.</p>
+          {current === "partida" && (
+            <>
+              <div className={styles.prow}>
+                <p className={styles.name}>
+                  Copia de seguridad
+                  <small>{backup ? describeLastBackup(backup.daysSinceBackup) : "Un archivo con tus juegos, copias y deseos."}</small>
+                </p>
+                <button type="button" className="btn btn-ink" onClick={() => toast(`Copia exportada: ${downloadBackup(library, { includeDemo })}`)}>
+                  <Download aria-hidden />
+                  Exportar copia
+                </button>
               </div>
-              <div className={styles.panel}>
-                {mode === "local" ? (
-                  <>
-                    <p className={styles.modeLine}>
-                      <HardDrive aria-hidden />
-                      <strong>Modo local</strong>
-                    </p>
-                    <p>
-                      Tu biblioteca se guarda solo en este navegador. No se sincroniza con otros dispositivos y se pierde si borras los datos del
-                      navegador. Exporta copias de seguridad con frecuencia; para usarla en varios dispositivos hay que activar la sincronización, como explican las instrucciones del proyecto.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className={styles.modeLine}>
-                      <Cloud aria-hidden />
-                      <strong>Sincronizado con tu base de datos</strong>
-                    </p>
-                    <p>Tu biblioteca se guarda en la nube y se sincroniza entre tus dispositivos. Solo tu cuenta puede leerla o modificarla.</p>
-                    <button
-                      type="button"
-                      className="btn"
-                      style={{ justifySelf: "start" }}
-                      onClick={async () => {
-                        const { getBrowserSupabase } = await import("@/lib/supabase/client");
-                        await getBrowserSupabase().auth.signOut();
-                        router.replace("/entrar");
-                        router.refresh();
-                      }}
-                    >
-                      <LogOut aria-hidden />
-                      Cerrar sesión
-                    </button>
-                  </>
-                )}
+              {demoCount > 0 && (
+                <label className={`check ${styles.check}`}>
+                  <input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} />
+                  Incluir los datos de demostración en la copia
+                </label>
+              )}
+              <div className={styles.options}>
+                <OptionRow
+                  label="Recordarme guardar"
+                  hint="Un aviso en el inicio"
+                  options={REMIND_CHOICES.map((c) => ({ value: c, label: REMIND_LABEL[c] }))}
+                  value={remind}
+                  onChange={setRemind}
+                />
               </div>
-            </section>
+              <p className={styles.note}>
+                ¿Recuperar una copia? Está en <Link href="/importar?origen=copia">Traer juegos</Link>, junto a Steam y Game Tracker.
+              </p>
+            </>
           )}
 
-          {current === "copia" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-copia">
-              <div className={styles.label}>
-                <h2 id="h-copia">Copia de seguridad</h2>
-                <p>
-                  Un archivo JSON con juegos, copias y deseos. Guarda uno de vez en cuando: si algo se borrara por error, es la forma de
-                  recuperarlo. Al importar, nada se sobrescribe sin que lo decidas.
+          {current === "traer" && (
+            <ul className={styles.sources}>
+              <li>
+                <Link href="/importar?origen=steam">
+                  <b>Steam</b>
+                  <span>Tus juegos y tus horas</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/importar?origen=gametracker">
+                  <b>Game Tracker</b>
+                  <span>Desde su archivo CSV</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/importar?origen=copia">
+                  <b>Copia de seguridad</b>
+                  <span>Recuperar tu partida guardada</span>
+                </Link>
+              </li>
+            </ul>
+          )}
+
+          {current === "pantalla" && (
+            <div className={styles.options}>
+              <OptionRow
+                label="Pantalla de título"
+                hint="«Pulsa Start» al entrar en el inicio"
+                options={TITLE_MODES.map((m) => ({ value: m, label: TITLE_LABEL[m] }))}
+                value={titleMode}
+                onChange={setTitleMode}
+              />
+              <OptionRow
+                label="Pistas de la guardiana"
+                hint="Te explica cada pantalla la primera vez"
+                options={PISTAS_MODES.map((m) => ({ value: m, label: PISTAS_LABEL[m] }))}
+                value={pistas}
+                onChange={setPistas}
+              />
+            </div>
+          )}
+
+          {current === "ayuda" && (
+            <>
+              <div className={styles.prow}>
+                <p className={styles.name}>
+                  Manual de instrucciones
+                  <small>Juegos y copias, estados, el mapa de la ficha, ¿A qué juego?…</small>
                 </p>
+                <Link href="/manual" className="btn" aria-label="Abrir el manual">
+                  <BookOpen aria-hidden />
+                  Abrir
+                </Link>
               </div>
-              <div className={styles.panel}>
-                {backup && <p className={styles.lastBackup}>{describeLastBackup(backup.daysSinceBackup)}</p>}
-                <div className={styles.actions}>
-                  <button type="button" className="btn btn-ink" onClick={exportBackup}>
-                    <Download aria-hidden />
-                    Exportar copia
+              <p className={styles.note}>
+                {catalog === "comprobando"
+                  ? "Comprobando el catálogo de carátulas…"
+                  : catalog === "si"
+                    ? "Al escribir un título verás sugerencias del catálogo: carátula, géneros y duración. Datos de IGDB.com, gratuito para uso no comercial."
+                    : "El catálogo de carátulas no está conectado: la carátula, los géneros y la duración se escriben a mano."}
+              </p>
+            </>
+          )}
+
+          {current === "cuenta" && (
+            <>
+              {mode === "local" ? (
+                <p className={styles.text}>
+                  Tu biblioteca se guarda solo en este navegador. No se sincroniza con otros dispositivos y se pierde si borras los datos del navegador:
+                  guarda copias a menudo en «Partida guardada».
+                </p>
+              ) : (
+                <div className={styles.prow}>
+                  <p className={styles.name}>
+                    {email ?? "Tu cuenta"}
+                    <small>
+                      <i className={styles.dot} aria-hidden /> Sincronizada en la nube
+                    </small>
+                  </p>
+                  <button type="button" className="btn" onClick={() => void leave()}>
+                    <LogOut aria-hidden />
+                    Salir de la ludoteca
                   </button>
-                  <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
-                    <Upload aria-hidden />
-                    Importar copia
-                  </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="application/json,.json"
-                    className="sr-only"
-                    aria-label="Archivo de copia de seguridad"
-                    data-testid="importar-archivo"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void readFile(file);
-                      e.target.value = "";
-                    }}
-                  />
                 </div>
-                {demoCount > 0 && (
-                  <label className="check">
-                    <input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} />
-                    Incluir los datos de demostración en la copia
-                  </label>
-                )}
-                {importErrors && (
-                  <div className="notice is-error" role="alert">
-                    <div>
-                      <p>
-                        <strong>No se ha importado nada.</strong> El archivo tiene problemas:
-                      </p>
-                      <ul className={styles.errors}>
-                        {importErrors.map((e) => (
-                          <li key={e}>{e}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
+              )}
+              {mode !== "local" && <p className={styles.note}>Al salir, la guardiana cierra la puerta y te pide el correo para volver a entrar.</p>}
+            </>
           )}
 
           {current === "demostracion" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-demo">
-              <div className={styles.label}>
-                <h2 id="h-demo">Datos de demostración</h2>
-                <p>Juegos inventados para probar la app. Están marcados y se retiran de una vez sin tocar tu colección.</p>
-              </div>
-              <div className={styles.panel}>
-                <p>
-                  {demoCount > 0
-                    ? `Ahora hay ${demoCount} elementos de demostración ${ownGamesBeside(realCount)}.`
-                    : "No hay datos de demostración cargados."}
+            <>
+              <div className={styles.prow}>
+                <p className={styles.name}>
+                  Datos de demostración
+                  <small>
+                    {demoCount > 0
+                      ? `Ahora hay ${demoCount} elementos de demostración ${ownGamesBeside(realCount)}.`
+                      : "No hay datos de demostración cargados."}
+                  </small>
                 </p>
-                <div className={styles.actions}>
-                  {demoCount > 0 ? (
-                    <button type="button" className="btn btn-danger" onClick={() => setConfirmDemo(true)}>
-                      Retirar datos de demostración
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={busy}
-                      onClick={async () => {
-                        setBusy(true);
-                        await actions.loadDemo();
-                        setBusy(false);
-                        toast("Datos de demostración cargados");
-                      }}
-                    >
-                      {busy ? "Cargando…" : "Cargar datos de demostración"}
-                    </button>
-                  )}
-                </div>
+                {demoCount > 0 ? (
+                  <button type="button" className="btn btn-danger" onClick={() => setConfirmDemo(true)}>
+                    Retirar datos de demostración
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      await actions.loadDemo();
+                      setBusy(false);
+                      toast("Datos de demostración cargados");
+                    }}
+                  >
+                    {busy ? "Cargando…" : "Cargar datos de demostración"}
+                  </button>
+                )}
               </div>
-            </section>
+              <details className={styles.credits}>
+                <summary>Ver las {DEMO_ART.length} obras de las imágenes y sus fuentes</summary>
+                <ul>
+                  {DEMO_ART.map((a) => (
+                    <li key={a.key}>
+                      <a href={a.page} target="_blank" rel="noreferrer">
+                        {a.title}
+                      </a>
+                      {a.creator ? `, ${a.creator}` : ""} · {a.license} · {a.via}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </>
           )}
 
-          {current === "catalogo" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-catalogo">
-              <div className={styles.label}>
-                <h2 id="h-catalogo">Catálogo de carátulas</h2>
-                <p>Búsqueda de carátulas, géneros y duración en IGDB.com. Todo se puede escribir o corregir a mano.</p>
-              </div>
-              <div className={styles.panel}>
-                <p>
-                  {catalog === "comprobando"
-                    ? "Comprobando…"
-                    : catalog === "si"
-                      ? "Conectado. Al escribir un título verás sugerencias del catálogo."
-                      : "Sin activar: el catálogo todavía no está conectado en el servidor. Mientras tanto, la carátula, los géneros y la duración se escriben a mano; las instrucciones del proyecto explican cómo conectarlo gratis."}
-                </p>
-                <p className={styles.note}>
-                  Datos del catálogo proporcionados por IGDB.com, gratuito para uso no comercial.
-                </p>
-              </div>
-            </section>
-          )}
-
-          {current === "steam" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-steam">
-              <div className={styles.label}>
-                <h2 id="h-steam">Steam</h2>
-                <p>Trae tus juegos y tus horas. Puedes repetirlo cuando quieras: no se duplica nada.</p>
-              </div>
-              <div className={styles.panel}>
-                <div className={styles.actions}>
-                  <Link href="/importar?origen=steam" className="btn">
-                    Importar de Steam
-                  </Link>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {current === "creditos" && (
-            <section className={`window ${styles.row}`} aria-labelledby="h-creditos">
-              <div className={styles.label}>
-                <h2 id="h-creditos">Imágenes de demostración</h2>
-                <p>Los juegos de demostración se ilustran con obras de dominio público, no con sus carátulas oficiales.</p>
-              </div>
-              <div className={styles.panel}>
-                <details>
-                  <summary className={styles.summary}>Ver las {DEMO_ART.length} obras y sus fuentes</summary>
-                  <ul className={styles.credits}>
-                    {DEMO_ART.map((a) => (
-                      <li key={a.key}>
-                        <a href={a.page} target="_blank" rel="noreferrer">
-                          {a.title}
-                        </a>
-                        {a.creator ? `, ${a.creator}` : ""} · {a.license} · {a.via}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </div>
-            </section>
-          )}
-
-          {current === "eliminar" && <DeleteAllGames />}
-        </div>
+          {current === "borrar" && <DeleteAllGames />}
+        </section>
       </div>
 
       <Dialog
@@ -325,12 +337,22 @@ export function SettingsView() {
       >
         <p>Se eliminan los juegos, copias y deseos de demostración. {ownGamesKept(realCount)}</p>
       </Dialog>
-
-
-      {plan && <ImportDialog plan={plan} onClose={() => setPlan(null)} />}
     </div>
   );
 }
+
+/** La frase bajo el título de cada panel. */
+const LEADS: Record<Slug, (mode: "local" | "supabase" | null) => string> = {
+  partida: (mode) =>
+    `Tu biblioteca ${mode === "local" ? "vive solo en este navegador" : "está a salvo en la nube"}; la copia es tu partida guardada en tu ordenador, por si algo se borrara.`,
+  traer: () => "Lo que ya tienes no se duplica: puedes traer juegos tantas veces como quieras.",
+  pantalla: () => "Cómo te recibe la ludoteca.",
+  ayuda: () => "Cómo funciona todo, contado con calma.",
+  cuenta: (mode) =>
+    mode === "local" ? "Modo local: sin cuenta, todo en este navegador." : "Tu biblioteca se ve igual en todos tus dispositivos. Solo tu cuenta puede abrirla.",
+  demostracion: () => "Juegos inventados para probar la app. Están marcados y se retiran de una vez sin tocar tu colección.",
+  borrar: () => "Vacía la biblioteca de una vez. Tu lista de deseos no se toca.",
+};
 
 /** «junto a 3 juegos tuyos», sin hablar de «0 juegos» ni de «1 juegos». */
 function ownGamesBeside(n: number) {
@@ -341,99 +363,4 @@ function ownGamesBeside(n: number) {
 function ownGamesKept(n: number) {
   if (n === 0) return "No tienes juegos tuyos todavía: solo se va lo de demostración.";
   return n === 1 ? "Tu juego no se toca." : `Tus ${n} juegos no se tocan.`;
-}
-
-const RESOLUTION_LABEL: Record<Resolution, string> = {
-  mantener: "Mantener el mío",
-  importado: "Usar el del archivo",
-  ambos: "Conservar los dos",
-};
-
-function ImportDialog({ plan, onClose }: { plan: ImportPlan; onClose: () => void }) {
-  const { actions } = useLibrary();
-  const [decisions, setDecisions] = useState<Record<string, Resolution>>({});
-  const [busy, setBusy] = useState(false);
-  const n = plan.newCounts;
-  const nothing = n.games + n.copies + n.wishlist === 0 && plan.conflicts.length === 0;
-  const setAll = (r: Resolution) => setDecisions(Object.fromEntries(plan.conflicts.map((c) => [c.key, r])));
-
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Importar copia de seguridad"
-      footer={
-        <>
-          <button type="button" className="btn" onClick={onClose}>
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="btn btn-ink"
-            disabled={busy || nothing}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                const changes = resolveImport(plan, decisions);
-                await actions.applyChanges(changes);
-                toast(
-                  `Importado: ${summary({ games: changes.games.length, copies: changes.copies.length, wishlist: changes.wishlist.length })}`,
-                );
-                onClose();
-              } catch (e) {
-                toast.error("No se ha podido importar", { description: e instanceof Error ? e.message : undefined });
-                setBusy(false);
-              }
-            }}
-          >
-            {busy ? "Importando…" : "Importar"}
-          </button>
-        </>
-      }
-    >
-      <p>
-        Archivo del {new Date(plan.backup.exportedAt).toLocaleString("es-ES")}. Nuevo: {summary(n)}.
-        {plan.identical > 0 && ` ${plan.identical} elementos ya los tienes iguales y se dejan como están.`}
-      </p>
-      {nothing && <p className="notice">No hay nada nuevo que importar.</p>}
-      {plan.conflicts.length > 0 && (
-        <div className={styles.conflicts}>
-          <div className={styles.conflictsHead}>
-            <h3>
-              {plan.conflicts.length} {plan.conflicts.length === 1 ? "coincidencia" : "coincidencias"} con tu biblioteca
-            </h3>
-            <div className="segmented" aria-label="Aplicar a todas">
-              {(Object.keys(RESOLUTION_LABEL) as Resolution[]).map((r) => (
-                <button key={r} type="button" onClick={() => setAll(r)}>
-                  Todas: {RESOLUTION_LABEL[r].toLowerCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <ul>
-            {plan.conflicts.map((c) => {
-              const value = decisions[c.key] ?? "mantener";
-              return (
-                <li key={c.key} className={styles.conflict}>
-                  <p>
-                    <strong>{c.incomingLabel}</strong>{" "}
-                    <span className="muted">
-                      ({c.kind}, {c.reason === "mismo-id" ? "mismo registro con cambios" : `mismo título que «${c.existingLabel}»`})
-                    </span>
-                  </p>
-                  <div className="segmented" role="radiogroup" aria-label={`Qué hacer con ${c.incomingLabel}`}>
-                    {(Object.keys(RESOLUTION_LABEL) as Resolution[]).map((r) => (
-                      <button key={r} type="button" role="radio" aria-checked={value === r} onClick={() => setDecisions((d) => ({ ...d, [c.key]: r }))}>
-                        {RESOLUTION_LABEL[r]}
-                      </button>
-                    ))}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </Dialog>
-  );
 }

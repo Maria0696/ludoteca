@@ -92,6 +92,12 @@ const session = {
 
 const guardianSays = (page: Page, role: "alert" | "status", text: string) => page.getByRole(role).filter({ hasText: text });
 
+test("al salir de la ludoteca, la guardiana se despide y pide el correo para volver", async ({ page }) => {
+  await page.goto("/entrar?adios=1");
+  await expect(guardianSays(page, "status", "¡Hasta pronto!")).toBeAttached();
+  await expect(guardianSays(page, "status", "dime tu correo")).toBeAttached();
+});
+
 test("la guardiana pide el correo y la contraseña, y avisa de lo que falla", async ({ page }) => {
   await mockSignIn(page, 400, { code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" });
   await page.goto("/entrar");

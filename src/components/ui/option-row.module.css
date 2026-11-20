@@ -1,0 +1,89 @@
+/* Una fila del menú de opciones: la pregunta a la izquierda y ◀ valor ▶ a la derecha.
+   Quien la usa decide las columnas (--option-columns) y cuánto llegan las filas al borde de su ventana (--bleed). */
+.option {
+  display: grid;
+  grid-template-columns: var(--option-columns, 5.5em minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 max(0px, calc(var(--bleed, 0px) - 8px)) 0 var(--bleed, 0px);
+  border-top: 2px solid var(--line);
+  font-family: var(--font-term);
+  transition: background-color 160ms ease;
+}
+.option:hover,
+.option:focus-within {
+  background: var(--raised);
+}
+.question {
+  display: grid;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--size-label);
+  line-height: 1.15;
+}
+.question small {
+  color: var(--faint);
+  font-size: var(--size-note);
+}
+.stepper {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+}
+.stepper button {
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.option:hover .stepper button,
+.option:focus-within .stepper button {
+  color: var(--paper);
+}
+.stepper button:hover {
+  color: var(--white);
+}
+.stepper button:active {
+  transform: translateY(2px);
+}
+.stepper button svg {
+  width: 18px;
+  height: 18px;
+}
+/* El valor: un desplegable que se lee como texto, centrado entre las flechas. */
+.stepper select {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--white);
+  font-family: var(--font-term);
+  font-size: var(--size-body);
+  text-align: center;
+  text-align-last: center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.stepper select option {
+  background: var(--window);
+  color: var(--text);
+  text-align: left;
+}
+.stepper select:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: -2px;
+}
+@media (max-width: 899px) {
+  .stepper {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+}

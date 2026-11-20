@@ -79,7 +79,7 @@ const DIGITAL = ["....GGGG....", "....GGGG....", "....GGGG....", "....GGGG....",
 const DIGITAL_PALETTE: Record<string, string> = { G: "#ffd76a", D: "#c9cdf0" };
 
 /** Convierte un dibujo en una imagen SVG nítida a cualquier tamaño. */
-function spriteUrl(rows: string[], palette: Record<string, string>): string {
+export function spriteUrl(rows: string[], palette: Record<string, string>): string {
   const width = Math.max(...rows.map((row) => row.length));
   let rects = "";
   rows.forEach((row, y) => {

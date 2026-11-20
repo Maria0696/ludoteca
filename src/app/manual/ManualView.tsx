@@ -15,6 +15,11 @@ import styles from "./manual.module.css";
 type Page = { title: string; art: ReactNode; text: ReactNode };
 
 /* eslint-disable @next/next/no-img-element -- dibujos de píxeles propios */
+/** Cuántas páginas tiene el manual: Ajustes lo dice en su icono de Ayuda. */
+export function manualPageCount(): number {
+  return PAGES.length;
+}
+
 const PAGES: Page[] = [
   {
     title: "Juegos y copias",

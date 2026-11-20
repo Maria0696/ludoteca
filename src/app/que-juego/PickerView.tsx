@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Info, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { Check, Info, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { GuideHint } from "@/components/ui/GuideHint";
+import { OptionRow } from "@/components/ui/OptionRow";
 import { Cover } from "@/components/ui/Cover";
 import { StatusMark } from "@/components/ui/StatusMark";
 import { copiesSummary } from "@/lib/format";
@@ -235,37 +236,6 @@ function SessionChoices({
         value={input.mood}
         onChange={(v) => set("mood", v)}
       />
-    </div>
-  );
-}
-
-/**
- * Una opción del menú: ◀ valor ▶. Las flechas pasan a la anterior o la siguiente y dan la vuelta, como en un juego;
- * el valor es un desplegable, para ir directa a la que quieras sin pulsar diez veces.
- */
-function OptionRow<T>({ label, options, value, onChange }: { label: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
-  // Un id por fila: la misma pregunta vive en el panel y en la hoja.
-  const id = useId();
-  const index = Math.max(0, options.findIndex((o) => o.value === value));
-  const step = (delta: number) => onChange(options[(index + delta + options.length) % options.length].value);
-  return (
-    <div className={styles.option}>
-      <label htmlFor={id}>{label}</label>
-      <div className={styles.stepper}>
-        <button type="button" aria-label={`${label}: anterior`} onClick={() => step(-1)}>
-          <ChevronLeft aria-hidden />
-        </button>
-        <select id={id} value={index} onChange={(e) => onChange(options[Number(e.target.value)].value)}>
-          {options.map((o, i) => (
-            <option key={o.label} value={i}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <button type="button" aria-label={`${label}: siguiente`} onClick={() => step(1)}>
-          <ChevronRight aria-hidden />
-        </button>
-      </div>
     </div>
   );
 }

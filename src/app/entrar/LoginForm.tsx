@@ -14,6 +14,7 @@ import { drawScene, initialScene, makeGameBoxes, pixelSize } from "./scene";
 const LINES = {
   askEmail: "¡Alto! Esto es la Ludoteca. ¿Quién va? Dime tu correo.",
   askEmailAgain: "De acuerdo. ¿Quién va, entonces? Dime tu correo.",
+  goodbye: "¡Hasta pronto! Cierro la puerta. Cuando vuelvas, dime tu correo y te abro.",
   askPassword: "Ajá, te conozco. ¿Y la contraseña secreta?",
   notHeard: "No te he oído. ¿Puedes repetirlo?",
   notEmail: "Eso no parece un correo. ¿Puedes repetirlo?",
@@ -57,7 +58,9 @@ export function LoginForm() {
   const [line, setLine] = useState<Line>(() => {
     if (!isSupabaseConfigured) return { id: 0, text: LINES.noSync, alert: false };
     const denied = params.get("error") === "acceso";
-    return { id: 0, text: denied ? LINES.noAccess : LINES.askEmail, alert: denied };
+    // Quien acaba de salir desde Ajustes se encuentra a la guardiana despidiéndose.
+    const leaving = params.get("adios") === "1";
+    return { id: 0, text: denied ? LINES.noAccess : leaving ? LINES.goodbye : LINES.askEmail, alert: denied };
   });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);

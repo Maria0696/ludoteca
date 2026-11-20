@@ -1,4 +1,5 @@
 import { useMemo, useSyncExternalStore } from "react";
+import { readChoice } from "./local-choice";
 
 /*
  * Recordatorio de copias de seguridad.
@@ -13,8 +14,13 @@ const LAST_KEY = "ludoteca:ultima-copia";
 const SNOOZE_KEY = "ludoteca:recordatorio-copia-pospuesto";
 const CHANGE_EVENT = "ludoteca:copia-cambiada";
 
-/** Días sin copia a partir de los cuales aparece el aviso. */
+/** Días sin copia a partir de los cuales aparece el aviso, si no se elige otra cosa en Ajustes. */
 export const REMIND_AFTER_DAYS = 30;
+/** Cada cuánto avisar, elegido en Ajustes: días, o «nunca». */
+export const REMIND_KEY = "ludoteca:recordatorio-copia";
+export const REMIND_CHOICES = ["7", "14", "30", "nunca"] as const;
+export type RemindChoice = (typeof REMIND_CHOICES)[number];
+export const remindEvery = (choice: RemindChoice): number | null => (choice === "nunca" ? null : Number(choice));
 /** Días que se esconde el aviso al pulsar «Ahora no». */
 export const SNOOZE_DAYS = 7;
 
@@ -23,6 +29,8 @@ export interface BackupStatus {
   daysSinceBackup: number | null;
   /** Días desde que se pospuso el aviso; null si no se ha pospuesto. */
   daysSinceSnooze: number | null;
+  /** Cada cuántos días avisar; null si se ha elegido «nunca». */
+  remindEvery: number | null;
 }
 
 function read(key: string): string | null {
@@ -62,14 +70,14 @@ function daysSince(iso: string | null, now: Date): number | null {
   return Number.isNaN(date.getTime()) ? null : daysBetween(date, now);
 }
 
-export function backupStatus(lastIso: string | null, snoozeIso: string | null, now: Date): BackupStatus {
-  return { daysSinceBackup: daysSince(lastIso, now), daysSinceSnooze: daysSince(snoozeIso, now) };
+export function backupStatus(lastIso: string | null, snoozeIso: string | null, now: Date, every: number | null = REMIND_AFTER_DAYS): BackupStatus {
+  return { daysSinceBackup: daysSince(lastIso, now), daysSinceSnooze: daysSince(snoozeIso, now), remindEvery: every };
 }
 
-/** Solo se avisa si hay algo propio que perder y no se ha pospuesto hace poco. */
-export function shouldRemind(status: BackupStatus, ownItems: number): boolean {
-  if (ownItems === 0) return false;
-  const due = status.daysSinceBackup === null || status.daysSinceBackup >= REMIND_AFTER_DAYS;
+/** Solo se avisa si hay algo propio que perder, toca según «cada cuánto» y no se ha pospuesto hace poco. */
+export function shouldRemind(status: BackupStatus, ownItems: number, every: number | null = REMIND_AFTER_DAYS): boolean {
+  if (ownItems === 0 || every === null) return false;
+  const due = status.daysSinceBackup === null || status.daysSinceBackup >= every;
   const snoozed = status.daysSinceSnooze !== null && status.daysSinceSnooze < SNOOZE_DAYS;
   return due && !snoozed;
 }
@@ -93,7 +101,8 @@ function subscribe(onChange: () => void) {
 /** Texto estable mientras nada cambie; incluye el día para recalcular al cambiar de fecha. */
 function snapshot(): string {
   const today = new Date();
-  return JSON.stringify([read(LAST_KEY), read(SNOOZE_KEY), today.getFullYear(), today.getMonth(), today.getDate()]);
+  const every = remindEvery(readChoice<RemindChoice>(REMIND_KEY, "30", REMIND_CHOICES));
+  return JSON.stringify([read(LAST_KEY), read(SNOOZE_KEY), today.getFullYear(), today.getMonth(), today.getDate(), every]);
 }
 
 /**
@@ -104,7 +113,7 @@ export function useBackupStatus(): BackupStatus | null {
   const snap = useSyncExternalStore(subscribe, snapshot, () => null);
   return useMemo(() => {
     if (snap === null) return null;
-    const [last, snooze, y, m, d] = JSON.parse(snap) as [string | null, string | null, number, number, number];
-    return backupStatus(last, snooze, new Date(y, m, d, 12));
+    const [last, snooze, y, m, d, every] = JSON.parse(snap) as [string | null, string | null, number, number, number, number | null];
+    return backupStatus(last, snooze, new Date(y, m, d, 12), every);
   }, [snap]);
 }
