@@ -12,6 +12,7 @@ import {
   FORMAT_LABEL,
   MODE_LABEL,
   MOOD_LABEL,
+  todayIso,
 } from "@/lib/model";
 import styles from "./adventure.module.css";
 import { Editable } from "./Editable";
@@ -58,17 +59,24 @@ function Objective({
   stage,
   selected,
   title,
+  onToggle,
   children,
 }: {
   done: boolean;
   stage: number;
   selected: number | null;
   title: React.ReactNode;
+  /** Si se puede marcar a mano, la casilla es un botón: marcar y desmarcar. Su título dice qué marca. */
+  onToggle?: () => void;
   children?: React.ReactNode;
 }) {
   return (
     <li className={styles.objective} data-done={done || undefined} data-selected={selected === stage || undefined} data-stage={stage}>
-      <span className={styles.check} role="img" aria-label={done ? "Conseguido" : "Pendiente"} />
+      {onToggle ? (
+        <button type="button" role="checkbox" className={styles.check} aria-checked={done} aria-label={typeof title === "string" ? title : undefined} onClick={onToggle} />
+      ) : (
+        <span className={styles.check} role="img" aria-label={done ? "Conseguido" : "Pendiente"} />
+      )}
       <div>
         <b>{title}</b>
         {children}
@@ -84,6 +92,8 @@ export function Quests({
   update,
   onAddCopy,
   onToggle100,
+  onFinish,
+  onStart,
 }: {
   game: Game;
   copies: Copy[];
@@ -91,6 +101,10 @@ export function Quests({
   update: Update;
   onAddCopy: () => void;
   onToggle100: () => void;
+  /** Anotar la fecha de fin también lo pasa a Completado. */
+  onFinish: (date: string | null) => void;
+  /** Anotar la fecha de inicio también lo pone en Jugando. */
+  onStart: (date: string | null) => void;
 }) {
   const percent = progressPercent(game);
   const platforms = [...new Set(copies.map((c) => c.platform))];
@@ -112,8 +126,14 @@ export function Quests({
               <p key={c.id}>{copyLine(c)}</p>
             ))}
           </Objective>
-          <Objective {...shared} stage={2} done={Boolean(game.startedAt)} title="Empieza la aventura">
-            <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={(v) => update({ startedAt: v })} />
+          <Objective
+            {...shared}
+            stage={2}
+            done={Boolean(game.startedAt)}
+            title="Empieza la aventura"
+            onToggle={() => onStart(game.startedAt ? null : todayIso())}
+          >
+            <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={onStart} />
           </Objective>
           <Objective
             {...shared}
@@ -129,8 +149,8 @@ export function Quests({
               )}
             </div>
           </Objective>
-          <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia">
-            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={(v) => update({ finishedAt: v })} />
+          <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia" onToggle={() => onFinish(game.finishedAt ? null : todayIso())}>
+            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
           </Objective>
         </ol>
       </div>
@@ -156,7 +176,7 @@ export function Quests({
           <Objective {...shared} stage={-1} done={Boolean(game.notes)} title="Escribe en tu diario">
             <Editable kind="multiline" label="Notas" value={game.notes} display={game.notes ?? null} empty="Escribir" onSave={(v) => update({ notes: v })} />
           </Objective>
-          <Objective {...shared} stage={6} done={game.completed100} title="Consíguelo al 100 %">
+          <Objective {...shared} stage={6} done={game.completed100} title="Consíguelo al 100 %" onToggle={onToggle100}>
             {game.completed100 ? (
               <div className={styles.trophyRow}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- dibujo de píxeles propio */}

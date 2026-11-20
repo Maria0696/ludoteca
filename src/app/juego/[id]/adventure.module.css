@@ -623,6 +623,29 @@
   background: var(--gold);
   border-color: var(--gold);
 }
+/* Las casillas que se pueden pulsar: más zona de toque que el cuadro que se ve. */
+button.check {
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+button.check::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+button.check:hover {
+  border-color: var(--gold);
+}
+button.check:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 3px;
+}
+@media (max-width: 899px) {
+  button.check::before {
+    inset: -14px;
+  }
+}
 .objective[data-done] .check::after {
   content: "";
   position: absolute;

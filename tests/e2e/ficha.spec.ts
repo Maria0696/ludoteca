@@ -73,6 +73,118 @@ test("jugar hoy supera niveles y el 100 % da un trofeo que se conserva", async (
   await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toHaveCount(0);
 });
 
+test("marcar el 100 % pasa el juego a Completado; quitarlo no le cambia el estado", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
+  await cards(page).getByRole("link", { name: /Tunic/ }).click();
+  // Con carga, la ficha puede tardar en llegar: se espera a su título antes de tocar nada.
+  await expect(page.getByRole("heading", { level: 1, name: "Tunic" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("button", { name: "100 %", exact: true }).click();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Tunic» pasa a Completado")).toBeVisible();
+  // Se guarda junto: tras recargar sigue al 100 % y completado, con su nivel «Terminado».
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("button", { name: "Terminado, conseguido" })).toBeVisible();
+  // Terminado implica empezado: «Empieza la aventura» también queda marcada.
+  await expect(page.getByRole("region", { name: "Misiones" }).getByRole("checkbox", { name: "Empieza la aventura" })).toHaveAttribute("aria-checked", "true");
+
+  // Quitar el 100 % no lo devuelve a otro estado: sigue terminado.
+  await page.getByRole("button", { name: "Al 100 %", exact: true }).click();
+  await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toHaveCount(0);
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("anotar la fecha de «Termina la historia» pasa el juego a Completado con esa fecha y marca el inicio", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Celeste", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Celeste/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Celeste" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  const quests = page.getByRole("region", { name: "Misiones" });
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+
+  await quests.getByRole("button", { name: "Terminado: añadir" }).click();
+  await quests.getByLabel("Terminado", { exact: true }).fill("3/10/2025");
+  await quests.getByLabel("Terminado", { exact: true }).press("Enter");
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Celeste» pasa a Completado")).toBeVisible();
+  // Se queda la fecha anotada, no la de hoy, también tras recargar.
+  await page.reload();
+  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  // Sin fecha de inicio, empieza el mismo día que termina: no se puede empezar después.
+  const started = quests.getByRole("checkbox", { name: "Empieza la aventura" });
+  await expect(started).toHaveAttribute("aria-checked", "true");
+  await expect(quests.getByRole("button", { name: "Empezado: 3 oct 2025. Editar" })).toBeVisible();
+
+  // Desmarcar su casilla borra la fecha de fin; el inicio se queda, así que vuelve a Jugando.
+  const finished = quests.getByRole("checkbox", { name: "Termina la historia" });
+  await expect(finished).toHaveAttribute("aria-checked", "true");
+  await finished.click();
+  await expect(finished).toHaveAttribute("aria-checked", "false");
+  await expect(quests.getByRole("button", { name: "Terminado: añadir" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Celeste» vuelve a Jugando")).toBeVisible();
+  await expect(started).toHaveAttribute("aria-checked", "true");
+});
+
+test("las casillas de empezar y terminar se marcan y desmarcan; las de datos son solo indicadores", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Tunic/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Tunic" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  const quests = page.getByRole("region", { name: "Misiones" });
+  // Solo empezar, terminar y el 100 % se pulsan; copia, horas, nota y diario se marcan solos con su dato.
+  await expect(quests.getByRole("checkbox")).toHaveCount(3);
+  const started = quests.getByRole("checkbox", { name: "Empieza la aventura" });
+  const finished = quests.getByRole("checkbox", { name: "Termina la historia" });
+
+  // Marcar «Empieza la aventura» anota hoy y lo pone en Jugando; desmarcarla la borra y vuelve a Pendiente.
+  await started.click();
+  await expect(started).toHaveAttribute("aria-checked", "true");
+  await expect(quests.getByRole("button", { name: "Empezado: añadir" })).toHaveCount(0);
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Tunic» pasa a Jugando")).toBeVisible();
+  await started.click();
+  await expect(started).toHaveAttribute("aria-checked", "false");
+  await expect(quests.getByRole("button", { name: "Empezado: añadir" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+  // Escribir la fecha de inicio hace lo mismo que marcar la casilla.
+  await quests.getByRole("button", { name: "Empezado: añadir" }).click();
+  await quests.getByLabel("Empezado", { exact: true }).fill("1/10/2025");
+  await quests.getByLabel("Empezado", { exact: true }).press("Enter");
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+
+  await page.getByRole("button", { name: /He jugado hoy/ }).click();
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+
+  // Marcar «Termina la historia» anota hoy y lo completa; desmarcarla lo devuelve a Jugando.
+  await finished.click();
+  await expect(finished).toHaveAttribute("aria-checked", "true");
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await finished.click();
+  await expect(finished).toHaveAttribute("aria-checked", "false");
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  // «Deshacer» devuelve el estado y la fecha.
+  await page.locator("[data-sonner-toast]").filter({ hasText: "«Tunic» vuelve a Jugando" }).getByRole("button", { name: "Deshacer" }).click();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(finished).toHaveAttribute("aria-checked", "true");
+
+  // La casilla del 100 % hace lo mismo que su botón; al 100 %, desmarcar el final no le quita el completado.
+  await quests.getByRole("checkbox", { name: "Consíguelo al 100 %" }).click();
+  await page.getByText(/Has completado Tunic del todo/).click();
+  await expect(page.getByRole("img", { name: "Trofeo del 100 %" })).toBeVisible();
+  await finished.click();
+  await expect(finished).toHaveAttribute("aria-checked", "false");
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+});
+
 test("el nombre y los estados van en una sola línea, y los recuadros igualados", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "The Legend of Zelda: Tears of the Kingdom", platform: "Switch", format: "Físico" });

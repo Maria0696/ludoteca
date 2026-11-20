@@ -109,7 +109,7 @@ export function GameDetail({ id }: { id: string }) {
 
   const toggle100 = () => {
     if (!game.completed100) setCelebrating(true);
-    update({ completed100: !game.completed100 });
+    actions.setCompleted100(game.id, !game.completed100);
   };
 
   const selectStage = (stage: number) => {
@@ -191,7 +191,7 @@ export function GameDetail({ id }: { id: string }) {
 
         <div ref={columnsRef} className={styles.columns}>
           <section className={`${styles.window} ${styles.panel}`} aria-label="Misiones">
-            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} />
+            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} onFinish={(date) => actions.setFinishedAt(game.id, date)} onStart={(date) => actions.setStartedAt(game.id, date)} />
           </section>
           <div className={styles.side}>
             <section className={`${styles.window} ${styles.panel}`} aria-label="Tus récords">
