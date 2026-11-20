@@ -46,14 +46,11 @@ export type GtParse = { ok: true; entries: GtEntry[] } | { ok: false; message: s
 
 const REQUIRED = ["title", "source", "externalId", "spaces", "userPlatforms", "formats", "tags"] as const;
 const NOT_GAME_TRACKER = "Este archivo no parece una exportación de Game Tracker.";
-/** Los visores se enchufan a una consola: no son una plataforma con copia propia. */
-const ACCESSORIES = new Set(["PlayStation VR", "PlayStation VR2"]);
 const SUMMARY_MAX = 2000;
 
-/** Plataforma de Game Tracker en la Ludoteca; `null` si es un accesorio. */
-export function gtPlatform(name: string): string | null {
+/** Plataforma de Game Tracker en la Ludoteca. */
+export function gtPlatform(name: string): string {
   const clean = name.trim();
-  if (ACCESSORIES.has(clean)) return null;
   return PLATFORM_NAMES[clean] ?? clean;
 }
 
@@ -82,9 +79,7 @@ function readEntry(get: (column: string) => string | undefined): GtEntry | null 
   const formats = list(get("formats"))
     .map((f) => (f === "PHYSICAL" ? "fisico" : f === "DIGITAL" ? "digital" : null))
     .filter((f): f is Format => f !== null);
-  const platforms = list(get("userPlatforms"))
-    .map(gtPlatform)
-    .filter((p): p is string => p !== null);
+  const platforms = list(get("userPlatforms")).map(gtPlatform);
   return {
     title,
     igdbId: (source === "igdb" || source === "igdbModified") && Number.isInteger(externalId) && externalId > 0 ? externalId : null,

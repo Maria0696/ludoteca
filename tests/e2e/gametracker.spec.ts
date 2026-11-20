@@ -4,7 +4,8 @@ import { type Page, expect, test } from "@playwright/test";
 import { parseCsv } from "../../src/lib/csv";
 import { type GtEntry, type GtItem, classifyGameTracker, gtPlatform, parseGameTracker, planCopies, planGameTrackerImport } from "../../src/lib/gametracker-import";
 import { EMPTY_FILTERS, buildEntries, facetValues, filterEntries } from "../../src/lib/filters";
-import { type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
+import { PLATFORM_NAMES } from "../../src/lib/igdb-maps";
+import { DEFAULT_PLATFORMS, type Library, PLATFORM_FAMILIES, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { addGame, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const HEADER =
@@ -77,14 +78,19 @@ test.describe("leer el archivo", () => {
     expect(e.moods).toEqual(expect.arrayContaining(["accion", "historia"]));
   });
 
-  test("las plataformas de Game Tracker se traducen y los visores de PlayStation no cuentan", () => {
-    expect(gtPlatform("PlayStation VR")).toBeNull();
-    expect(gtPlatform("PlayStation VR2")).toBeNull();
-    expect(gtPlatform("Oculus Rift")).toBe("PC");
+  test("las plataformas de Game Tracker se traducen, visores de realidad virtual incluidos", () => {
+    expect(gtPlatform("PlayStation VR")).toBe("PS VR");
+    expect(gtPlatform("PlayStation VR2")).toBe("PS VR2");
+    expect(gtPlatform("Oculus Rift")).toBe("Oculus Rift");
     expect(gtPlatform("Meta Quest 3")).toBe("Meta Quest");
     expect(gtPlatform("PlayStation Portable")).toBe("PSP");
     expect(gtPlatform("Atari 2600")).toBe("Atari 2600");
-    expect(readOne({ ...ARK, userPlatforms: "PlayStation 5;PlayStation VR;PlayStation 4" }).platforms).toEqual(["PS5", "PS4"]);
+    expect(readOne({ ...ARK, userPlatforms: "PlayStation 5;PlayStation VR;PlayStation 4" }).platforms).toEqual(["PS5", "PS VR", "PS4"]);
+    // Se pueden elegir al añadir un juego y llevan el color de su familia.
+    expect(DEFAULT_PLATFORMS).toEqual(expect.arrayContaining(["PS VR", "PS VR2", "Oculus Rift"]));
+    expect(PLATFORM_FAMILIES.find((f) => f.platforms.includes("PS VR2"))?.name).toBe("PlayStation");
+    // El catálogo los llama por su abreviatura.
+    expect([PLATFORM_NAMES.PSVR, PLATFORM_NAMES.PSVR2, PLATFORM_NAMES["Oculus Rift"]]).toEqual(["PS VR", "PS VR2", "Oculus Rift"]);
   });
 
   test("juegos sin catálogo, sin nota, deseos y sinopsis largas", () => {
@@ -283,13 +289,19 @@ test.describe("pantalla", () => {
     await expectCarcasaText(page.locator("main"));
 
     await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
-    await expect(page.getByText("Copiados 6 juegos, 12 copias y 1 deseo.")).toBeVisible();
+    await expect(page.getByText("Copiados 6 juegos, 13 copias y 1 deseo.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Ver la biblioteca" })).toBeVisible();
 
     await openApp(page, "/biblioteca?q=Kirby&agrupar=ninguno");
     const kirby = page.locator("main").getByRole("listitem").filter({ hasText: "Kirby and the Forgotten Land" });
     await expect(kirby).toContainText("Switch 2");
     await expect(kirby).toContainText("2 copias");
+    // Los visores son plataformas con su copia: Resident Evil 7 está en PS5, PS4 y PS VR.
+    await openApp(page, "/biblioteca?q=Resident&agrupar=ninguno");
+    const re7 = page.locator("main").getByRole("listitem").filter({ hasText: "Resident Evil 7" });
+    await expect(re7).toContainText("3 copias");
+    await openApp(page, "/biblioteca?plataforma=PS+VR");
+    await expect(page.locator("main").getByRole("listitem").filter({ hasText: "Resident Evil 7" })).toHaveCount(1);
     await openApp(page, "/deseos");
     await expect(page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: "Fable" })).toHaveCount(1);
     await openApp(page, "/biblioteca?q=Genshin");
@@ -347,7 +359,8 @@ test.describe("tienda", () => {
     test.setTimeout(90_000);
     await importSample(page);
     await openApp(page, "/biblioteca");
-    for (const name of ["PC · Steam", "PC · Epic Games", "PC · sin tienda"]) await expect(shelf(page, name)).toHaveCount(1);
+    await addGame(page, { title: "Celeste", platform: "PC" });
+    for (const name of ["PC · Steam", "PC · Epic Games", "PC · sin tienda", "Oculus Rift"]) await expect(shelf(page, name)).toHaveCount(1);
     await expect(shelf(page, "PC")).toHaveCount(0);
     await expect(page.locator("main").getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" })).toHaveCount(2);
 
