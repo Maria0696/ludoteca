@@ -42,6 +42,8 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 8_000 },
   fullyParallel: true,
+  // En GitHub la máquina tiene 2 núcleos y Playwright usaría solo uno: con dos, cada parte tarda ~1 min menos.
+  workers: process.env.CI ? 2 : undefined,
   reporter: [["list"], ["html", { open: "never", outputFolder: "test-results/informe" }]],
   use: {
     channel: "chrome",

@@ -120,7 +120,7 @@ npx playwright test
 
 Ejecuta las pruebas de extremo a extremo con el Chrome instalado. Antes compila su propia copia de la app en `.next-pruebas`, sin las claves de `.env.local`, así que siempre funciona en modo local aunque tengas Supabase configurado (tarda un par de minutos más). Cada prueba usa un navegador limpio, así que no toca tus datos.
 
-En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) pasa los tipos, el lint y estas pruebas en cada petición de fusión y en cada cambio de `main`. No necesita ninguna clave. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
+En GitHub, la tarea [comprobaciones.yml](.github/workflows/comprobaciones.yml) pasa los tipos, el lint y estas pruebas en cada petición de fusión, repartidas en dos máquinas a la vez. Al fusionar en `main` no se repiten, porque la petición ya las pasó; si hace falta, se lanzan a mano desde **Actions → Comprobaciones → Run workflow**. No necesita ninguna clave. La prueba de acceso arranca otra instancia con un Supabase falso para comprobar que sin sesión no se entra en ninguna pantalla ni en la API.
 
 ### Actualizaciones
 
