@@ -63,7 +63,7 @@ test("las consolas están por familias y la que escribes a mano se queda", async
     await expect(platforms.getByRole("group", { name: family }).getByRole("radio", { name: platform, exact: true })).toBeVisible();
   }
   // Dentro de cada familia van por año de salida, de la más nueva a la más antigua.
-  await expect(platforms.getByRole("group", { name: "PlayStation" }).getByRole("radio")).toHaveText(["PS5", "PS4", "PS Vita", "PS3", "PSP", "PS2", "PS1"]);
+  await expect(platforms.getByRole("group", { name: "PlayStation" }).getByRole("radio")).toHaveText(["PS5", "PS4", "PS Vita", "PS3", "PSP", "PS2", "PS1", "PS VR2", "PS VR"]);
   await expect(platforms.getByRole("group", { name: "Nintendo" }).getByRole("radio")).toHaveText([
     "Switch 2",
     "Switch",
