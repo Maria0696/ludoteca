@@ -241,11 +241,6 @@ export function LibraryView() {
           {library.copies.length === 1 ? "copia" : "copias"}
         </p>
         <div className={styles.headActions}>
-          {/* Mis listas no es una plataforma: va aquí, con las demás cosas de la biblioteca. */}
-          <Link href="/listas" className={`${styles.chip} ${styles.listsLink}`}>
-            <i className={styles.led} style={led("#ffe94d")} aria-hidden />
-            Mis listas <small>{library.lists.length}</small>
-          </Link>
           <Link href="/importar" className={styles.chip}>
             Importar…
           </Link>
@@ -313,12 +308,6 @@ export function LibraryView() {
                   ))}
                 </div>
               ))}
-            </div>
-            <div className={`${styles.platFamily} ${styles.listsFamily}`}>
-              <Link href="/listas" className={styles.plat} style={led("#ffe94d")}>
-                <i aria-hidden />
-                Mis listas <small>{library.lists.length}</small>
-              </Link>
             </div>
           </div>
         </div>

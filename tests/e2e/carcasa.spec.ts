@@ -1,5 +1,5 @@
 import { type Locator, expect, test } from "@playwright/test";
-import { addGame, cards, expectCarcasaText, loadDemo, openAjustes, openApp, placeholderRoom } from "./helpers";
+import { addGame, cards, expectCarcasaText, loadDemo, openAjustes, openApp } from "./helpers";
 
 const font = (l: Locator) => l.evaluate((el) => [getComputedStyle(el).fontFamily, parseFloat(getComputedStyle(el).fontSize)] as const);
 
@@ -106,46 +106,15 @@ test("los avisos: letra de la carcasa y «Deshacer» visible", async ({ page }) 
   expect(await undo.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
 });
 
-/** Contraste entre dos colores `rgb(...)` según WCAG. */
-function contrast(a: string, b: string) {
-  const lum = (c: string) => {
-    const [r, g, bl] = c.match(/\d+/g)!.slice(0, 3).map((v) => {
-      const s = Number(v) / 255;
-      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
-  };
-  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
-test("en Mis listas, el número de juegos de la lista elegida se lee", async ({ page }) => {
-  await loadDemo(page);
-  await page.goto("/listas");
-  const current = page.locator('button[aria-current="true"]').first();
-  const colors = await current.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el.querySelector("small")!).color]);
-  expect(contrast(colors[0], colors[1])).toBeGreaterThanOrEqual(4.5);
-});
-
 test("el estado se dice igual en toda la app: etiqueta arcade y nombre normal", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/que-juego");
   // Cada propuesta es un <li> con el enlace «Ficha de …».
   const proposal = page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /^Ficha de / }) }).first();
   await expect(proposal).toContainText(/EN PARTIDA ·\s*Jugando/);
-  await page.goto("/listas");
-  await expect(page.getByText("NUEVA PARTIDA").first()).toBeVisible();
-  // En una tarjeta estrecha, el nombre baja de línea antes que cortarse.
-  const state = page.locator(".state").first();
-  const overflow = await state.evaluate((el) => {
-    const card = el.closest("li")!.getBoundingClientRect();
-    return Math.max(...[...el.childNodes].map((n) => {
-      const r = document.createRange();
-      r.selectNodeContents(n);
-      return r.getBoundingClientRect().right;
-    })) - card.right;
-  });
-  expect(overflow).toBeLessThanOrEqual(0);
+  // El manual lo explica con la misma etiqueta.
+  await openApp(page, "/manual?pagina=2");
+  await expect(page.locator("main")).toContainText(/NUEVA PARTIDA ·\s*Pendiente/);
 });
 
 test("un solo nombre para cada cosa: Estadísticas en el inicio y Récords en la biblioteca", async ({ page }) => {
@@ -326,43 +295,6 @@ test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura",
   await expectCarcasaText(page.locator("main"));
 });
 
-test("Mis listas en la carcasa: dos ventanas, tarjetas legibles y foco visible", async ({ page }) => {
-  await loadDemo(page);
-  await page.goto("/listas");
-  const [family] = await font(page.getByRole("heading", { level: 1, name: "Mis listas" }));
-  expect(family).toMatch(/Press.Start.2P/i);
-  for (const name of ["Tus listas", /^Lista /]) {
-    expect(await page.getByRole("region", { name }).evaluate((el) => getComputedStyle(el).boxShadow)).toContain("rgb(243, 234, 210)");
-  }
-  await expectCarcasaText(page.locator("main"));
-  // Con el teclado, el foco se ve también en la lista elegida (papel).
-  const current = page.locator('button[aria-current="true"]').first();
-  await current.focus();
-  await page.keyboard.press("Shift+Tab");
-  await page.keyboard.press("Tab");
-  await expect(current).toBeFocused();
-  expect(await current.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("solid");
-  // La tarjeta no recorta su marco ni el contorno del foco.
-  expect(await page.locator("main li").filter({ has: page.getByRole("link") }).first().evaluate((el) => getComputedStyle(el).contentVisibility)).not.toBe("auto");
-  // El diálogo de añadir juegos a la lista, también.
-  await page.getByRole("button", { name: "Añadir juegos" }).click();
-  await expectCarcasaText(page.getByRole("dialog"));
-  await page.keyboard.press("Escape");
-
-  // El error al crear una lista sin nombre, en la carcasa y en rojo.
-  await page.getByRole("button", { name: "Crear" }).click();
-  const error = page.getByText("Ponle un nombre a la lista.");
-  await expect(error).toBeVisible();
-  expect(await error.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 107, 107)");
-  await expectCarcasaText(page.locator("main"));
-
-  // Una lista vacía: su aviso no lleva un segundo marco dentro de la ventana.
-  await page.getByLabel("Nombre de la nueva lista").fill("Vacía");
-  await page.getByRole("button", { name: "Crear" }).click();
-  const empty = page.getByRole("heading", { name: "Lista vacía" }).locator("..");
-  expect(await empty.evaluate((el) => getComputedStyle(el).boxShadow)).toBe("none");
-});
-
 test("la página que no existe se ve como una ventana de la carcasa", async ({ page }) => {
   await openApp(page, "/no-existe");
   const heading = page.getByRole("heading", { name: "Esta página no está en tu ludoteca" });
@@ -398,7 +330,7 @@ test("la app habla español: sin rótulos en inglés ni jerga técnica", async (
   // La pantalla dice lo que es.
   await expect(page.getByRole("heading", { level: 1, name: "Biblioteca" })).toBeVisible();
   await expect(page.getByText(/^22 títulos · 24 copias$/)).toBeVisible();
-  for (const url of ["/", "/biblioteca", "/listas", "/que-juego"]) {
+  for (const url of ["/", "/biblioteca", "/que-juego"]) {
     await page.goto(url);
     await expect(page.locator("main")).not.toHaveText(english);
   }
@@ -584,8 +516,3 @@ test("en el ordenador, Deseos no repite los filtros en un botón «Filtros»", a
   await expect(page.getByRole("button", { name: /^Filtros/ })).toBeHidden();
 });
 
-test("en el ordenador, el ejemplo del nombre de una lista nueva se lee entero", async ({ page }) => {
-  await loadDemo(page);
-  await openApp(page, "/listas");
-  expect(await placeholderRoom(page.getByLabel("Nombre de la nueva lista"))).toBeGreaterThanOrEqual(0);
-});

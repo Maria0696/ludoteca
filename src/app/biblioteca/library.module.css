@@ -88,10 +88,6 @@
   display: flex;
   gap: 4px;
 }
-.listsLink small {
-  color: var(--soft);
-  font-size: var(--size-meta);
-}
 
 /* Botones de la recreativa: marco de neón, letra de terminal. */
 .chip {
@@ -235,10 +231,6 @@
 }
 .tablist {
   display: contents;
-}
-/* En el ordenador, Mis listas va en la cabecera. */
-.platFamily.listsFamily {
-  display: none;
 }
 /* En el ordenador no hay deslizar a ciegas: lo que no cabe pasa a otra línea, cada familia entera. */
 @media (min-width: 900px) {
@@ -849,12 +841,8 @@
     margin-left: 0;
   }
   /* Importar de Steam sigue en Ajustes: en el móvil no ocupa una fila de la cabecera. */
-  /* Mis listas, en el móvil, cierra la fila de plataformas: en la cabecera no cabe. */
   .headActions > .chip {
     display: none;
-  }
-  .platFamily.listsFamily {
-    display: flex;
   }
   .viewToggle span {
     position: absolute;

@@ -2,12 +2,10 @@ import { z } from "zod";
 import {
   type Copy,
   type Game,
-  type GameList,
   type Library,
   type WishItem,
   copySchema,
   gameSchema,
-  listSchema,
   newId,
   normalizeTitle,
   nowIso,
@@ -36,7 +34,8 @@ const backupSchema = z.object({
     games: z.array(gameSchema),
     copies: z.array(copySchema),
     wishlist: z.array(wishSchema),
-    lists: z.array(listSchema),
+    /** Las copias de cuando había «Mis listas» las traen: se aceptan y no se importan. */
+    lists: z.array(z.unknown()).optional(),
   }),
 });
 
@@ -53,7 +52,6 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
       games: keep(library.games),
       copies: keep(library.copies),
       wishlist: keep(library.wishlist),
-      lists: keep(library.lists),
     },
   };
 }
@@ -94,7 +92,7 @@ export function parseBackup(text: string): ParseResult {
 }
 
 function describePath(path: PropertyKey[]): string {
-  const names: Record<string, string> = { games: "Juego", copies: "Copia", wishlist: "Deseo", lists: "Lista" };
+  const names: Record<string, string> = { games: "Juego", copies: "Copia", wishlist: "Deseo" };
   const [, section, index, field] = path;
   if (typeof section === "string" && typeof index === "number") {
     return `${names[section] ?? section} n.º ${index + 1}${field ? ` (${String(field)})` : ""}`;
@@ -106,7 +104,7 @@ export type Resolution = "mantener" | "importado" | "ambos";
 
 export interface Conflict {
   key: string;
-  kind: "juego" | "deseo" | "lista";
+  kind: "juego" | "deseo";
   reason: "mismo-id" | "mismo-titulo";
   existingLabel: string;
   incomingLabel: string;
@@ -119,7 +117,7 @@ export interface ImportPlan {
   conflicts: Conflict[];
   /** Elementos del archivo idénticos a los tuyos: no hace falta importarlos. */
   identical: number;
-  newCounts: { games: number; copies: number; wishlist: number; lists: number };
+  newCounts: { games: number; copies: number; wishlist: number };
 }
 
 export function planImport(current: Library, backup: Backup): ImportPlan {
@@ -127,7 +125,7 @@ export function planImport(current: Library, backup: Backup): ImportPlan {
   let identical = 0;
   const gamesById = new Map(current.games.map((g) => [g.id, g]));
   const gamesByTitle = new Map(current.games.map((g) => [normalizeTitle(g.title), g]));
-  const newCounts = { games: 0, copies: 0, wishlist: 0, lists: 0 };
+  const newCounts = { games: 0, copies: 0, wishlist: 0 };
 
   for (const g of backup.data.games) {
     const sameId = gamesById.get(g.id);
@@ -158,20 +156,6 @@ export function planImport(current: Library, backup: Backup): ImportPlan {
     else newCounts.wishlist++;
   }
 
-  const listById = new Map(current.lists.map((l) => [l.id, l]));
-  const listByName = new Map(current.lists.map((l) => [normalizeTitle(l.name), l]));
-  for (const l of backup.data.lists) {
-    const sameId = listById.get(l.id);
-    if (sameId) {
-      if (sameId.updatedAt === l.updatedAt) identical++;
-      else conflicts.push(conflict("lista", "mismo-id", sameId.id, l.id, sameId.name, l.name));
-      continue;
-    }
-    const sameName = listByName.get(normalizeTitle(l.name));
-    if (sameName) conflicts.push(conflict("lista", "mismo-titulo", sameName.id, l.id, sameName.name, l.name));
-    else newCounts.lists++;
-  }
-
   return { backup, conflicts, identical, newCounts };
 }
 
@@ -190,12 +174,11 @@ export interface ImportChanges {
   games: Game[];
   copies: Copy[];
   wishlist: WishItem[];
-  lists: GameList[];
 }
 
 /** Calcula qué hay que guardar según las decisiones tomadas. Sin decisión, se mantiene lo tuyo. */
 export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolution>): ImportChanges {
-  const out: ImportChanges = { games: [], copies: [], wishlist: [], lists: [] };
+  const out: ImportChanges = { games: [], copies: [], wishlist: [] };
   const byKey = new Map(plan.conflicts.map((c) => [c.key, c]));
   const decide = (kind: Conflict["kind"], id: string) => {
     const c = byKey.get(`${kind}:${id}`);
@@ -234,14 +217,6 @@ export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolu
     if (!d) out.wishlist.push(w);
     else if (d.resolution === "importado") out.wishlist.push({ ...w, id: d.conflict.existingId, updatedAt: stamp });
     else if (d.resolution === "ambos") out.wishlist.push({ ...w, id: newId(), updatedAt: stamp });
-  }
-
-  for (const l of plan.backup.data.lists) {
-    const d = decide("lista", l.id);
-    const gameIds = l.gameIds.map((id) => gameIdMap.get(id) ?? null).filter((id): id is string => !!id);
-    if (!d) out.lists.push({ ...l, gameIds });
-    else if (d.resolution === "importado") out.lists.push({ ...l, id: d.conflict.existingId, gameIds, updatedAt: stamp });
-    else if (d.resolution === "ambos") out.lists.push({ ...l, id: newId(), name: `${l.name} (importada)`, gameIds, updatedAt: stamp });
   }
 
   return out;

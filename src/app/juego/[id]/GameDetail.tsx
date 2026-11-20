@@ -210,9 +210,7 @@ export function GameDetail({ id }: { id: string }) {
           <Foldable label="Más datos" labelledBy="mas-datos">
             <MorePanel
               game={game}
-              lists={library.lists}
               update={update}
-              onToggleList={(listId) => actions.toggleInList(listId, game.id)}
               onChangeCover={() => setCoverDialog(true)}
               onDelete={() => setConfirmDelete(true)}
             />

@@ -1,5 +1,5 @@
 import { demoBackdropUrl, demoCoverUrl } from "./demo-art";
-import type { Copy, Game, GameList, GameStatus, Library, Mood, PlayMode, WishItem } from "./model";
+import type { Copy, Game, GameStatus, Library, Mood, PlayMode, WishItem } from "./model";
 import { newId } from "./model";
 
 /*
@@ -99,12 +99,6 @@ const WISHES: { title: string; platform: string; priority: WishItem["priority"];
   { title: "Pentiment", platform: "PC", priority: "baja", genres: ["Narrativo"], notes: "Esperar a una rebaja." },
 ];
 
-const LISTS: { name: string; titles: string[] }[] = [
-  { name: "Para jugar con mi pareja", titles: ["It Takes Two", "Overcooked! 2", "Mario Kart 8 Deluxe", "Spiritfarer"] },
-  { name: "Partidas rápidas", titles: ["Mario Kart 8 Deluxe", "Hades", "Unpacking", "A Short Hike"] },
-  { name: "Mis favoritos", titles: ["The Legend of Zelda: Tears of the Kingdom", "Hades", "Stardew Valley"] },
-];
-
 function isoDaysAgo(today: Date, days: number): string {
   const d = new Date(today);
   d.setDate(d.getDate() - days);
@@ -114,11 +108,9 @@ function isoDaysAgo(today: Date, days: number): string {
 export function createDemoLibrary(today = new Date()): Library {
   const games: Game[] = [];
   const copies: Copy[] = [];
-  const idByTitle = new Map<string, string>();
 
   GAMES.forEach((d, index) => {
     const id = newId();
-    idByTitle.set(d.title, id);
     const created = new Date(today.getTime() - (GAMES.length - index) * 86_400_000 * 9).toISOString();
     games.push({
       id,
@@ -191,14 +183,5 @@ export function createDemoLibrary(today = new Date()): Library {
     demo: true,
   }));
 
-  const lists: GameList[] = LISTS.map((l) => ({
-    id: newId(),
-    name: l.name,
-    gameIds: l.titles.map((t) => idByTitle.get(t)).filter((id): id is string => !!id),
-    createdAt: stamp,
-    updatedAt: stamp,
-    demo: true,
-  }));
-
-  return { games, copies, wishlist, lists };
+  return { games, copies, wishlist };
 }

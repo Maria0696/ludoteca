@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { addGame, cards, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
@@ -89,6 +89,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const backup = JSON.parse(await readFile(path, "utf8"));
   expect(backup.data.games).toHaveLength(2);
   expect(backup.data.copies).toHaveLength(2);
+  expect(backup.data).not.toHaveProperty("lists");
 
   // Otro navegador limpio: ya tiene un «Celeste» propio distinto.
   const context = await browser.newContext({ locale: "es-ES" });
@@ -124,6 +125,34 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await context.close();
 });
 
+test("una copia de antes, con listas, se sigue importando y las listas se ignoran", async ({ page, browser }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
+  await page.goto("/ajustes?apartado=copia");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar copia" }).click();
+  const backup = JSON.parse(await readFile(await (await downloadPromise).path(), "utf8"));
+  // Así eran las copias cuando había «Mis listas».
+  backup.data.lists = [
+    { id: "lista-antigua", name: "Para el verano", gameIds: [backup.data.games[0].id], createdAt: backup.exportedAt, updatedAt: backup.exportedAt },
+  ];
+  const path = test.info().outputPath("copia-con-listas.json");
+  await writeFile(path, JSON.stringify(backup));
+
+  const context = await browser.newContext({ locale: "es-ES" });
+  const other = await context.newPage();
+  await openApp(other, "/ajustes?apartado=copia");
+  await other.getByTestId("importar-archivo").setInputFiles(path);
+  const dialog = other.getByRole("dialog");
+  await expect(dialog.getByText(/Nuevo: 1 juego, 1 copia y 0 deseos\./)).toBeVisible();
+  await expect(dialog).not.toContainText("lista");
+  await dialog.getByRole("button", { name: "Importar" }).click();
+  await expect(other.getByText("Importado: 1 juego, 1 copia y 0 deseos")).toBeVisible();
+  await other.goto("/biblioteca");
+  await expect(other.getByText("1 título · 1 copia")).toBeVisible();
+  await context.close();
+});
+
 test("datos de demostración separados y retirables", async ({ page }) => {
   await loadDemo(page);
   // Sin juegos propios no se habla de «0 juegos tuyos».
@@ -155,8 +184,6 @@ test("estados vacíos y de error", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Aún no hay juegos en tu biblioteca" })).toBeVisible();
   await page.goto("/estadisticas");
   await expect(page.getByRole("heading", { name: "Sin datos todavía" })).toBeVisible();
-  await page.goto("/listas");
-  await expect(page.getByRole("heading", { name: "Sin listas todavía" })).toBeVisible();
   await page.goto("/juego/no-existe");
   await expect(page.getByRole("heading", { name: "Este juego no está en tu biblioteca" })).toBeVisible();
   await page.goto("/una-ruta-que-no-existe");
