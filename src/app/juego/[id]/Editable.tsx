@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DateInput } from "@/components/ui/DateInput";
 import { isoToDmy, parseDecimal, parseDmy } from "@/lib/format";
 import styles from "./adventure.module.css";
@@ -14,8 +14,6 @@ type Common = {
   empty: string;
   /** En una fila de datos: el hueco vacío es texto discreto, sin recuadro de añadir. */
   quiet?: boolean;
-  /** Con valor, ofrece un botón «Borrar» al lado: vaciar el campo a mano no se adivina. */
-  clearable?: boolean;
 };
 
 type Props = Common &
@@ -27,7 +25,7 @@ type Props = Common &
 
 /** Un dato que se ve como texto y se edita al pulsarlo. */
 export function Editable(props: Props) {
-  const { label, display, empty, quiet, clearable } = props;
+  const { label, display, empty, quiet } = props;
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Lo escrito en una fecha, como día/mes/año. */
@@ -89,10 +87,8 @@ export function Editable(props: Props) {
   };
 
   if (!editing) {
-    // Con «Borrar», el valor y el botón van juntos en una fila.
-    const Row = clearable ? "span" : Fragment;
     return (
-      <Row {...(clearable ? { className: styles.valueRow } : {})}>
+      <>
         <button
           ref={buttonRef}
           type="button"
@@ -114,15 +110,10 @@ export function Editable(props: Props) {
               </>
             ))}
         </button>
-        {display && clearable && (
-          <button type="button" className={styles.clear} aria-label={`Borrar ${label}`} onClick={() => save(null)}>
-            Borrar
-          </button>
-        )}
         <span className={styles.saved} aria-live="polite">
           {justSaved ? <span key={justSaved}>Guardado</span> : null}
         </span>
-      </Row>
+      </>
     );
   }
 
