@@ -102,6 +102,9 @@ export function storeOf(copy: Copy): string {
   return copy.store?.trim() ?? "";
 }
 
+/** Tiendas de PC que se ofrecen como filtro (dentro de la pestaña PC). */
+export const PC_STORES = ["EA", "Epic Games", "Steam", "Ubisoft"];
+
 /** Valores presentes en la colección, para ofrecer solo filtros que devuelven algo. */
 export function facetValues(entries: LibraryEntry[]) {
   const platforms = new Map<string, number>();
@@ -109,7 +112,8 @@ export function facetValues(entries: LibraryEntry[]) {
   const stores = new Map<string, number>();
   for (const { game, copies } of entries) {
     for (const p of new Set(copies.map((c) => c.platform))) platforms.set(p, (platforms.get(p) ?? 0) + 1);
-    for (const st of new Set(copies.map(storeOf).filter(Boolean))) stores.set(st, (stores.get(st) ?? 0) + 1);
+    const pcStores = copies.filter((c) => c.platform === "PC").map(storeOf).filter((st) => PC_STORES.includes(st));
+    for (const st of new Set(pcStores)) stores.set(st, (stores.get(st) ?? 0) + 1);
     for (const g of game.genres) genres.set(g, (genres.get(g) ?? 0) + 1);
   }
   const sorted = (m: Map<string, number>) =>
