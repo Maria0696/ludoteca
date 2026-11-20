@@ -1,13 +1,16 @@
 name: Comprobaciones
 
-# Tipos, lint y pruebas de extremo a extremo en cada petición de fusión y en
-# cada cambio de main. Las pruebas compilan su propia copia en modo local,
-# así que no necesitan ninguna clave.
+# Tipos, lint y pruebas de extremo a extremo en cada petición de fusión. Las
+# pruebas compilan su propia copia en modo local, así que no necesitan ninguna
+# clave.
+#
+# Al fusionar en main no se repiten: la petición de fusión ya las pasó con ese
+# mismo código, y así se gasta la mitad de minutos de GitHub. Si hace falta,
+# se pueden lanzar a mano desde la pestaña Actions («Run workflow»).
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,8 +21,14 @@ concurrency:
 
 jobs:
   comprobar:
+    # Las pruebas, repartidas en dos máquinas a la vez: tardan la mitad.
+    name: comprobar (${{ matrix.parte }}/2)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        parte: [1, 2]
     steps:
       - uses: actions/checkout@v7
 
@@ -32,20 +41,23 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # Tipos y lint, una sola vez: en la primera parte.
       - name: Tipos
+        if: matrix.parte == 1
         run: npm run typecheck
 
       - name: Lint
+        if: matrix.parte == 1
         run: npm run lint
 
       # Las pruebas usan el Chrome que ya trae la máquina de GitHub.
       - name: Pruebas de extremo a extremo
-        run: npx playwright test --reporter=line
+        run: npx playwright test --shard=${{ matrix.parte }}/2 --reporter=line
 
       - name: Guardar el informe si algo falla
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: informe-de-pruebas
+          name: informe-de-pruebas-${{ matrix.parte }}
           path: test-results/
           retention-days: 7
