@@ -228,7 +228,7 @@ Todo es rectangular: radio 0 en botones, campos, chips, ventanas, diálogos y ca
 - **Style:** superficie alzada con marco suave, 38 px de alto, VT323.
 - **State:** lo elegido pasa a fondo papel con texto de ventana, sin marco. Los grupos son `radiogroup` con nombre.
 
-### Menú de opciones (la sesión de ¿A qué juego?)
+### Menú de opciones (la sesión de ¿A qué juego? y las preferencias de Ajustes)
 - **Cuándo:** una ventana que pregunta varias cosas a la vez, cada una con un valor. Se lee como los ajustes de un juego, no como un formulario.
 - **Forma:** una fila por pregunta, de 52 px, separada por líneas de 2 px que llegan al borde de la ventana. La pregunta va a la izquierda, en lavanda; a la derecha, `◀ valor ▶`, con el valor en blanco y centrado.
 - **Uso:** las flechas pasan al valor anterior o al siguiente y dan la vuelta. El valor es un desplegable nativo que se lee como texto, así que también se elige de la lista (a un toque, también desde el teclado y el lector de pantalla).
@@ -260,6 +260,7 @@ Rombo de color, etiqueta arcade en su color y nombre normal (`◆ NUEVA PARTIDA 
 - **Ficha:** mapa de niveles en píxeles con la guardiana, misiones y récords en ventanas; con trofeo, marcos dorados.
 - **Añadir juego:** cofre de píxeles que tiembla y se abre; el formulario va en las letras de la carcasa.
 - **Importar de Steam:** dos bahías en azul de consola con las letras de la carcasa.
+- **Ajustes:** los ajustes de una consola. A la izquierda, una columna de iconos de píxeles de 12 × 12, dibujados como la guardiana: disquete, cartucho, tele, libro, puerta, cofre y calavera. Cada icono lleva su estado debajo («Copia de hoy», «Sincronizada»…). El elegido se alza con marco dorado; «Borrar todo» va aparte y con marco rojo. Al lado, el panel del elegido, con su icono en grande y filas separadas por líneas. Las preferencias usan el menú de opciones. En el móvil, los iconos van de dos en dos y el panel queda debajo.
 - **Estadísticas:** la pantalla de récords. Un marcador con cuatro cifras; tu estantería con un cuadro por juego, del color de su estado; columnas por mes; joyas por jugar; y clasificaciones con puesto y puntos suspensivos. Las ventanas de una fila miden lo mismo y sus notas quedan al pie. Lo que casi nunca está completo (horas, gasto) va en una línea que dice cuántos tienen el dato.
 
 ## Do's and Don'ts

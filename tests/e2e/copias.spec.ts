@@ -19,6 +19,10 @@ test("cuándo toca recordar la copia de seguridad", () => {
   // «Ahora no» lo esconde 7 días.
   expect(shouldRemind(backupStatus(ago(40), ago(6), now), 3)).toBe(false);
   expect(shouldRemind(backupStatus(ago(40), ago(7), now), 3)).toBe(true);
+  // Cada cuánto se elige en Ajustes: cada semana avisa antes y «nunca» no avisa.
+  expect(shouldRemind(backupStatus(ago(10), null, now), 3, 7)).toBe(true);
+  expect(shouldRemind(backupStatus(ago(10), null, now), 3, 30)).toBe(false);
+  expect(shouldRemind(backupStatus(null, null, now), 3, null)).toBe(false);
   // Una fecha estropeada cuenta como «nunca».
   expect(backupStatus("no-es-una-fecha", null, now).daysSinceBackup).toBeNull();
 

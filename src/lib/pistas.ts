@@ -1,3 +1,5 @@
+import { readChoice } from "./local-choice";
+
 /*
  * Las pistas de la guardiana: cada una sale una sola vez por navegador, en el
  * momento en que hace falta. Sin almacenamiento no sale ninguna: mejor eso que
@@ -19,10 +21,15 @@ export const PISTAS: Record<PistaId, string> = {
 export const PISTA_PAGINA: Partial<Record<PistaId, number>> = { mapa: 3, datos: 3, moneda: 4, quejuego: 6 };
 
 export const PISTAS_KEY = "ludoteca:pistas-vistas";
+/** Las pistas se pueden apagar en Ajustes: entonces cuentan todas como vistas. */
+export const PISTAS_MODE_KEY = "ludoteca:pistas";
+export const PISTAS_MODES = ["activadas", "desactivadas"] as const;
+export type PistasMode = (typeof PISTAS_MODES)[number];
 
 const TODAS = Object.keys(PISTAS) as PistaId[];
 
 export function pistasVistas(): Set<PistaId> {
+  if (readChoice<PistasMode>(PISTAS_MODE_KEY, "activadas", PISTAS_MODES) === "desactivadas") return new Set(TODAS);
   try {
     const raw = localStorage.getItem(PISTAS_KEY);
     // Si no se puede escribir (cuota llena), la pista no se recordaría: mejor no enseñar ninguna.

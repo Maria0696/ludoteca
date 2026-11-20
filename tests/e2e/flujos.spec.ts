@@ -96,7 +96,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   const other = await context.newPage();
   await openApp(other, "/biblioteca");
   await addGame(other, { title: "Celeste", platform: "PS4", format: "Digital" });
-  await other.goto("/ajustes?apartado=copia");
+  await other.goto("/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
   const dialog = other.getByRole("dialog");
   await expect(dialog.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
@@ -111,7 +111,7 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await expect(other.getByText("3 títulos · 3 copias")).toBeVisible();
 
   // Importar el mismo archivo otra vez no duplica nada.
-  await other.goto("/ajustes?apartado=copia");
+  await other.goto("/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
   await expect(other.getByRole("dialog").getByText(/ya los tienes iguales/)).toBeVisible();
   await other.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
@@ -141,7 +141,7 @@ test("una copia de antes, con listas, se sigue importando y las listas se ignora
 
   const context = await browser.newContext({ locale: "es-ES" });
   const other = await context.newPage();
-  await openApp(other, "/ajustes?apartado=copia");
+  await openApp(other, "/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
   const dialog = other.getByRole("dialog");
   await expect(dialog.getByText(/Nuevo: 1 juego, 1 copia y 0 deseos\./)).toBeVisible();

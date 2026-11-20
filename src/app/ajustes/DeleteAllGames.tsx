@@ -18,25 +18,23 @@ export function DeleteAllGames() {
   const [open, setOpen] = useState(false);
   const games = library.games.length;
 
+  // Va dentro del panel «Borrar todo» de Ajustes: una fila con lo que hay y el botón, y los tres avisos.
   return (
-    <section className={`window ${styles.row}`} aria-labelledby="h-eliminar">
-      <div className={styles.label}>
-        <h2 id="h-eliminar">Eliminar todos los juegos</h2>
-        <p>Vacía la biblioteca de una vez. Tu lista de deseos no se toca.</p>
-      </div>
-      <div className={styles.panel}>
-        <p>{games > 0 ? `Ahora tienes ${count(games, "juego", "juegos")} y ${count(library.copies.length, "copia", "copias")}.` : "No hay juegos que eliminar."}</p>
+    <>
+      <div className={styles.prow}>
+        <p className={styles.name}>
+          Eliminar todos los juegos
+          <small>{games > 0 ? `Ahora tienes ${count(games, "juego", "juegos")} y ${count(library.copies.length, "copia", "copias")}.` : "No hay juegos que eliminar."}</small>
+        </p>
         {games > 0 && (
-          <div className={styles.actions}>
-            <button type="button" className="btn btn-danger" onClick={() => setOpen(true)}>
-              <Trash2 aria-hidden />
-              Eliminar todos los juegos
-            </button>
-          </div>
+          <button type="button" className="btn btn-danger" onClick={() => setOpen(true)}>
+            <Trash2 aria-hidden />
+            Eliminar todos los juegos
+          </button>
         )}
       </div>
       {open && <Warnings onClose={() => setOpen(false)} />}
-    </section>
+    </>
   );
 }
 

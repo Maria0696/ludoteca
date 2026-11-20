@@ -8,13 +8,13 @@ import type { Library } from "@/lib/model";
 import styles from "./backup-reminder.module.css";
 
 /**
- * Aviso discreto en el inicio cuando hace más de un mes que no se exporta
+ * Aviso discreto en el inicio cuando hace más de lo elegido en Ajustes (un mes, si no se cambia) que no se exporta
  * una copia (o nunca se ha hecho) y hay juegos o deseos propios que perder.
  */
 export function BackupReminder({ library }: { library: Library }) {
   const status = useBackupStatus();
   const own = library.games.filter((g) => !g.demo).length + library.wishlist.filter((w) => !w.demo).length;
-  if (!status || !shouldRemind(status, own)) return null;
+  if (!status || !shouldRemind(status, own, status.remindEvery)) return null;
 
   const days = status.daysSinceBackup;
   return (
