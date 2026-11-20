@@ -116,7 +116,7 @@ export function Quests({
             ))}
           </Objective>
           <Objective {...shared} stage={2} done={Boolean(game.startedAt)} title="Empieza la aventura">
-            <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={(v) => update({ startedAt: v })} />
+            <Editable kind="date" clearable label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={(v) => update({ startedAt: v })} />
           </Objective>
           <Objective
             {...shared}
@@ -133,7 +133,7 @@ export function Quests({
             </div>
           </Objective>
           <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia">
-            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
+            <Editable kind="date" clearable label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
           </Objective>
         </ol>
       </div>

@@ -797,6 +797,39 @@
 .value:hover {
   text-decoration-color: var(--white);
 }
+/* Borrar una fecha anotada: discreto, al lado del valor. */
+.valueRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+}
+.valueRow .saved {
+  margin-left: 0;
+}
+.clear {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--soft);
+  font-size: var(--size-note);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.clear:hover {
+  color: var(--white);
+}
+.clear:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 2px;
+}
+@media (max-width: 899px) {
+  .clear {
+    min-height: 44px;
+  }
+}
 .add {
   display: inline-flex;
   align-items: center;

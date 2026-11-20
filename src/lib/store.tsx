@@ -274,14 +274,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setFinishedAt(id, date) {
         const previous = findGame(id);
         if (!previous) return;
-        // Terminar la historia es completarlo; borrar la fecha no lo devuelve a otro estado.
+        // Terminar la historia es completarlo. Borrar la fecha lo descompleta: vuelve a Jugando si lo
+        // habías empezado y si no a Pendiente; al 100 % sigue completado, porque el trofeo dice que lo terminaste.
         const finishing = Boolean(date) && previous.status !== "completado";
-        const next = finishing ? withStatus(previous, "completado") : { ...previous, updatedAt: nowIso() };
+        const unfinishing = !date && previous.status === "completado" && !previous.completed100;
+        const backTo: GameStatus = previous.startedAt || previous.hoursPlayed || previous.lastPlayedAt ? "jugando" : "pendiente";
+        const next = finishing
+          ? withStatus(previous, "completado")
+          : unfinishing
+            ? { ...previous, status: backTo, updatedAt: nowIso() }
+            : { ...previous, updatedAt: nowIso() };
         void saveGame({ ...next, finishedAt: date });
-        if (finishing) {
-          toast(`«${previous.title}» pasa a ${STATUS_LABEL.completado}`, {
-            action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
-          });
+        if (finishing || unfinishing) {
+          const message = finishing ? `«${previous.title}» pasa a ${STATUS_LABEL.completado}` : `«${previous.title}» vuelve a ${STATUS_LABEL[backTo]}`;
+          toast(message, { action: { label: "Deshacer", onClick: () => undoStatus([previous]) } });
         }
       },
 

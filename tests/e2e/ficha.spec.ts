@@ -116,10 +116,38 @@ test("anotar la fecha de «Termina la historia» pasa el juego a Completado con 
   await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
 
-  // Borrar la fecha no le cambia el estado.
-  await quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" }).click();
-  await quests.getByLabel("Terminado", { exact: true }).fill("");
+  // La fecha se borra con su botón; sin empezar, vuelve a Pendiente.
+  await quests.getByRole("button", { name: "Borrar Terminado" }).click();
+  await expect(quests.getByRole("button", { name: "Terminado: añadir" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Celeste» vuelve a Pendiente")).toBeVisible();
+});
+
+test("borrar la fecha de fin de un juego empezado lo devuelve a Jugando; al 100 %, sigue completado", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Tunic/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Tunic" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  const quests = page.getByRole("region", { name: "Misiones" });
+  await page.getByRole("button", { name: /He jugado hoy/ }).click();
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+
+  await quests.getByRole("button", { name: "Terminado: añadir" }).click();
+  await quests.getByLabel("Terminado", { exact: true }).fill("3/10/2025");
   await quests.getByLabel("Terminado", { exact: true }).press("Enter");
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await quests.getByRole("button", { name: "Borrar Terminado" }).click();
+  await expect(status.getByRole("radio", { name: "Jugando" })).toHaveAttribute("aria-checked", "true");
+  // «Deshacer» devuelve el estado y la fecha.
+  await page.locator("[data-sonner-toast]").filter({ hasText: "«Tunic» vuelve a Jugando" }).getByRole("button", { name: "Deshacer" }).click();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+
+  // Al 100 %, borrar la fecha no le quita el completado: el trofeo dice que lo terminaste.
+  await page.getByRole("button", { name: "100 %", exact: true }).click();
+  await page.getByText(/Has completado Tunic del todo/).click();
+  await quests.getByRole("button", { name: "Borrar Terminado" }).click();
   await expect(quests.getByRole("button", { name: "Terminado: añadir" })).toBeVisible();
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
 });
