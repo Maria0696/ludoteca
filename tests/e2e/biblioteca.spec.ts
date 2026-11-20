@@ -125,21 +125,22 @@ test("buscar, filtrar por plataforma, formato y estado, y ordenar", async ({ pag
   await expect(page.getByText("22 títulos", { exact: true })).toHaveCount(0);
 
   await page.getByRole("combobox").filter({ hasText: "Por plataforma" }).selectOption("ninguno");
-  await page.getByRole("combobox").filter({ hasText: "Añadidos recientemente" }).selectOption("titulo");
-  await expect(page).toHaveURL(/orden=titulo/);
+  // Por defecto, por título de la A a la Z; sin nada en la dirección.
+  await expect(page.getByRole("combobox").filter({ hasText: "Título (A–Z)" })).toHaveValue("titulo");
+  await expect(page).not.toHaveURL(/orden=/);
   await expect(cards(page).first()).toContainText("A Short Hike");
   const titles = await cards(page).locator("[data-card-title]").allInnerTexts();
   const sorted = [...titles].sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base", numeric: true }));
   expect(titles).toEqual(sorted);
 
   await page.getByRole("combobox").filter({ hasText: "Título (A–Z)" }).selectOption("valoracion");
+  await expect(page).toHaveURL(/orden=valoracion/);
   await expect(cards(page).first()).toContainText("The Legend of Zelda");
 });
 
 test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las flechas lo mueven", async ({ page }) => {
   await loadDemo(page);
   await page.getByRole("combobox").filter({ hasText: "Por plataforma" }).selectOption("ninguno");
-  await page.getByRole("combobox").filter({ hasText: "Añadidos recientemente" }).selectOption("titulo");
 
   // El estado se dice como en una recreativa, en español, sin perder el nombre de siempre.
   const shortHike = cards(page).first();

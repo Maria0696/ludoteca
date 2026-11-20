@@ -5,7 +5,7 @@ import { parseCsv } from "../../src/lib/csv";
 import { type GtEntry, type GtItem, classifyGameTracker, gtPlatform, parseGameTracker, planCopies, planGameTrackerImport } from "../../src/lib/gametracker-import";
 import { EMPTY_FILTERS, buildEntries, facetValues, filterEntries } from "../../src/lib/filters";
 import { type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
-import { addGame, expectCarcasaText, openApp } from "./helpers";
+import { addGame, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const HEADER =
   "createdAt;updatedAt;id;externalId;source;title;alternativeNames;externalLink;cover;artworks;externalRating;userRating;firstReleaseDate;gameModes;playerPerspectives;releaseStatus;summary;availablePlatforms;userPlatforms;genres;developers;publishers;spaces;tags;videos;formats;location;storageUnit;section";
@@ -319,18 +319,20 @@ async function importSample(page: Page) {
 const shelf = (page: Page, name: string) => page.locator("main li[aria-hidden] > strong").filter({ hasText: new RegExp(`^${name}$`) });
 
 test.describe("tienda", () => {
-  test("el filtro de tienda deja los juegos con alguna copia de esa tienda", () => {
+  test("el filtro de tienda deja los juegos con alguna copia de esa tienda y solo ofrece las tiendas de PC elegidas", () => {
     const a = createGame({ title: "A" });
     const b = createGame({ title: "B" });
     const c = createGame({ title: "C" });
+    const d = createGame({ title: "D" });
     const library: Library = {
       ...emptyLibrary(),
-      games: [a, b, c],
+      games: [a, b, c, d],
       copies: [
         createCopy(a.id, { platform: "PC", format: "digital", store: "Steam" }),
         createCopy(b.id, { platform: "PC", format: "digital", store: "Epic Games" }),
         createCopy(b.id, { platform: "PC", format: "digital", store: "Steam" }),
-        createCopy(c.id, { platform: "PS4", format: "fisico" }),
+        createCopy(c.id, { platform: "PS4", format: "fisico", store: "GAME" }),
+        createCopy(d.id, { platform: "PC", format: "digital", store: "GOG" }),
       ],
     };
     const entries = buildEntries(library);
@@ -349,16 +351,39 @@ test.describe("tienda", () => {
     await expect(shelf(page, "PC")).toHaveCount(0);
     await expect(page.locator("main").getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" })).toHaveCount(2);
 
-    const steam = page.getByRole("group", { name: "Tienda" }).getByRole("button", { name: /^Steam/ });
-    await expect(steam).toContainText("2");
-    await steam.click();
+    // La tienda solo se ofrece dentro de PC.
+    await expect(page.getByRole("group", { name: "Tienda" })).toHaveCount(0);
+    const platforms = page.getByRole("tablist", { name: "Plataforma" });
+    await platforms.getByRole("tab", { name: /^PC/ }).click();
+    const stores = page.getByRole("group", { name: "Tienda" });
+    await expect(stores.getByRole("button")).toHaveText(["Epic Games 2", "Steam 2"]);
+    await stores.getByRole("button", { name: /^Steam/ }).click();
     await expect(page).toHaveURL(/tienda=Steam/);
     const main = page.locator("main");
     await expect(main.getByRole("listitem").filter({ hasText: "Final Fantasy X/X-2 HD Remaster" }).first()).toBeVisible();
     await expect(main.getByRole("listitem").filter({ hasText: "Ark: Survival Evolved" }).first()).toBeVisible();
-    await expect(main.getByText("Horizon Zero Dawn")).toHaveCount(0);
-    await page.getByRole("button", { name: "Restablecer", exact: true }).first().click();
+    await expect(main.getByText("Asgard's Wrath")).toHaveCount(0);
+    // Al salir de PC, el filtro de tienda se va con ella.
+    await platforms.getByRole("tab", { name: /^Todas/ }).click();
     await expect(page).not.toHaveURL(/tienda=/);
+    await expect(main.getByText("Horizon Zero Dawn").first()).toBeVisible();
+    // Una dirección antigua con tienda pero sin PC no esconde nada.
+    await openApp(page, "/biblioteca?tienda=Steam");
+    await expect(main.getByText("Horizon Zero Dawn").first()).toBeVisible();
+  });
+
+  test("en el ordenador, todas las plataformas caben: la fila pasa a otra línea", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 900, height: 800 });
+    await loadDemo(page);
+    await addGame(page, { title: "Halo Infinite", platform: "Xbox Series" });
+    await addGame(page, { title: "Beat Saber", platform: "Meta Quest" });
+    await addGame(page, { title: "Sonic the Hedgehog", platform: "Mega Drive" });
+    const tabs = page.getByRole("tablist", { name: "Plataforma" }).getByRole("tab");
+    await expect(tabs).toHaveCount(8);
+    const width = page.viewportSize()!.width;
+    const items = tabs.or(page.getByRole("link", { name: /^Mis listas/ }));
+    for (const right of await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right))) expect(right).toBeLessThanOrEqual(width);
   });
 
   test("sin tiendas, la balda se llama PC y no hay filtro de tienda", async ({ page }) => {

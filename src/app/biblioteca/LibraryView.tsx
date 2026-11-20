@@ -58,7 +58,7 @@ export function LibraryView() {
   }
 
   const tab = params.get("plataforma") ?? "";
-  const sort = (SORTS as readonly string[]).includes(params.get("orden") ?? "") ? (params.get("orden") as SortKey) : "anadido";
+  const sort = (SORTS as readonly string[]).includes(params.get("orden") ?? "") ? (params.get("orden") as SortKey) : "titulo";
   const view = params.get("vista") === "lista" ? "lista" : "caratulas";
   const group: Group = (params.get("agrupar") as Group) || (tab ? "ninguno" : "plataforma");
   const filters: LibraryFilters = useMemo(
@@ -66,7 +66,8 @@ export function LibraryView() {
       q: params.get("q") ?? "",
       platforms: tab ? [tab] : [],
       formats: readList(params, "formato") as Format[],
-      stores: readList(params, "tienda"),
+      // La tienda solo cuenta dentro de PC: fuera de ella no se ve, así que tampoco filtra.
+      stores: tab === "PC" ? readList(params, "tienda") : [],
       genres: readList(params, "genero"),
       statuses: readList(params, "estado") as GameStatus[],
       favorites: params.get("favoritos") === "1",
@@ -173,7 +174,7 @@ export function LibraryView() {
           Favoritos
         </button>
       </div>
-      {facets.stores.length > 0 && (
+      {tab === "PC" && facets.stores.length > 0 && (
         <div className={styles.filterGroup} role="group" aria-label="Tienda">
           {facets.stores.map((st) => (
             <button key={st.value} type="button" className={styles.chip} aria-pressed={filters.stores.includes(st.value)} onClick={() => toggleIn("tienda", st.value)}>
@@ -208,7 +209,7 @@ export function LibraryView() {
     <>
       <label className={styles.sort}>
         <span className="sr-only">Ordenar</span>
-        <select className="select" value={sort} onChange={(e) => setParams({ orden: e.target.value === "anadido" ? null : e.target.value })}>
+        <select className="select" value={sort} onChange={(e) => setParams({ orden: e.target.value === "titulo" ? null : e.target.value })}>
           {SORTS.map((s) => (
             <option key={s} value={s}>
               {SORT_LABEL[s]}
@@ -278,7 +279,7 @@ export function LibraryView() {
 
       <div className={styles.plats}>
         <div role="tablist" aria-label="Plataforma" style={{ display: "contents" }}>
-          <button type="button" role="tab" className={styles.plat} style={led("#ffffff")} aria-selected={!tab} onClick={() => setParams({ plataforma: null })}>
+          <button type="button" role="tab" className={styles.plat} style={led("#ffffff")} aria-selected={!tab} onClick={() => setParams({ plataforma: null, tienda: null })}>
             <i aria-hidden />
             Todas <small>{entries.length}</small>
           </button>
@@ -290,7 +291,7 @@ export function LibraryView() {
               className={styles.plat}
               style={led(platformColor(p.value))}
               aria-selected={tab === p.value}
-              onClick={() => setParams({ plataforma: p.value })}
+              onClick={() => setParams({ plataforma: p.value, tienda: null })}
             >
               <i aria-hidden />
               {p.value} <small>{p.count}</small>

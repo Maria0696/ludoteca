@@ -209,6 +209,13 @@
 .plats::-webkit-scrollbar {
   display: none;
 }
+/* En el ordenador no hay deslizar a ciegas: lo que no cabe pasa a otra línea. */
+@media (min-width: 900px) {
+  .plats {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
 .plat {
   flex: none;
   display: inline-flex;
