@@ -97,6 +97,33 @@ test("marcar el 100 % pasa el juego a Completado; quitarlo no le cambia el estad
   await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
 });
 
+test("anotar la fecha de «Termina la historia» pasa el juego a Completado con esa fecha", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Celeste", platform: "PC" });
+  await cards(page).getByRole("link", { name: /Celeste/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Celeste" })).toBeVisible({ timeout: 20_000 });
+  const status = page.getByRole("radiogroup", { name: "Estado" });
+  const quests = page.getByRole("region", { name: "Misiones" });
+  await expect(status.getByRole("radio", { name: "Pendiente" })).toHaveAttribute("aria-checked", "true");
+
+  await quests.getByRole("button", { name: "Terminado: añadir" }).click();
+  await quests.getByLabel("Terminado", { exact: true }).fill("3/10/2025");
+  await quests.getByLabel("Terminado", { exact: true }).press("Enter");
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByText("«Celeste» pasa a Completado")).toBeVisible();
+  // Se queda la fecha anotada, no la de hoy, también tras recargar.
+  await page.reload();
+  await expect(quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+
+  // Borrar la fecha no le cambia el estado.
+  await quests.getByRole("button", { name: "Terminado: 3 oct 2025. Editar" }).click();
+  await quests.getByLabel("Terminado", { exact: true }).fill("");
+  await quests.getByLabel("Terminado", { exact: true }).press("Enter");
+  await expect(quests.getByRole("button", { name: "Terminado: añadir" })).toBeVisible();
+  await expect(status.getByRole("radio", { name: "Completado" })).toHaveAttribute("aria-checked", "true");
+});
+
 test("el nombre y los estados van en una sola línea, y los recuadros igualados", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "The Legend of Zelda: Tears of the Kingdom", platform: "Switch", format: "Físico" });

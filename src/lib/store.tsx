@@ -43,6 +43,8 @@ interface Actions {
   setStatusMany(ids: string[], status: GameStatus): void;
   /** Marca o quita el 100 %; marcarlo también lo pasa a Completado, en un solo guardado. */
   setCompleted100(id: string, done: boolean): void;
+  /** Anota o borra la fecha de fin; anotarla también lo pasa a Completado, en un solo guardado. */
+  setFinishedAt(id: string, date: string | null): void;
   markPlayedToday(id: string): void;
   deleteGame(id: string): void;
   /** Vacía la biblioteca; si no lo consigue del todo, avisa con un error. */
@@ -262,6 +264,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const finishing = done && previous.status !== "completado";
         const next = finishing ? withStatus(previous, "completado") : { ...previous, updatedAt: nowIso() };
         void saveGame({ ...next, completed100: done });
+        if (finishing) {
+          toast(`«${previous.title}» pasa a ${STATUS_LABEL.completado}`, {
+            action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
+          });
+        }
+      },
+
+      setFinishedAt(id, date) {
+        const previous = findGame(id);
+        if (!previous) return;
+        // Terminar la historia es completarlo; borrar la fecha no lo devuelve a otro estado.
+        const finishing = Boolean(date) && previous.status !== "completado";
+        const next = finishing ? withStatus(previous, "completado") : { ...previous, updatedAt: nowIso() };
+        void saveGame({ ...next, finishedAt: date });
         if (finishing) {
           toast(`«${previous.title}» pasa a ${STATUS_LABEL.completado}`, {
             action: { label: "Deshacer", onClick: () => undoStatus([previous]) },

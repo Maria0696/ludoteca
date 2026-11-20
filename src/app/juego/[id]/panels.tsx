@@ -84,6 +84,7 @@ export function Quests({
   update,
   onAddCopy,
   onToggle100,
+  onFinish,
 }: {
   game: Game;
   copies: Copy[];
@@ -91,6 +92,8 @@ export function Quests({
   update: Update;
   onAddCopy: () => void;
   onToggle100: () => void;
+  /** Anotar la fecha de fin también lo pasa a Completado. */
+  onFinish: (date: string | null) => void;
 }) {
   const percent = progressPercent(game);
   const platforms = [...new Set(copies.map((c) => c.platform))];
@@ -130,7 +133,7 @@ export function Quests({
             </div>
           </Objective>
           <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia">
-            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={(v) => update({ finishedAt: v })} />
+            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
           </Objective>
         </ol>
       </div>

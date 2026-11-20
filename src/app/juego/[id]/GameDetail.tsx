@@ -191,7 +191,7 @@ export function GameDetail({ id }: { id: string }) {
 
         <div ref={columnsRef} className={styles.columns}>
           <section className={`${styles.window} ${styles.panel}`} aria-label="Misiones">
-            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} />
+            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} onFinish={(date) => actions.setFinishedAt(game.id, date)} />
           </section>
           <div className={styles.side}>
             <section className={`${styles.window} ${styles.panel}`} aria-label="Tus récords">
