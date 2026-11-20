@@ -165,38 +165,29 @@ export function WishlistView() {
                         {w.platform ?? "Cualquier plataforma"} · prioridad {PRIORITY_LABEL[w.priority].toLowerCase()}
                         {w.demo ? " · demostración" : ""}
                       </span>
-                      {w.notes && <p className={styles.notes}>{w.notes}</p>}
-                    </div>
-                    {/* Un solo bloque de precio: lo último visto con su veredicto y, debajo, dónde y el objetivo. */}
-                    <div className={styles.price}>
+                      {/* El precio, como una etiqueta bajo el título; sin precio ni objetivo, nada. */}
                       {p ? (
-                        <>
-                          <span className={styles.priceLabel}>Último precio</span>
-                          <p className={styles.priceLine}>
-                            <span className="num">{formatMoney(p.amount)}</span>
-                            {diff != null && (
-                              <span className={diff <= 0 ? `${styles.verdict} ${styles.good}` : styles.verdict}>
-                                {diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}
-                              </span>
-                            )}
+                        <div className={styles.priceRow}>
+                          <p className={diff != null && diff <= 0 ? `${styles.tag} ${styles.tagGood}` : styles.tag}>
+                            <span className="sr-only">Último precio: </span>
+                            <span className={`${styles.amount} num`}>{formatMoney(p.amount)}</span>
+                            {diff != null && <span className={styles.verdict}>{diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}</span>}
                           </p>
-                          <p className={styles.priceMeta}>{[p.store, formatDate(p.date)].filter(Boolean).join(" · ")}</p>
-                          {w.targetPrice != null && <p className={styles.priceMeta}>Objetivo {formatMoney(w.targetPrice)}</p>}
-                        </>
-                      ) : w.targetPrice != null ? (
-                        <>
-                          <span className={styles.priceLabel}>Objetivo</span>
-                          <p className={styles.priceLine}>
-                            <span className="num">{formatMoney(w.targetPrice)}</span>
-                          </p>
-                          <p className={styles.priceMeta}>Aún no has apuntado ningún precio</p>
-                        </>
+                          <span className={styles.priceMeta}>
+                            {[p.store, formatDate(p.date), w.targetPrice != null ? `objetivo ${formatMoney(w.targetPrice)}` : null].filter(Boolean).join(" · ")}
+                          </span>
+                        </div>
                       ) : (
-                        <>
-                          <span className={styles.priceLabel}>Precio</span>
-                          <p className={styles.priceMeta}>Sin objetivo ni precios todavía</p>
-                        </>
+                        w.targetPrice != null && (
+                          <div className={styles.priceRow}>
+                            <p className={`${styles.tag} ${styles.tagTarget}`}>
+                              <span className={`${styles.verdict} num`}>Objetivo {formatMoney(w.targetPrice)}</span>
+                            </p>
+                            <span className={styles.priceMeta}>sin precio visto</span>
+                          </div>
+                        )
                       )}
+                      {w.notes && <p className={styles.notes}>{w.notes}</p>}
                     </div>
                     {/* La acción principal, enmarcada; las demás, calladas debajo. */}
                     <div className={styles.actions}>

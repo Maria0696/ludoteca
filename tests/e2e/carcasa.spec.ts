@@ -289,27 +289,27 @@ test("Deseos en la carcasa: título en píxeles, una ventana y todo legible", as
   }
 });
 
-test("Deseos: el precio se lee de un vistazo y solo «Ya lo tengo» va enmarcado", async ({ page }) => {
+test("Deseos: el precio es una etiqueta bajo el título y solo «Ya lo tengo» va enmarcado", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/deseos");
   const row = (title: string) => page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: title });
-  // Con precio: el último visto, su veredicto al lado y, debajo, tienda y fecha en una línea y el objetivo en otra.
+  // Con precio: la etiqueta con la cifra y su veredicto, debajo del título; al lado, tienda, fecha y objetivo.
   const silksong = row("Hollow Knight: Silksong");
-  await expect(silksong.getByText("Último precio", { exact: true })).toBeVisible();
+  const tag = silksong.getByText("19,50 €", { exact: true });
   await expect(silksong.getByText("4,50 € por encima", { exact: true })).toBeVisible();
+  const title = (await silksong.getByText("Hollow Knight: Silksong", { exact: true }).boundingBox())!;
+  const tagBox = (await tag.boundingBox())!;
+  expect(tagBox.y).toBeGreaterThan(title.y);
+  expect(tagBox.x - title.x).toBeLessThan(30);
   const meta = silksong.getByText(/Nintendo eShop/);
-  await expect(silksong.getByText("Objetivo 15,00 €", { exact: true })).toBeVisible();
-  const lines = await meta.evaluate((el) => {
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
-  });
-  expect(lines).toBe(1);
-  // Sin precio apuntado: el objetivo manda, sin rayas vacías.
-  await expect(row("Okami HD").getByText("Objetivo", { exact: true })).toBeVisible();
-  await expect(row("Okami HD")).toContainText("Aún no has apuntado ningún precio");
-  await expect(row("Pentiment")).toContainText("Sin objetivo ni precios todavía");
-  for (const title of ["Okami HD", "Pentiment"]) await expect(row(title)).not.toContainText("—");
+  await expect(meta).toHaveText(/^Nintendo eShop · .+ · objetivo 15,00\s€$/);
+  // Sin precio visto: la etiqueta dice el objetivo.
+  await expect(row("Okami HD").getByText("Objetivo 12,00 €", { exact: true })).toBeVisible();
+  await expect(row("Okami HD")).toContainText("sin precio visto");
+  // Sin precio ni objetivo: nada que leer, ni rayas ni frases de relleno.
+  await expect(row("Pentiment")).not.toContainText("€");
+  await expect(row("Pentiment")).not.toContainText("—");
+  await expect(row("Pentiment")).not.toContainText("todavía");
   // Una sola acción enmarcada; las demás, calladas y con su nombre.
   const background = (name: string | RegExp) => silksong.getByRole("button", { name }).evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(await background("Ya lo tengo")).not.toBe("rgba(0, 0, 0, 0)");
