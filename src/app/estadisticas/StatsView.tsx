@@ -58,8 +58,8 @@ export function StatsView() {
       <header className={styles.head}>
         <h1 className="screen-title">Estadísticas</h1>
         <p>
-          Calculadas con lo que has registrado{hasDemo ? ", incluidos los datos de demostración" : ""}. Un título es un juego; una copia, cada
-          ejemplar que tienes de él.
+          Calculadas con lo que has registrado,{hasDemo ? " incluidos los datos de demostración," : ""} contando cada juego como un título y cada
+          ejemplar como una copia.
         </p>
       </header>
 

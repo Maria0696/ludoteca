@@ -14,7 +14,6 @@
   color: var(--muted);
   font-size: var(--size-body);
   line-height: 1.2;
-  max-width: 75ch;
 }
 
 .hero,
