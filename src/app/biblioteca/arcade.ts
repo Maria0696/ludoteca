@@ -25,6 +25,12 @@ export function platformFamilies<T extends { value: string }>(platforms: readonl
     .filter((f) => f.items.length > 0);
 }
 
+/** Color de cada familia de plataformas: el mismo que llevan sus botones en la biblioteca. */
+export function familyColor(name: string): string {
+  if (name === "PC") return "#c8c8d4";
+  return FAMILY_COLOR[name] ?? "#ff3fa4";
+}
+
 /** Color del botón de cada plataforma: el de su familia, o rosa si es otra. */
 export function platformColor(platform: string): string {
   if (platform === "PC") return "#c8c8d4";

@@ -1,218 +1,377 @@
-/* Estadísticas en la carcasa: una ventana por sección, cifras grandes en letra de terminal. */
+/* Estadísticas como la pantalla de récords de un juego: el marcador, tu estantería y el año, lo útil y la nota y la salida.
+   Las ventanas de una misma fila miden lo mismo y su nota final baja al pie, para que las notas queden alineadas. */
 .page {
   padding: 36px var(--gutter) 0;
   display: grid;
-  gap: 24px;
-}
-.title {
-  margin-bottom: 10px;
-}
-.intro,
-.extra {
-  color: var(--muted);
+  gap: 28px;
   font-family: var(--font-term);
+}
+.head {
+  display: grid;
+  gap: 10px;
+}
+.head p {
+  color: var(--muted);
   font-size: var(--size-body);
   line-height: 1.2;
+  max-width: 75ch;
 }
 
-/* En cifras: celdas sin marco propio, separadas por líneas. */
-.kpis {
+.hero,
+.trio,
+.duo {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  font-family: var(--font-term);
+  gap: 28px;
+  align-items: stretch;
 }
-.kpis > div {
-  min-width: 0;
-  padding: 4px 18px;
-  border-left: 2px solid var(--line);
-  animation: rise 520ms var(--ease-out) backwards;
+.hero {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
 }
-.kpis > div:first-child {
-  padding-left: 0;
-  border-left: 0;
+.trio {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.kpis > div:nth-child(2) {
-  animation-delay: 40ms;
-}
-.kpis > div:nth-child(3) {
-  animation-delay: 80ms;
-}
-.kpis > div:nth-child(4) {
-  animation-delay: 120ms;
-}
-.kpis > div:nth-child(5) {
-  animation-delay: 160ms;
-}
-.kpis > div:nth-child(6) {
-  animation-delay: 200ms;
-}
-.kpis dt {
-  font-size: var(--size-label);
-  line-height: 1.1;
-}
-.kpis dd {
-  margin: 8px 0 6px;
-  color: var(--white);
-  font-size: 56px;
-  line-height: 1;
-}
-.kpis p {
-  color: var(--muted);
-  font-size: var(--size-note);
-  line-height: 1.1;
-}
-
-.grid {
-  display: grid;
+.duo {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  align-items: start;
 }
 .panel {
-  display: grid;
-  gap: 18px;
-  font-family: var(--font-term);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
-/* El hueco bajo el título ya lo pone el gap de la ventana. */
 .panel > h2 {
   margin-bottom: 0;
 }
-.bars {
-  display: grid;
-  gap: 14px;
+.note {
+  color: var(--muted);
+  font-size: var(--size-note);
+  line-height: 1.2;
 }
-.bars li {
-  display: grid;
-  gap: 6px;
+.panel > .note:last-child {
+  margin-top: auto;
 }
-.barLabel {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.empty {
+  color: var(--muted);
   font-size: var(--size-body);
 }
-.barLabel a {
+.page a {
   text-decoration: none;
 }
-.barLabel a:hover {
+.page a:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.barLabel small {
-  font-size: var(--size-note);
-  color: var(--muted);
+
+/* Marcador: cuatro cifras separadas por líneas, sin marco propio. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.track {
-  display: block;
-  height: 12px;
-  background: var(--raised);
-}
-.fill {
-  display: block;
-  height: 12px;
-  background: var(--paper);
+.board > div {
   min-width: 0;
-  transform-origin: left;
-  animation: grow 900ms var(--ease-out) backwards;
+  padding: 4px 20px;
+  border-left: 2px solid var(--line);
 }
-@keyframes grow {
-  from {
-    transform: scaleX(0);
-  }
+.board > div:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
-.stack {
-  display: flex;
-  height: 36px;
-  overflow: hidden;
+.board dt {
+  color: var(--muted);
+  font-size: var(--size-label);
+  line-height: 1.1;
+}
+/* Una cifra nunca se parte: «12.345» en dos líneas se leería como otro número. */
+.board dd {
+  margin-top: 8px;
+  color: var(--white);
+  font-size: 56px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.board dd[data-status="pendiente"] {
+  color: var(--st-pendiente);
+}
+.board dd[data-status="completado"] {
+  color: var(--st-completado);
+}
+
+/* Tu estantería: un cuadro por juego, del color de su estado. */
+.waffle {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 12px);
   gap: 3px;
 }
-.stackA {
-  background: var(--paper);
-}
-/* Digital: un tono que no es de ningún estado, para no confundirlo con «Completado». */
-.stackB {
-  background: var(--muted);
-}
-.legend {
-  display: flex;
-  gap: 36px;
-}
-.legend dt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--size-label);
-  color: var(--muted);
-}
-.legend i {
-  display: inline-block;
+.waffle i {
   width: 12px;
   height: 12px;
 }
-.legend dd {
-  color: var(--white);
-  font-size: 40px;
-  line-height: 1.1;
+.waffle[data-size="s"] {
+  grid-template-columns: repeat(auto-fill, 8px);
+  gap: 2px;
 }
-.legend small,
-.footnote {
-  color: var(--muted);
-  font-family: var(--font-term);
-  font-size: var(--size-note);
-  line-height: 1.15;
+.waffle[data-size="s"] i {
+  width: 8px;
+  height: 8px;
 }
-/* Si una celda se queda por debajo de 240 px, horas y gasto se apilan en vez de partir la cifra. */
-.pair {
+.waffle i[data-status="pendiente"],
+.legend i[data-status="pendiente"] {
+  background: var(--st-pendiente);
+}
+.waffle i[data-status="jugando"],
+.legend i[data-status="jugando"] {
+  background: var(--st-jugando);
+}
+.waffle i[data-status="pausado"],
+.legend i[data-status="pausado"] {
+  background: var(--st-pausado);
+}
+.waffle i[data-status="completado"],
+.legend i[data-status="completado"] {
+  background: var(--st-completado);
+}
+.waffle i[data-status="abandonado"],
+.legend i[data-status="abandonado"] {
+  background: var(--st-abandonado);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  font-size: var(--size-meta);
+}
+.legend a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.legend i {
+  width: 12px;
+  height: 12px;
+}
+
+/* Columnas: superados por mes, nota de Metacritic y década de salida. */
+.cols {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 22px;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+  height: 150px;
+  border-bottom: 2px solid var(--line);
 }
-.pair dt {
-  font-size: var(--size-label);
-  color: var(--muted);
+.col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 24px;
 }
-.pair dd {
-  margin: 6px 0;
+.col b {
   color: var(--white);
-  font-size: 48px;
+  font-size: var(--size-meta);
+  font-weight: 400;
   line-height: 1;
 }
-/* Una cifra nunca se parte: «12.345,6 / 7 €» se leería como otro número. */
-.kpis dd,
-.legend dd,
-.pair dd {
+.col i {
+  width: 100%;
+  max-width: 42px;
+  background: var(--paper);
+}
+.col i[data-tone="completado"] {
+  background: var(--st-completado);
+}
+.col i[data-tone="lavanda"] {
+  background: var(--muted);
+}
+.col[data-future] i {
+  background: none;
+}
+.colx {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: -8px;
+  color: var(--faint);
+  font-size: var(--size-note);
+  text-align: center;
+}
+.colx [data-now] {
+  color: var(--white);
+}
+
+/* Joyas por jugar. */
+.gems {
+  display: grid;
+}
+.gems li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 2px solid var(--line);
+}
+.gems li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.gemTitle {
+  display: grid;
+  min-width: 0;
+  font-size: var(--size-body);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.gemTitle small {
+  color: var(--faint);
+  font-size: var(--size-note);
+}
+.score {
+  min-width: 2.4em;
+  height: 32px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--raised);
+  box-shadow: var(--pixel-frame-soft);
+  color: var(--white);
+  font-size: var(--size-body);
+}
+.score[data-top] {
+  box-shadow: inset 0 0 0 2px var(--paper);
+}
+
+/* De dónde vienen: una barra por familias y el desglose de cada una. */
+.famBar {
+  display: flex;
+  gap: 2px;
+  height: 22px;
+}
+.famBar i {
+  min-width: 4px;
+}
+.families > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  padding: 9px 0;
+  border-top: 2px solid var(--line);
+}
+.families > div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.families dt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--size-body);
+}
+.families dt i {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+.families dd[data-count] {
+  color: var(--white);
+  font-size: var(--size-body);
+  white-space: nowrap;
+}
+.families .sub {
+  grid-column: 1 / -1;
+  padding-left: 22px;
+  color: var(--faint);
+  font-size: var(--size-note);
+  line-height: 1.25;
+}
+
+/* Géneros como clasificación de recreativa: puesto, nombre, puntos y cifra. */
+.ranking {
+  display: grid;
+  gap: 4px;
+  font-size: var(--size-body);
+}
+.ranking li {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, auto) minmax(12px, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+}
+.rank {
+  color: var(--faint);
+}
+.ranking li:first-child .rank {
+  color: var(--paper);
+}
+.ranking a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dots {
+  border-bottom: 2px dotted var(--line);
+  transform: translateY(-5px);
+}
+.ranking .num {
+  color: var(--white);
+}
+
+/* Lo anotado a mano: horas, gasto y formato, con cuántos tienen el dato. */
+.footline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  padding: 14px 0 8px;
+  border-top: 2px solid var(--line);
+  color: var(--muted);
+  font-size: var(--size-meta);
+  line-height: 1.2;
+}
+.footline b {
+  color: var(--white);
+  font-weight: 400;
   white-space: nowrap;
 }
 
 @media (max-width: 1200px) {
-  .kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    row-gap: 18px;
-  }
-  .kpis > div:nth-child(4) {
-    padding-left: 0;
-    border-left: 0;
+  .trio {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 899px) {
   .page {
     padding-top: 22px;
+    gap: 22px;
   }
-  .kpis {
+  .hero,
+  .trio,
+  .duo {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 16px;
   }
-  .kpis > div:nth-child(4) {
-    padding-left: 18px;
-    border-left: 2px solid var(--line);
-  }
-  .kpis > div:nth-child(odd) {
+  .board > div:nth-child(odd) {
     padding-left: 0;
     border-left: 0;
   }
-  .kpis dd {
-    font-size: 40px;
+  .board dd {
+    font-size: 44px;
   }
-  .grid {
-    grid-template-columns: 1fr;
+  /* Cuadros más pequeños: con cientos de juegos, la estantería no ocupa dos pantallas. */
+  .waffle,
+  .waffle[data-size="s"] {
+    grid-template-columns: repeat(auto-fill, 8px);
+    gap: 2px;
+  }
+  .waffle i,
+  .waffle[data-size="s"] i {
+    width: 8px;
+    height: 8px;
   }
 }

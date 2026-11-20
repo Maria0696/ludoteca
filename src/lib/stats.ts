@@ -1,4 +1,4 @@
-import { type Format, type GameStatus, type Library, GAME_STATUSES } from "./model";
+import { type Format, type GameStatus, type Library, GAME_STATUSES, PLATFORM_FAMILIES } from "./model";
 
 /*
  * Estadísticas calculadas solo a partir de los datos guardados.
@@ -10,8 +10,28 @@ export interface CollectionStats {
   titles: number;
   copies: number;
   byStatus: Record<GameStatus, number>;
-  /** Copias por plataforma, de mayor a menor. */
-  copiesByPlatform: { platform: string; copies: number; titles: number }[];
+  /**
+   * Copias por familia de plataformas, en el orden de la biblioteca: PC, PlayStation, Xbox, Nintendo y Otras.
+   * Dentro de cada una, sus plataformas de más a menos copias; el PC, además, por tienda.
+   */
+  families: { name: string; copies: number; platforms: { platform: string; copies: number }[] }[];
+  pcStores: { store: string; copies: number }[];
+  /** Superados (con fecha de fin) en cada mes del año en curso, de enero a diciembre. */
+  finishedByMonth: number[];
+  /** El último juego con fecha de fin, sea del año que sea. */
+  lastFinished: { id: string; title: string; finishedAt: string } | null;
+  /** Los pendientes con mejor nota de Metacritic. */
+  gems: { id: string; title: string; metacritic: number; platform: string | null }[];
+  /** Géneros con más títulos. */
+  genres: { genre: string; titles: number }[];
+  /** Títulos por tramo de nota de Metacritic: menos de 50, de 50 a 59… y 90 o más. */
+  metacritic: { buckets: { label: string; titles: number }[]; average: number | null; withData: number };
+  /** Títulos por década de salida, de la más antigua a la más nueva. */
+  decades: { decade: number; titles: number }[];
+  oldest: { title: string; year: number } | null;
+  /** Pendientes con sesiones de 30 minutos o menos, y pendientes que se pueden jugar acompañada. */
+  pendingQuick: number;
+  pendingCoop: number;
   copiesByFormat: Record<Format, number>;
   /** Juegos con fecha de fin en el año en curso. */
   finishedThisYear: number;
@@ -45,7 +65,40 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     }
   }
 
+  const finishedByMonth = Array.from({ length: 12 }, () => 0);
+  let lastFinished: CollectionStats["lastFinished"] = null;
+  const genreMap = new Map<string, number>();
+  const buckets = ["<50", "50", "60", "70", "80", "90+"].map((label) => ({ label, titles: 0 }));
+  let mcSum = 0;
+  let mcWith = 0;
+  const decadeMap = new Map<number, number>();
+  let oldest: { title: string; date: string } | null = null;
+  let pendingQuick = 0;
+  let pendingCoop = 0;
+  for (const g of library.games) {
+    if (g.finishedAt) {
+      if (g.finishedAt.startsWith(year)) finishedByMonth[Number(g.finishedAt.slice(5, 7)) - 1]++;
+      if (!lastFinished || g.finishedAt > lastFinished.finishedAt) lastFinished = { id: g.id, title: g.title, finishedAt: g.finishedAt };
+    }
+    for (const genre of g.genres) genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
+    if (g.metacritic != null) {
+      buckets[g.metacritic < 50 ? 0 : Math.min(5, Math.floor(g.metacritic / 10) - 4)].titles++;
+      mcSum += g.metacritic;
+      mcWith++;
+    }
+    if (g.releaseDate) {
+      const decade = Math.floor(Number(g.releaseDate.slice(0, 4)) / 10) * 10;
+      decadeMap.set(decade, (decadeMap.get(decade) ?? 0) + 1);
+      if (!oldest || g.releaseDate < oldest.date) oldest = { title: g.title, date: g.releaseDate };
+    }
+    if (g.status === "pendiente") {
+      if (g.sessionMinutes != null && g.sessionMinutes <= 30) pendingQuick++;
+      if (g.modes.some((m) => m === "coop_local" || m === "coop_online")) pendingCoop++;
+    }
+  }
+
   const platformMap = new Map<string, { copies: number; games: Set<string> }>();
+  const storeMap = new Map<string, number>();
   const copiesByFormat: Record<Format, number> = { fisico: 0, digital: 0 };
   const spend = { total: 0, withData: 0, missing: 0 };
   let lentOut = 0;
@@ -56,6 +109,7 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     entry.games.add(c.gameId);
     platformMap.set(c.platform, entry);
     copiesByFormat[c.format]++;
+    if (c.platform === "PC" && c.store) storeMap.set(c.store, (storeMap.get(c.store) ?? 0) + 1);
     if (c.lentTo) lentOut++;
     if (c.availability === "comprado") {
       if (c.pricePaid != null) {
@@ -67,9 +121,24 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     }
   }
 
-  const copiesByPlatform = [...platformMap.entries()]
-    .map(([platform, v]) => ({ platform, copies: v.copies, titles: v.games.size }))
-    .sort((a, b) => b.copies - a.copies || a.platform.localeCompare(b.platform, "es"));
+  const byCount = <T>(entries: [T, number][]) => entries.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "es"));
+  // Las familias de la biblioteca, con el PC aparte; lo que no está en ninguna va a «Otras».
+  const order = [{ name: "PC", platforms: ["PC"] }, ...PLATFORM_FAMILIES.map((f) => ({ name: f.name, platforms: f.platforms.filter((p) => p !== "PC") }))];
+  const familyOf = (platform: string) => order.find((f) => f.platforms.includes(platform))?.name ?? "Otras";
+  const families = order
+    .map((f) => {
+      const counts = [...platformMap.entries()].filter(([p]) => familyOf(p) === f.name).map(([p, v]): [string, number] => [p, v.copies]);
+      const platforms = byCount(counts).map(([platform, copies]) => ({ platform, copies }));
+      return { name: f.name, copies: platforms.reduce((sum, p) => sum + p.copies, 0), platforms };
+    })
+    .filter((f) => f.copies > 0);
+
+  const firstPlatform = new Map<string, string>();
+  for (const c of library.copies) if (!firstPlatform.has(c.gameId)) firstPlatform.set(c.gameId, c.platform);
+  const gems = library.games
+    .flatMap((g) => (g.status === "pendiente" && g.metacritic != null ? [{ id: g.id, title: g.title, metacritic: g.metacritic, platform: firstPlatform.get(g.id) ?? null }] : []))
+    .sort((a, b) => b.metacritic - a.metacritic || a.title.localeCompare(b.title, "es"))
+    .slice(0, 6);
 
   spend.total = Math.round(spend.total * 100) / 100;
   hours.total = Math.round(hours.total * 10) / 10;
@@ -78,7 +147,19 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     titles: library.games.length,
     copies: library.copies.length,
     byStatus,
-    copiesByPlatform,
+    families,
+    pcStores: byCount([...storeMap.entries()]).map(([store, copies]) => ({ store, copies })),
+    finishedByMonth,
+    lastFinished,
+    gems,
+    genres: byCount([...genreMap.entries()])
+      .slice(0, 8)
+      .map(([genre, titles]) => ({ genre, titles })),
+    metacritic: { buckets, average: mcWith ? Math.round((mcSum / mcWith) * 10) / 10 : null, withData: mcWith },
+    decades: [...decadeMap.entries()].sort((a, b) => a[0] - b[0]).map(([decade, titles]) => ({ decade, titles })),
+    oldest: oldest ? { title: oldest.title, year: Number(oldest.date.slice(0, 4)) } : null,
+    pendingQuick,
+    pendingCoop,
     copiesByFormat,
     finishedThisYear,
     completedWithoutDate,

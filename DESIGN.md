@@ -260,6 +260,7 @@ Rombo de color, etiqueta arcade en su color y nombre normal (`◆ NUEVA PARTIDA 
 - **Ficha:** mapa de niveles en píxeles con la guardiana, misiones y récords en ventanas; con trofeo, marcos dorados.
 - **Añadir juego:** cofre de píxeles que tiembla y se abre; el formulario va en las letras de la carcasa.
 - **Importar de Steam:** dos bahías en azul de consola con las letras de la carcasa.
+- **Estadísticas:** la pantalla de récords. Un marcador con cuatro cifras; tu estantería con un cuadro por juego, del color de su estado; columnas por mes; joyas por jugar; y clasificaciones con puesto y puntos suspensivos. Las ventanas de una fila miden lo mismo y sus notas quedan al pie. Lo que casi nunca está completo (horas, gasto) va en una línea que dice cuántos tienen el dato.
 
 ## Do's and Don'ts
 

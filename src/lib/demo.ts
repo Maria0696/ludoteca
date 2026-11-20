@@ -92,6 +92,32 @@ const GAMES: DemoGame[] = [
     copies: [{ platform: "PC", format: "digital", acquiredMonthsAgo: 16, price: 6.99, store: "Steam" }] },
 ];
 
+/** Nota de Metacritic y fecha de salida de cada juego de demostración, para que Estadísticas tenga qué contar. */
+const FACTS: Record<string, [metacritic: number, released: string]> = {
+  Hades: [93, "2020-09-17"],
+  "Hollow Knight": [87, "2017-02-24"],
+  Spiritfarer: [84, "2020-08-18"],
+  "Metroid Dread": [88, "2021-10-08"],
+  "Kirby y la tierra olvidada": [85, "2022-03-25"],
+  "Overcooked! 2": [81, "2018-08-07"],
+  "The Legend of Zelda: Tears of the Kingdom": [96, "2023-05-12"],
+  Celeste: [92, "2018-01-25"],
+  Unpacking: [84, "2021-11-02"],
+  "Astro Bot": [94, "2024-09-06"],
+  "It Takes Two": [89, "2021-03-26"],
+  "Outer Wilds": [85, "2019-05-28"],
+  "Final Fantasy VII Remake": [87, "2020-04-10"],
+  "Ghost of Tsushima": [83, "2020-07-17"],
+  Returnal: [86, "2021-04-30"],
+  "Red Dead Redemption 2": [97, "2018-10-26"],
+  Inside: [87, "2016-06-29"],
+  "Stardew Valley": [89, "2016-02-26"],
+  "Disco Elysium": [91, "2019-10-15"],
+  "Baldur's Gate 3": [96, "2023-08-03"],
+  "Mario Kart 8 Deluxe": [92, "2017-04-28"],
+  "A Short Hike": [85, "2019-07-30"],
+};
+
 const WISHES: { title: string; platform: string; priority: WishItem["priority"]; target?: number; notes?: string; genres: string[]; prices?: { amount: number; store: string; daysAgo: number }[] }[] = [
   { title: "Hollow Knight: Silksong", platform: "Switch 2", priority: "alta", target: 15, genres: ["Metroidvania"], prices: [{ amount: 19.5, store: "Nintendo eShop", daysAgo: 12 }] },
   { title: "Split Fiction", platform: "PS5", priority: "alta", target: 30, notes: "Para jugar en pareja después de It Takes Two.", genres: ["Cooperativo"], prices: [{ amount: 49.99, store: "PlayStation Store", daysAgo: 40 }, { amount: 37.9, store: "Amazon", daysAgo: 3 }] },
@@ -137,6 +163,8 @@ export function createDemoLibrary(today = new Date()): Library {
       moods: d.moods,
       sessionMinutes: d.session ?? null,
       lengthHours: d.length ?? null,
+      metacritic: FACTS[d.title]?.[0] ?? null,
+      releaseDate: FACTS[d.title]?.[1] ?? null,
       createdAt: created,
       updatedAt: created,
       demo: true,
