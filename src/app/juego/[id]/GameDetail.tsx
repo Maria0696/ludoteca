@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Trophy } from "lucide-react";
+import { Infinity as InfinityIcon, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -20,7 +20,7 @@ import { Celebration } from "./Celebration";
 import { CoverDialog } from "./CoverDialog";
 import { Inventory } from "./Inventory";
 import { MorePanel, PlayOptions, Quests, Records, TechSheet } from "./panels";
-import { STAGES, TROPHY_STAGE, keeperLine, reachedStages } from "./progress";
+import { TROPHY_STAGE, keeperLine, reachedStages, stagesFor } from "./progress";
 
 /** El nombre va en una sola línea: si no cabe, la letra se reduce hasta que quepa. */
 function GameTitle({ title }: { title: string }) {
@@ -87,7 +87,8 @@ export function GameDetail({ id }: { id: string }) {
     if (before?.id !== id) return;
     const was = before.key.split(",");
     const won = reachedKey.split(",").findIndex((done, i) => done === "true" && was[i] !== "true");
-    if (won >= 0 && won !== TROPHY_STAGE) toast(`¡Nivel superado: ${STAGES[won]}!`);
+    if (won >= 0 && won !== TROPHY_STAGE && game) toast(`¡Nivel superado: ${stagesFor(game)[won]}!`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo avisa cuando cambian los niveles conseguidos
   }, [id, reachedKey]);
 
   if (!game) {
@@ -121,6 +122,7 @@ export function GameDetail({ id }: { id: string }) {
   return (
     <div className={`${styles.page} ${arcade.variable} ${terminal.variable}`} data-trofeo={game.completed100 || undefined}>
       <AdventureMap
+        stages={stagesFor(game)}
         reached={reached}
         selected={selected}
         onSelect={selectStage}
@@ -142,7 +144,8 @@ export function GameDetail({ id }: { id: string }) {
           <div className={styles.identity}>
             <GameTitle title={game.title} />
             <div className={styles.statusRow} role="radiogroup" aria-label="Estado">
-              {GAME_STATUSES.map((s) => (
+              {/* Un juego sin final no se completa; si ya estaba completado, se ve para poder cambiarlo. */}
+              {GAME_STATUSES.filter((s) => !game.endless || s !== "completado" || game.status === "completado").map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -164,6 +167,16 @@ export function GameDetail({ id }: { id: string }) {
               <button type="button" className={styles.action} aria-pressed={game.completed100} onClick={toggle100}>
                 <Trophy aria-hidden fill={game.completed100 ? "currentColor" : "none"} />
                 {game.completed100 ? "Al 100 %" : "100 %"}
+              </button>
+              <button
+                type="button"
+                className={styles.action}
+                aria-pressed={game.endless}
+                title="Juegos como Mario Kart o Stardew: no se terminan, se juegan"
+                onClick={() => update({ endless: !game.endless })}
+              >
+                <InfinityIcon aria-hidden />
+                Sin final
               </button>
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}
             </div>
@@ -191,7 +204,7 @@ export function GameDetail({ id }: { id: string }) {
 
         <div ref={columnsRef} className={styles.columns}>
           <section className={`${styles.window} ${styles.panel}`} aria-label="Misiones">
-            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} onFinish={(date) => actions.setFinishedAt(game.id, date)} onStart={(date) => actions.setStartedAt(game.id, date)} />
+            <Quests game={game} copies={copies} selected={selected} update={update} onAddCopy={() => openAdd({ gameId: game.id })} onToggle100={toggle100} onFinish={(date) => actions.setFinishedAt(game.id, date)} onStart={(date) => actions.setStartedAt(game.id, date)} onPlayToday={() => actions.markPlayedToday(game.id)} />
           </section>
           <div className={styles.side}>
             <section className={`${styles.window} ${styles.panel}`} aria-label="Tus récords">

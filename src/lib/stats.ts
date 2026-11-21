@@ -29,6 +29,8 @@ export interface CollectionStats {
   /** Títulos por década de salida, de la más antigua a la más nueva. */
   decades: { decade: number; titles: number }[];
   oldest: { title: string; year: number } | null;
+  /** Juegos sin final: no se completan y no cuentan en la pila de «por jugar». */
+  endless: { total: number; pending: number; byStatus: Record<GameStatus, number> };
   /** Pendientes con sesiones de 30 minutos o menos, y pendientes que se pueden jugar acompañada. */
   pendingQuick: number;
   pendingCoop: number;
@@ -75,7 +77,13 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
   let oldest: { title: string; date: string } | null = null;
   let pendingQuick = 0;
   let pendingCoop = 0;
+  const endless = { total: 0, pending: 0, byStatus: Object.fromEntries(GAME_STATUSES.map((s) => [s, 0])) as Record<GameStatus, number> };
   for (const g of library.games) {
+    if (g.endless) {
+      endless.total++;
+      endless.byStatus[g.status]++;
+      if (g.status === "pendiente") endless.pending++;
+    }
     if (g.finishedAt) {
       if (g.finishedAt.startsWith(year)) finishedByMonth[Number(g.finishedAt.slice(5, 7)) - 1]++;
       if (!lastFinished || g.finishedAt > lastFinished.finishedAt) lastFinished = { id: g.id, title: g.title, finishedAt: g.finishedAt };
@@ -136,7 +144,7 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
   const firstPlatform = new Map<string, string>();
   for (const c of library.copies) if (!firstPlatform.has(c.gameId)) firstPlatform.set(c.gameId, c.platform);
   const gems = library.games
-    .flatMap((g) => (g.status === "pendiente" && g.metacritic != null ? [{ id: g.id, title: g.title, metacritic: g.metacritic, platform: firstPlatform.get(g.id) ?? null }] : []))
+    .flatMap((g) => (g.status === "pendiente" && !g.endless && g.metacritic != null ? [{ id: g.id, title: g.title, metacritic: g.metacritic, platform: firstPlatform.get(g.id) ?? null }] : []))
     .sort((a, b) => b.metacritic - a.metacritic || a.title.localeCompare(b.title, "es"))
     .slice(0, 6);
 
@@ -158,6 +166,7 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     metacritic: { buckets, average: mcWith ? Math.round((mcSum / mcWith) * 10) / 10 : null, withData: mcWith },
     decades: [...decadeMap.entries()].sort((a, b) => a[0] - b[0]).map(([decade, titles]) => ({ decade, titles })),
     oldest: oldest ? { title: oldest.title, year: Number(oldest.date.slice(0, 4)) } : null,
+    endless,
     pendingQuick,
     pendingCoop,
     copiesByFormat,

@@ -179,7 +179,10 @@ function scoreTime(rec: Recommendation, input: RecommendInput, onMissing: () => 
     rec.score -= 3;
     rec.caveats.push(`Una sesión suele pedir ${formatMinutes(session)}, más de lo que tienes.`);
   }
-  if (input.intent !== "continuar" && rec.game.status === "pendiente" && rec.game.lengthHours != null && rec.game.lengthHours <= 10) {
+  // Un juego sin final no es corto ni largo: su «duración» del catálogo no significa nada.
+  if (rec.game.endless) {
+    rec.reasons.push("No tiene final: echa una partida y lo dejas cuando quieras.");
+  } else if (input.intent !== "continuar" && rec.game.status === "pendiente" && rec.game.lengthHours != null && rec.game.lengthHours <= 10) {
     rec.score += 1;
     rec.reasons.push(`Es corto: unas ${formatHours(rec.game.lengthHours)} en total.`);
   }

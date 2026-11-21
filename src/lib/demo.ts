@@ -40,6 +40,8 @@ interface DemoGame {
   hours?: number;
   favorite?: boolean;
   completed100?: boolean;
+  /** Sin final: no se completa, se juega. */
+  endless?: boolean;
   finishedMonthsAgo?: number;
   lastPlayedDaysAgo?: number;
   copies: { platform: string; format: "fisico" | "digital"; acquiredMonthsAgo: number; price?: number; store?: string; edition?: string; availability?: Copy["availability"]; hasCase?: boolean; hasFullArtwork?: boolean; shelf?: string; lentTo?: string }[];
@@ -80,13 +82,13 @@ const GAMES: DemoGame[] = [
     copies: [{ platform: "PS4", format: "fisico", acquiredMonthsAgo: 60, price: 19.9, store: "Wallapop", shelf: "Balda 4", lentTo: "Lucía" }] },
   { title: "Inside", status: "completado", genres: ["Puzles", "Plataformas"], modes: ["solo"], moods: ["historia"], session: 60, length: 4, rating: 8.5, hours: 4, finishedMonthsAgo: 26,
     copies: [{ platform: "PS4", format: "digital", acquiredMonthsAgo: 48, price: 4.99, store: "PlayStation Store" }] },
-  { title: "Stardew Valley", status: "jugando", genres: ["Gestión", "Granja"], modes: ["solo", "coop_online"], moods: ["tranquila", "rapida"], session: 30, length: 60, rating: 9, hours: 88, favorite: true, lastPlayedDaysAgo: 6,
+  { title: "Stardew Valley", status: "jugando", endless: true, genres: ["Gestión", "Granja"], modes: ["solo", "coop_online"], moods: ["tranquila", "rapida"], session: 30, length: 60, rating: 9, hours: 88, favorite: true, lastPlayedDaysAgo: 6,
     copies: [{ platform: "PC", format: "digital", acquiredMonthsAgo: 70, price: 13.99, store: "Steam" }] },
   { title: "Disco Elysium", status: "abandonado", genres: ["Rol", "Narrativo"], modes: ["solo"], moods: ["historia"], session: 90, length: 25, rating: 7, hours: 11,
     copies: [{ platform: "PC", format: "digital", acquiredMonthsAgo: 44, price: 9.99, store: "GOG" }] },
   { title: "Baldur's Gate 3", status: "pendiente", genres: ["Rol"], modes: ["solo", "coop_online"], moods: ["historia"], session: 120, length: 75,
     copies: [{ platform: "PC", format: "digital", acquiredMonthsAgo: 11, price: 59.99, store: "Steam" }] },
-  { title: "Mario Kart 8 Deluxe", status: "jugando", genres: ["Carreras"], modes: ["solo", "competitivo", "coop_local"], moods: ["rapida", "accion"], session: 15, rating: 8, hours: 60, lastPlayedDaysAgo: 9,
+  { title: "Mario Kart 8 Deluxe", status: "jugando", endless: true, genres: ["Carreras"], modes: ["solo", "competitivo", "coop_local"], moods: ["rapida", "accion"], session: 15, rating: 8, hours: 60, lastPlayedDaysAgo: 9,
     copies: [{ platform: "Switch", format: "fisico", acquiredMonthsAgo: 66, price: 49.99, store: "GAME", shelf: "Balda 1" }] },
   { title: "A Short Hike", status: "pendiente", genres: ["Aventura"], modes: ["solo"], moods: ["tranquila", "rapida"], session: 30, length: 3,
     copies: [{ platform: "PC", format: "digital", acquiredMonthsAgo: 16, price: 6.99, store: "Steam" }] },
@@ -148,6 +150,7 @@ export function createDemoLibrary(today = new Date()): Library {
       tags: [],
       status: d.status,
       completed100: d.completed100 ?? false,
+      endless: d.endless ?? false,
       favorite: d.favorite ?? false,
       rating: d.rating ?? null,
       hoursPlayed: d.hours ?? null,

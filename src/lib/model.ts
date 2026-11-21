@@ -83,6 +83,8 @@ export const gameSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(60)).max(50).default([]),
   status: z.enum(GAME_STATUSES).default("pendiente"),
   completed100: z.boolean().default(false),
+  /** Sin final (Mario Kart, Stardew…): no se completa, se juega. */
+  endless: z.boolean().default(false),
   favorite: z.boolean().default(false),
   rating: z.number().min(0).max(10).nullish(),
   /** Nota de Metacritic, apuntada a mano. */
@@ -196,6 +198,7 @@ export function createGame(input: NewGameInput): Game {
     tags: [],
     status: "pendiente",
     completed100: false,
+    endless: false,
     favorite: false,
     rating: null,
     hoursPlayed: null,

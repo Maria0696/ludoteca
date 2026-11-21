@@ -258,7 +258,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const previous = findGame(id);
         if (!previous) return;
         // Al 100 % es que lo has terminado; quitarlo no lo devuelve a otro estado.
-        const finishing = done && previous.status !== "completado";
+        // Un juego sin final no se termina: su 100 % son sus logros y no cambia el estado.
+        const finishing = done && previous.status !== "completado" && !previous.endless;
         const next = finishing ? withStatus(previous, "completado") : { ...previous, updatedAt: nowIso() };
         void saveGame({ ...next, completed100: done });
         if (finishing) {
@@ -432,6 +433,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             tags: [],
             status: "pendiente",
             completed100: false,
+            endless: false,
             favorite: false,
             rating: null,
             hoursPlayed: null,

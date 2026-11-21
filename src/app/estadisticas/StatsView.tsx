@@ -77,7 +77,7 @@ export function StatsView() {
           <div>
             <dt>Por jugar</dt>
             <dd className="num" data-status="pendiente">
-              {formatNumber(s.byStatus.pendiente)}
+              {formatNumber(s.byStatus.pendiente - s.endless.pending)}
             </dd>
           </div>
           <div>
@@ -87,6 +87,11 @@ export function StatsView() {
             </dd>
           </div>
         </dl>
+        {s.endless.pending > 0 && (
+          <p className={styles.note}>
+            «Por jugar» no cuenta {count(s.endless.pending, "juego sin final que aún no has empezado", "juegos sin final que aún no has empezado")}.
+          </p>
+        )}
         {s.completedWithoutDate > 0 && (
           <p className={styles.note}>
             {count(s.completedWithoutDate, "completado sin fecha de fin no cuenta", "completados sin fecha de fin no cuentan")} en «Superados en {year}».
@@ -101,9 +106,16 @@ export function StatsView() {
             className={styles.waffle}
             data-size={s.titles > 1000 ? "s" : undefined}
             role="img"
-            aria-label={`${count(s.titles, "juego", "juegos")}: ${statuses.map((st) => count(s.byStatus[st], ...STATUS_COUNT[st])).join(", ")}`}
+            aria-label={`${count(s.titles, "juego", "juegos")}: ${statuses.map((st) => count(s.byStatus[st], ...STATUS_COUNT[st])).join(", ")}${
+              s.endless.total > 0 ? `; ${count(s.endless.total, "sin final", "sin final")}` : ""
+            }`}
           >
-            {statuses.flatMap((st) => Array.from({ length: s.byStatus[st] }, (_, i) => <i key={`${st}-${i}`} data-status={st} />))}
+            {/* Los sin final, al final de su estado y huecos: no se terminan, se juegan. */}
+            {statuses.flatMap((st) =>
+              Array.from({ length: s.byStatus[st] }, (_, i) => (
+                <i key={`${st}-${i}`} data-status={st} data-endless={i >= s.byStatus[st] - s.endless.byStatus[st] || undefined} />
+              )),
+            )}
           </div>
           <ul className={styles.legend}>
             {statuses.map((st) => (
@@ -114,6 +126,12 @@ export function StatsView() {
                 </Link>
               </li>
             ))}
+            {s.endless.total > 0 && (
+              <li className={styles.endlessKey}>
+                <i aria-hidden />
+                Sin final {formatNumber(s.endless.total)}
+              </li>
+            )}
           </ul>
           <p className={styles.note}>
             Cada cuadro es un juego{s.completed100 > 0 ? `; ${count(s.completed100, "completado al 100 %", "completados al 100 %")}` : ""}.
