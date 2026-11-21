@@ -93,6 +93,7 @@ export function Quests({
   onToggle100,
   onFinish,
   onStart,
+  onPlayToday,
 }: {
   game: Game;
   copies: Copy[];
@@ -104,6 +105,8 @@ export function Quests({
   onFinish: (date: string | null) => void;
   /** Anotar la fecha de inicio también lo pone en Jugando. */
   onStart: (date: string | null) => void;
+  /** «He jugado hoy»: la misión final de un juego sin final. */
+  onPlayToday: () => void;
 }) {
   const percent = progressPercent(game);
   const platforms = [...new Set(copies.map((c) => c.platform))];
@@ -134,23 +137,46 @@ export function Quests({
           >
             <Editable kind="date" label="Empezado" value={game.startedAt} display={game.startedAt ? formatDate(game.startedAt) : null} empty="Anotar fecha" onSave={onStart} />
           </Objective>
-          <Objective
-            {...shared}
-            stage={3}
-            done={percent === 100 || Boolean(game.finishedAt)}
-            title={game.lengthHours ? `Juega ${formatNumber(game.lengthHours)} horas` : "Juega hasta el final"}
-          >
-            <div className={styles.experience}>
-              <Editable kind="number" label="Horas jugadas" value={game.hoursPlayed} display={hours} empty="Anotar horas" max={100000} step={0.5} onSave={(v) => update({ hoursPlayed: v })} />
-              {percent != null && <Meter percent={percent} cells={14} />}
-              {!game.lengthHours && (
-                <Editable kind="number" label="Duración del juego" value={game.lengthHours} display={null} empty="Anotar duración" max={100000} step={0.5} onSave={(v) => update({ lengthHours: v })} />
-              )}
-            </div>
-          </Objective>
-          <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia" onToggle={() => onFinish(game.finishedAt ? null : todayIso())}>
-            <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
-          </Objective>
+          {game.endless ? (
+            // Sin final no hay meta de horas ni historia que terminar: se suman horas y partidas.
+            <>
+              <Objective {...shared} stage={3} done={(game.hoursPlayed ?? 0) > 0} title="Suma horas de juego">
+                <div className={styles.experience}>
+                  <Editable kind="number" label="Horas jugadas" value={game.hoursPlayed} display={hours} empty="Anotar horas" max={100000} step={0.5} onSave={(v) => update({ hoursPlayed: v })} />
+                </div>
+              </Objective>
+              <Objective {...shared} stage={5} done={Boolean(game.lastPlayedAt)} title="Echa una partida" onToggle={onPlayToday}>
+                <Editable
+                  kind="date"
+                  label="Última partida"
+                  value={game.lastPlayedAt}
+                  display={game.lastPlayedAt ? formatDate(game.lastPlayedAt) : null}
+                  empty="Anotar fecha"
+                  onSave={(v) => update({ lastPlayedAt: v })}
+                />
+              </Objective>
+            </>
+          ) : (
+            <>
+              <Objective
+                {...shared}
+                stage={3}
+                done={percent === 100 || Boolean(game.finishedAt)}
+                title={game.lengthHours ? `Juega ${formatNumber(game.lengthHours)} horas` : "Juega hasta el final"}
+              >
+                <div className={styles.experience}>
+                  <Editable kind="number" label="Horas jugadas" value={game.hoursPlayed} display={hours} empty="Anotar horas" max={100000} step={0.5} onSave={(v) => update({ hoursPlayed: v })} />
+                  {percent != null && <Meter percent={percent} cells={14} />}
+                  {!game.lengthHours && (
+                    <Editable kind="number" label="Duración del juego" value={game.lengthHours} display={null} empty="Anotar duración" max={100000} step={0.5} onSave={(v) => update({ lengthHours: v })} />
+                  )}
+                </div>
+              </Objective>
+              <Objective {...shared} stage={5} done={Boolean(game.finishedAt)} title="Termina la historia" onToggle={() => onFinish(game.finishedAt ? null : todayIso())}>
+                <Editable kind="date" label="Terminado" value={game.finishedAt} display={game.finishedAt ? formatDate(game.finishedAt) : null} empty="Anotar fecha" onSave={onFinish} />
+              </Objective>
+            </>
+          )}
         </ol>
       </div>
       <div>

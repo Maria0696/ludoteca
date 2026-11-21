@@ -6,6 +6,10 @@ import type { Copy, Game } from "@/lib/model";
  */
 
 export const STAGES = ["Llegó a tu ludoteca", "Tu copia", "Primera partida", "En marcha", "Tu nota", "Terminado", "Al 100 %"];
+/** Un juego sin final no se termina: su penúltimo nivel es la última partida. */
+const ENDLESS_STAGES = STAGES.map((s) => (s === "Terminado" ? "Última partida" : s));
+
+export const stagesFor = (game: Game) => (game.endless ? ENDLESS_STAGES : STAGES);
 
 export const TROPHY_STAGE = 6;
 
@@ -16,7 +20,7 @@ export function reachedStages(game: Game, copies: Copy[]): boolean[] {
     Boolean(game.startedAt),
     (game.hoursPlayed ?? 0) > 0 || Boolean(game.lastPlayedAt),
     game.rating != null,
-    Boolean(game.finishedAt) || game.status === "completado",
+    game.endless ? Boolean(game.lastPlayedAt) : Boolean(game.finishedAt) || game.status === "completado",
     game.completed100,
   ];
 }
@@ -38,6 +42,7 @@ function daysSince(iso: string, today: Date): number {
 
 /** Lo que dice la guardiana según cómo va el juego. */
 export function keeperLine(game: Game, today = new Date()): string {
+  if (game.endless) return endlessLine(game, today);
   if (game.completed100) return "¡Al 100 %! Este trofeo se queda para siempre en tu ludoteca.";
   if (game.status === "completado") return "Misión cumplida. Aún te queda el 100 %, si te atreves.";
   if (game.status === "abandonado") return "A veces una aventura se deja atrás. Esta seguirá aquí si vuelves.";
@@ -48,4 +53,13 @@ export function keeperLine(game: Game, today = new Date()): string {
     return `Llevas ${days} ${days === 1 ? "día" : "días"} sin volver. La aventura te espera.`;
   }
   return "Cuando juegues, cuéntamelo y lo apunto.";
+}
+
+/** Un juego sin final no tiene meta: la guardiana habla de partidas, no de terminarlo. */
+function endlessLine(game: Game, today: Date): string {
+  if (game.status === "abandonado") return "Lo dejaste aparcado. Si un día te apetece una partida, aquí sigue.";
+  if (!game.lastPlayedAt) return "Este juego no tiene final: echa una partida cuando te apetezca y te la apunto.";
+  const days = daysSince(game.lastPlayedAt, today);
+  if (days === 0) return "¡Partida de hoy apuntada! Este no se acaba nunca.";
+  return `Tu última partida fue hace ${days} ${days === 1 ? "día" : "días"}. ¿Otra?`;
 }

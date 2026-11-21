@@ -6,7 +6,7 @@ import { type CSSProperties, useEffect, useRef } from "react";
 import { KEEPER_URL, TROPHY_URL } from "@/components/pixel/sprites";
 import styles from "./adventure.module.css";
 import { KeeperHint } from "./KeeperHint";
-import { STAGES, TROPHY_STAGE, currentStage } from "./progress";
+import { TROPHY_STAGE, currentStage } from "./progress";
 
 /* Posición de cada nivel, en %: una versión apaisada y otra para móvil. */
 const WIDE_SPOTS = [[7, 56], [20, 26], [33, 58], [47, 24], [60, 56], [75, 26], [91, 20]];
@@ -84,6 +84,7 @@ function paintTerrain(W: number, H: number, points: Point[], wide: boolean): HTM
 }
 
 export function AdventureMap({
+  stages,
   reached,
   selected,
   onSelect,
@@ -92,6 +93,8 @@ export function AdventureMap({
   onCloseHint,
   hopSignal,
 }: {
+  /** Los nombres de los niveles: los de un juego sin final acaban en la última partida. */
+  stages: readonly string[];
   reached: boolean[];
   selected: number | null;
   onSelect: (stage: number) => void;
@@ -153,7 +156,7 @@ export function AdventureMap({
         <ArrowLeft aria-hidden />
         Biblioteca
       </Link>
-      {STAGES.map((stage, i) => (
+      {stages.map((stage, i) => (
         <div key={stage}>
           <button
             type="button"
