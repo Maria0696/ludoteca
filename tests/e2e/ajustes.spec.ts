@@ -49,6 +49,8 @@ test("Importar: primero la copia de seguridad y luego Steam, con el mismo format
   await expect(page.getByRole("region", { name: /^Copia de seguridad/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Ludoteca" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
+  // En el ordenador, el archivo también se puede soltar encima.
+  await expect(page.getByText("Suelta aquí tu archivo")).toBeVisible();
   // Game Tracker ya no está; un enlace antiguo lleva a la copia de seguridad.
   await openApp(page, "/importar?origen=gametracker");
   await expect(page.getByRole("heading", { level: 1, name: "Copiar desde tu copia de seguridad" })).toBeVisible();

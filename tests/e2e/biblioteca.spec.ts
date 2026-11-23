@@ -255,6 +255,27 @@ test("«Elegido» enseña solo los datos que hay, sin filas de «---»", async (
 const pick = (page: import("@playwright/test").Page, title: string) => page.getByRole("checkbox", { name: `Elegir «${title}»` });
 const statusOf = (page: import("@playwright/test").Page, title: string) => page.getByRole("combobox", { name: `Estado de ${title}` });
 
+test("la tabla agrupa como las cabinas: por plataforma, por estado o sin agrupar", async ({ page }) => {
+  await loadDemo(page);
+  const table = page.getByRole("table", { name: "Juegos" });
+  const groupNames = () => table.getByRole("rowgroup").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+  // Por plataforma, lo de siempre: una balda por plataforma, y cada juego una sola vez.
+  await page.goto("/biblioteca?vista=lista");
+  expect((await groupNames()).length).toBeGreaterThan(1);
+  const titles = await table.getByRole("row").filter({ has: page.getByRole("combobox") }).getByRole("link").allTextContents();
+  expect(new Set(titles).size).toBe(titles.length);
+  expect(titles).toHaveLength(22);
+  // Por estado: una cabecera por estado, con su recuento.
+  await page.goto("/biblioteca?vista=lista&agrupar=estado");
+  expect(await groupNames()).toEqual(["Pendiente", "Jugando", "Pausado", "Completado", "Abandonado"]);
+  const playing = table.getByRole("rowgroup", { name: "Jugando" });
+  await expect(playing).toContainText("5 juegos");
+  await expect(playing.getByRole("row").filter({ has: page.getByRole("combobox") })).toHaveCount(5);
+  // Sin agrupar, una sola lista.
+  await page.goto("/biblioteca?vista=lista&agrupar=ninguno");
+  expect(await groupNames()).toEqual([]);
+});
+
 test("en la tabla se eligen varios juegos y se les cambia el estado de una vez", async ({ page }) => {
   await loadDemo(page);
   await page.goto("/biblioteca?vista=lista");
