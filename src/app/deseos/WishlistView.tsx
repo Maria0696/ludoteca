@@ -11,10 +11,11 @@ import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
 
 type Sort = "prioridad" | "anadido" | "titulo" | "objetivo";
+// Por defecto, en orden alfabético: la primera opción.
 const SORT_LABEL: Record<Sort, string> = {
+  titulo: "Título (A–Z)",
   prioridad: "Prioridad",
   anadido: "Añadidos recientemente",
-  titulo: "Título (A–Z)",
   objetivo: "Más cerca del objetivo",
 };
 const PRIORITY_RANK: Record<Priority, number> = { alta: 0, media: 1, baja: 2 };
@@ -28,7 +29,7 @@ export function WishlistView() {
   const [q, setQ] = useState("");
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [platform, setPlatform] = useState("");
-  const [sort, setSort] = useState<Sort>("prioridad");
+  const [sort, setSort] = useState<Sort>("titulo");
   const [sheet, setSheet] = useState(false);
   const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert"; wish: WishItem } | null>(null);
 

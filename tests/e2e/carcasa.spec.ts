@@ -529,6 +529,18 @@ for (const [ruta, nombre, texto] of [
   });
 }
 
+test("Deseos sale por defecto en orden alfabético", async ({ page }) => {
+  await loadDemo(page);
+  await openApp(page, "/deseos");
+  const order = page.getByRole("combobox", { name: "Ordenar" });
+  await expect(order).toHaveValue("titulo");
+  // «Título (A–Z)», la primera opción, porque es la de siempre.
+  await expect(order.locator("option").first()).toHaveText("Título (A–Z)");
+  const titles = await page.getByRole("region", { name: "Deseos" }).getByRole("listitem").locator("strong").allTextContents();
+  expect(titles.length).toBeGreaterThan(2);
+  expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b, "es")));
+});
+
 test("en el ordenador, Deseos no repite los filtros en un botón «Filtros»", async ({ page }) => {
   await loadDemo(page);
   await openApp(page, "/deseos");
