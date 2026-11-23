@@ -209,13 +209,10 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
             </dl>
             {/* Una copia física ya trae su caja y su carátula: solo se pregunta por la caja decorativa de una digital. */}
             {digital && (
-              <>
-                <div className={styles.toggles}>
-                  {check("hasCase", "Tengo caja (decorativa)")}
-                  {check("hasFullArtwork", "Tiene la carátula completa")}
-                </div>
-                <p className={styles.statNote}>Una caja decorativa no cambia el formato: la copia sigue siendo digital.</p>
-              </>
+              <div className={styles.toggles}>
+                {check("hasCase", "Tengo caja (decorativa)")}
+                {check("hasFullArtwork", "Tiene la carátula completa")}
+              </div>
             )}
           </div>
         </div>
