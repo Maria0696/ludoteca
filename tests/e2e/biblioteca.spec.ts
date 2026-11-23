@@ -177,6 +177,9 @@ test("recreativa: cada juego en su cabina, «Elegido» sigue al cursor y las fle
   const hiscore = page.getByRole("region", { name: "Récords de horas" }).getByRole("listitem");
   await expect(hiscore.first()).toContainText("The Legend of Zelda");
   await expect(hiscore.first()).toContainText("132 h");
+  // El puesto con punto: en la letra de píxeles, «1º» se lee «19».
+  await expect(hiscore.first()).toContainText(/^1\./);
+  await expect(page.getByRole("region", { name: "Récords de horas" })).not.toContainText("º");
 });
 
 test("un título largo cabe en el rótulo de la cabina sin cortarse a media línea", async ({ page }) => {

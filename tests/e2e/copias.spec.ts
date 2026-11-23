@@ -65,6 +65,19 @@ test("el inicio recuerda hacer una copia y deja de hacerlo al exportarla", async
   await expect(reminder(page)).toHaveCount(0);
 });
 
+test("en modo local, el inicio enseña un solo aviso: el de la copia, que ya dice dónde se guarda todo", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
+  await openApp(page, "/");
+  const local = page.getByText(/^Modo local: tu biblioteca se guarda solo en este navegador/);
+  await expect(reminder(page)).toContainText("Se guarda solo en este navegador");
+  await expect(local).toHaveCount(0);
+  // Si lo dejas para luego, vuelve el de modo local, que además ofrece la sincronización.
+  await reminder(page).getByRole("button", { name: "Ahora no" }).click();
+  await expect(reminder(page)).toHaveCount(0);
+  await expect(local).toBeVisible();
+});
+
 test("con solo datos de demostración no se pide copia", async ({ page }) => {
   await loadDemo(page);
   await openApp(page, "/");

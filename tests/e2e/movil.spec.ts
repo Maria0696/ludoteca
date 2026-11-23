@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { addGame, cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
 
@@ -371,6 +371,23 @@ test("en el móvil, la barra del cambio en grupo queda encima de la barra inferi
   expect(b.y + b.height).toBeLessThanOrEqual(nav.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   await expectCarcasaText(bar);
+});
+
+test("¿A qué juego? en el móvil: el aviso de datos que faltan va después de las propuestas", async ({ page }) => {
+  await loadDemo(page);
+  // Un juego sin modos de juego: la sesión es «Sola» y no se sabe si se juega así.
+  await addGame(page, { title: "Juego sin datos", platform: "PC", format: "Digital" });
+  await openApp(page, "/que-juego");
+  const results = page.getByRole("region", { name: /^Mis propuestas/ });
+  await expect(results.getByText(/no indican si admiten jugar acompañada/)).toBeAttached();
+  // La respuesta primero: el aviso no empuja la primera propuesta.
+  await expect(results.getByRole("heading", { level: 3 }).first()).toBeInViewport();
+  const afterPicks = await results.evaluate((r) => {
+    const picks = r.querySelector("ol")!;
+    const note = [...r.querySelectorAll("p")].find((p) => /no indican si admiten/.test(p.textContent ?? ""))!;
+    return Boolean(picks.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(afterPicks).toBe(true);
 });
 
 test("en el móvil, «Jugar a este» de la primera propuesta se ve sin bajar", async ({ page }) => {

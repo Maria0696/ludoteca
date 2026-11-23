@@ -60,7 +60,8 @@ test("Estadísticas no cuenta los juegos sin final en la pila de pendientes", as
   // En la estantería, los sin final son cuadros huecos, y la leyenda lo dice.
   const shelf = page.getByRole("region", { name: "Tu estantería" });
   await expect(shelf.locator("[data-endless]")).toHaveCount(3);
-  await expect(shelf).toContainText("Sin final 3");
+  // Ya van contados en su estado: la leyenda no los suma otra vez.
+  await expect(shelf).toContainText("Sin final 3 (ya contados)");
   // Las joyas por jugar tampoco los proponen.
   await expect(page.getByRole("region", { name: "Joyas por jugar" })).not.toContainText("Overcooked! 2");
 });

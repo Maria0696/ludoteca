@@ -309,7 +309,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
         )}
         {rows.map((row, i) => (
           <li key={i} className={styles.record} style={{ color: RECORD_COLORS[i % RECORD_COLORS.length], animationDelay: `${i * 70}ms` }} data-stage={row.stage}>
-            <span>{i + 1}º</span>
+            <span>{i + 1}.</span>
             <span>{row.name}</span>
             <span className={styles.recordValue}>{row.value}</span>
           </li>
