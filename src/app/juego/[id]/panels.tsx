@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageUp, Plus, Search, Trash2, Trophy } from "lucide-react";
+import { ImageUp, Infinity as InfinityIcon, Plus, Search, Trash2, Trophy } from "lucide-react";
 import { useState } from "react";
 import { TROPHY_URL } from "@/components/pixel/sprites";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
@@ -405,11 +405,26 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
         </div>
         <div className={styles.field}>
           <span className={styles.label}>Duración total</span>
+          {/* Sin final también es una duración: la de los juegos que no se terminan. Con ella, las horas no cuentan. */}
           <div className={styles.fieldLine}>
-            <Editable kind="number" label="Duración total" value={game.lengthHours} display={game.lengthHours != null ? `${formatNumber(game.lengthHours)} h` : null} empty="Añadir" max={100000} step={0.5} onSave={(v) => update({ lengthHours: v })} />
-            {igdbId != null && game.lengthHours == null && (
-              <FillFromIgdb igdbId={igdbId} what="duración total" needsTime update={update} read={(found) => (found.lengthHours != null ? { lengthHours: found.lengthHours } : null)} />
+            {!game.endless && (
+              <>
+                <Editable kind="number" label="Duración total" value={game.lengthHours} display={game.lengthHours != null ? `${formatNumber(game.lengthHours)} h` : null} empty="Añadir" max={100000} step={0.5} onSave={(v) => update({ lengthHours: v })} />
+                {igdbId != null && game.lengthHours == null && (
+                  <FillFromIgdb igdbId={igdbId} what="duración total" needsTime update={update} read={(found) => (found.lengthHours != null ? { lengthHours: found.lengthHours } : null)} />
+                )}
+              </>
             )}
+            <button
+              type="button"
+              className={styles.chip}
+              aria-pressed={game.endless}
+              title="Juegos como Mario Kart o Stardew: no se terminan, se juegan"
+              onClick={() => update({ endless: !game.endless })}
+            >
+              <InfinityIcon aria-hidden className={styles.chipIcon} />
+              Sin final
+            </button>
           </div>
         </div>
       </div>

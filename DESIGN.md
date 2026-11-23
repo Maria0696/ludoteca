@@ -257,7 +257,7 @@ Rombo de color, etiqueta arcade en su color y nombre normal (`◆ NUEVA PARTIDA 
 ### Toques de pantalla (signature)
 - **Inicio:** menú de consola en Anton y amarillo con la pantalla de título «Pulsa Start». Es la portada y conserva su mundo.
 - **Biblioteca:** cabinas de recreativa con neón rosa y cian, rótulo con el título y rayas de pantalla.
-- **Ficha:** mapa de niveles en píxeles con la guardiana, misiones y récords en ventanas; con trofeo, marcos dorados. Un juego **sin final** (Mario Kart, Stardew…) no se completa: su estado no ofrece «Completado», el penúltimo nivel es «Última partida» y en Estadísticas su cuadro va hueco.
+- **Ficha:** mapa de niveles en píxeles con la guardiana, misiones y récords en ventanas; con trofeo, marcos dorados. Un juego **sin final** (Mario Kart, Stardew…) se marca en «Duración total», dentro de «Para elegir a qué jugar», y no se completa: su estado no ofrece «Completado», el penúltimo nivel es «Última partida» y en Estadísticas su cuadro va hueco.
 - **Añadir juego:** cofre de píxeles que tiembla y se abre; el formulario va en las letras de la carcasa.
 - **Importar de Steam:** dos bahías en azul de consola con las letras de la carcasa.
 - **Ajustes:** los ajustes de una consola. A la izquierda, una columna de iconos de píxeles de 12 × 12, dibujados como la guardiana: disquete, cartucho, tele, libro, puerta, cofre y calavera. Cada icono lleva su estado debajo («Copia de hoy», «Sincronizada»…). El elegido se alza con marco dorado; «Borrar todo» va aparte y con marco rojo. Al lado, el panel del elegido, con su icono en grande y filas separadas por líneas. Las preferencias usan el menú de opciones. En el móvil, los iconos van de dos en dos y el panel queda debajo.

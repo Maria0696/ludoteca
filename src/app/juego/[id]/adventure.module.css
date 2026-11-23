@@ -802,6 +802,17 @@ button.check:focus-visible {
 .chip:hover {
   color: var(--white);
 }
+/* «∞ Sin final», en la duración total: el mismo botón que los modos de juego, con su icono. */
+.chip:has(.chipIcon) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chipIcon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
 .chip[aria-pressed="true"] {
   background: #3d4385;
   color: var(--white);
