@@ -61,7 +61,7 @@
   left: 18px;
   top: -18px;
   padding: 7px 12px 6px;
-  background: #2f8a99;
+  background: #1f5d6b; /* el verde oscuro de la guardiana: con el claro, el blanco se quedaba en 4:1 */
   color: #fff;
   font-family: var(--font-arcade), "Courier New", monospace;
   font-size: 12px;

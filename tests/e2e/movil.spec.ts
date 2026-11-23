@@ -492,6 +492,9 @@ test("en el móvil, el campo del perfil de Steam va a lo ancho y se lee entero",
 test("en el móvil, copiar desde la copia de seguridad cabe sin desplazarse de lado", async ({ page }) => {
   await openApp(page, "/importar?origen=copia");
   await expect(page.getByRole("region", { name: "Ludoteca" })).toBeVisible();
+  // En el móvil no se arrastran archivos: solo el botón para elegirlo.
+  await expect(page.getByText("Suelta aquí tu archivo")).toBeHidden();
+  await expect(page.getByText("Elegir archivo", { exact: true })).toBeVisible();
   // Si algo no cabe, el móvil ensancha la página entera en vez de desplazarla: se compara con el ancho del aparato.
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
   await expectCarcasaText(page.locator("main"));
