@@ -31,9 +31,12 @@ test("el precio puede ser un importe, un regalo, gratis, de un pack o no saberse
   await inventory.getByLabel("Precio").press("Enter");
   await how.selectOption({ label: "Regalo" });
   await expect(inventory.getByRole("button", { name: /^Precio/ })).toHaveCount(0);
+  // Un regalo no se compró en ninguna tienda: no se pregunta.
+  await expect(inventory.getByRole("button", { name: /^Tienda/ })).toHaveCount(0);
 
   // En un pack: se puede decir con cuál.
   await how.selectOption({ label: "En un pack" });
+  await expect(inventory.getByRole("button", { name: /^Tienda/ })).toBeVisible();
   await inventory.getByRole("button", { name: /^En un pack con/ }).click();
   await inventory.getByLabel("En un pack con").fill("Hades");
   await inventory.getByLabel("En un pack con").press("Enter");
