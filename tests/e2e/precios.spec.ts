@@ -22,8 +22,13 @@ test("el precio puede ser un importe, un regalo, gratis, de un pack o no saberse
   await inventory.getByLabel("Precio").fill("19,99");
   await inventory.getByLabel("Precio").press("Enter");
   await expect(inventory.getByRole("button", { name: /^Precio: 19,99/ })).toBeVisible();
+  // Con importe ya se sabe que se pagó: no hace falta el desplegable.
+  await expect(how).toHaveCount(0);
 
-  // Un regalo no tiene importe que anotar.
+  // Al borrar el importe vuelve, y un regalo no tiene importe que anotar.
+  await inventory.getByRole("button", { name: /^Precio: 19,99/ }).click();
+  await inventory.getByLabel("Precio").fill("");
+  await inventory.getByLabel("Precio").press("Enter");
   await how.selectOption({ label: "Regalo" });
   await expect(inventory.getByRole("button", { name: /^Precio/ })).toHaveCount(0);
 
@@ -46,6 +51,10 @@ test("el precio puede ser un importe, un regalo, gratis, de un pack o no saberse
 test("en Estadísticas, un juego gratis o regalado no cuenta como precio que falta", async ({ page }) => {
   await loadDemo(page);
   const inventory = await inventoryOf(page, "Hades");
+  // Hades tiene precio: para decir que fue gratis, primero se borra el importe.
+  await inventory.getByRole("button", { name: /^Precio: 24,99/ }).click();
+  await inventory.getByLabel("Precio").fill("");
+  await inventory.getByLabel("Precio").press("Enter");
   await inventory.getByLabel("Cómo lo conseguiste").selectOption({ label: "Gratis" });
   await expect(inventory.getByRole("button", { name: /^Precio/ })).toHaveCount(0);
 
