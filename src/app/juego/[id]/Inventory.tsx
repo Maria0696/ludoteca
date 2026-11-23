@@ -192,7 +192,8 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
                 </span>
               </Row>
               {copy.priceKind === "pack" && <Row label="En un pack con">{text("En un pack con", "bundleWith")}</Row>}
-              <Row label="Tienda">{text("Tienda", "store")}</Row>
+              {/* Un regalo no se compró en ninguna tienda: no se pregunta (y lo anotado se conserva). */}
+              {copy.priceKind !== "regalo" && <Row label="Tienda">{text("Tienda", "store")}</Row>}
             </dl>
           </div>
         </div>
