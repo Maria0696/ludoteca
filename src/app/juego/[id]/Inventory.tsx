@@ -190,25 +190,30 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
                   <Editable kind="date" quiet label="Prestada desde" value={copy.lentAt} display={copy.lentAt ? formatDate(copy.lentAt) : null} empty="Añadir" onSave={(lentAt) => save({ lentAt })} />
                 </Row>
               )}
-              <Row label="Carátula imprimible">
-                <Editable
-                  kind="text"
-                  quiet
-                  label="Enlace de la carátula imprimible"
-                  value={copy.artworkUrl}
-                  display={copy.artworkUrl ? linkHost(copy.artworkUrl) : null}
-                  empty="Añadir enlace"
-                  maxLength={2000}
-                  validate={(url) => (/^https?:\/\//i.test(url) ? null : "El enlace debe empezar por http:// o https://.")}
-                  onSave={(artworkUrl) => save({ artworkUrl })}
-                />
-              </Row>
+              {/* La carátula imprimible es para la caja decorativa de una copia digital: una física ya trae la suya. */}
+              {digital && (
+                <Row label="Carátula imprimible">
+                  <Editable
+                    kind="text"
+                    quiet
+                    label="Enlace de la carátula imprimible"
+                    value={copy.artworkUrl}
+                    display={copy.artworkUrl ? linkHost(copy.artworkUrl) : null}
+                    empty="Añadir enlace"
+                    maxLength={2000}
+                    validate={(url) => (/^https?:\/\//i.test(url) ? null : "El enlace debe empezar por http:// o https://.")}
+                    onSave={(artworkUrl) => save({ artworkUrl })}
+                  />
+                </Row>
+              )}
             </dl>
-            <div className={styles.toggles}>
-              {check("hasCase", digital ? "Tengo caja (decorativa)" : "Tengo caja")}
-              {check("hasFullArtwork", "Tiene la carátula completa")}
-            </div>
-            {digital && <p className={styles.statNote}>Una caja decorativa no cambia el formato: la copia sigue siendo digital.</p>}
+            {/* Una copia física ya trae su caja y su carátula: solo se pregunta por la caja decorativa de una digital. */}
+            {digital && (
+              <div className={styles.toggles}>
+                {check("hasCase", "Tengo caja (decorativa)")}
+                {check("hasFullArtwork", "Tiene la carátula completa")}
+              </div>
+            )}
           </div>
         </div>
       </div>
