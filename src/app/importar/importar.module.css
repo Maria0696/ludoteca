@@ -542,6 +542,19 @@
     min-height: 44px;
   }
 }
+/* Sin ratón no se arrastran archivos: queda solo el botón, sin el recuadro de soltar. */
+@media (hover: none), (max-width: 760px) {
+  .drop {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    place-content: start;
+    justify-items: start;
+  }
+  .drop p {
+    display: none;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   [data-fase="copiando"] .arrow svg,

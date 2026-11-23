@@ -309,7 +309,7 @@
   left: 12px;
   top: -15px;
   padding: 5px 9px 4px;
-  background: #2f8a99;
+  background: #1f5d6b; /* el verde oscuro de la guardiana: con el claro, el blanco se quedaba en 4:1 */
   color: var(--white);
   font-family: var(--arcade);
   font-size: 10px;

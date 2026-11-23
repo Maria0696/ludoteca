@@ -150,6 +150,8 @@ export function LibraryView() {
     const starts = list.reduce<number[]>((acc, g, i) => [...acc, i === 0 ? 0 : acc[i - 1] + list[i - 1].entries.length], []);
     return list.map((g, i) => ({ ...g, offset: starts[i] }));
   }, [visible, group, tab]);
+  // La tabla agrupa igual, pero cada juego sale una sola vez (una fila, una casilla para elegirlo).
+  const tableGroups = useMemo(() => groupEntries(visible, group, tab, true), [visible, group, tab]);
 
   if (library.games.length === 0) return <FirstRun />;
 
@@ -449,53 +451,68 @@ export function LibraryView() {
                     Última partida
                   </span>
                 </div>
-                {visible.map(({ game, copies }) => (
-                  <div key={game.id} className={styles.row} role="row" style={led(ARCADE_STATUS[game.status].color)} data-picked={picked.has(game.id) || undefined}>
-                    <span role="cell">
-                      <label className={styles.pick}>
-                        <input
-                          type="checkbox"
-                          aria-label={`Elegir «${game.title}»`}
-                          checked={picked.has(game.id)}
-                          onChange={(e) => togglePick(game.id, e.target.checked)}
-                        />
-                      </label>
-                    </span>
-                    <span role="cell">
-                      <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
-                    </span>
-                    <span role="cell" className={styles.rowTitle}>
-                      <Link href={`/juego/${game.id}`}>{game.title}</Link>
-                      <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
-                    </span>
-                    <span role="cell" className={styles.hideNarrow}>
-                      {copiesSummary(copies)}
-                    </span>
-                    <span role="cell">
-                      <select
-                        className={`select ${styles.statusSelect}`}
-                        aria-label={`Estado de ${game.title}`}
-                        value={game.status}
-                        onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
-                      >
-                        {GAME_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {STATUS_LABEL[s]}
-                          </option>
-                        ))}
-                      </select>
-                    </span>
-                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                      {game.hoursPlayed ? formatHours(game.hoursPlayed) : "—"}
-                    </span>
-                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                      {game.rating != null ? formatNumber(game.rating) : "—"}
-                    </span>
-                    <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
-                      {relativeDay(game.lastPlayedAt)}
-                    </span>
-                  </div>
-                ))}
+                {tableGroups.map((g) => {
+                  const rows = g.entries.map(({ game, copies }) => (
+                    <div key={`${g.key}-${game.id}`} className={styles.row} role="row" style={led(ARCADE_STATUS[game.status].color)} data-picked={picked.has(game.id) || undefined}>
+                      <span role="cell">
+                        <label className={styles.pick}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Elegir «${game.title}»`}
+                            checked={picked.has(game.id)}
+                            onChange={(e) => togglePick(game.id, e.target.checked)}
+                          />
+                        </label>
+                      </span>
+                      <span role="cell">
+                        <Cover src={game.coverUrl} title={game.title} caption="" className={styles.thumb} />
+                      </span>
+                      <span role="cell" className={styles.rowTitle}>
+                        <Link href={`/juego/${game.id}`}>{game.title}</Link>
+                        <small>{game.genres.slice(0, 2).join(", ") || " "}</small>
+                      </span>
+                      <span role="cell" className={styles.hideNarrow}>
+                        {copiesSummary(copies)}
+                      </span>
+                      <span role="cell">
+                        <select
+                          className={`select ${styles.statusSelect}`}
+                          aria-label={`Estado de ${game.title}`}
+                          value={game.status}
+                          onChange={(e) => actions.setStatus(game.id, e.target.value as GameStatus)}
+                        >
+                          {GAME_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {STATUS_LABEL[s]}
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                      <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                        {game.hoursPlayed ? formatHours(game.hoursPlayed) : "—"}
+                      </span>
+                      <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                        {game.rating != null ? formatNumber(game.rating) : "—"}
+                      </span>
+                      <span role="cell" className={`${styles.hideNarrow} ${styles.num}`}>
+                        {relativeDay(game.lastPlayedAt)}
+                      </span>
+                    </div>
+                  ));
+                  return g.label ? (
+                    <div key={g.key} role="rowgroup" aria-label={g.title} className={styles.tableGroup}>
+                      <div role="row" className={`${styles.groupHeading} ${styles.tableGroupHead}`} style={g.color ? led(g.color) : undefined}>
+                        <span role="cell">
+                          <strong>{g.title}</strong>
+                          <span>{g.detail}</span>
+                        </span>
+                      </div>
+                      {rows}
+                    </div>
+                  ) : (
+                    <Fragment key={g.key}>{rows}</Fragment>
+                  );
+                })}
               </div>
             </>
           )}
@@ -562,7 +579,7 @@ const PLATFORM_LONG: Record<string, string> = {
   "Xbox Series": "Xbox Series",
 };
 
-function groupEntries(entries: LibraryEntry[], group: Group, tab: string): EntryGroup[] {
+function groupEntries(entries: LibraryEntry[], group: Group, tab: string, unique = false): EntryGroup[] {
   if (group === "ninguno" || tab) return [{ key: "todo", label: "", title: "", detail: "", entries }];
   const map = new Map<string, LibraryEntry[]>();
   if (group === "estado") {
@@ -586,19 +603,25 @@ function groupEntries(entries: LibraryEntry[], group: Group, tab: string): Entry
     const platforms = e.copies.length ? [...new Set(e.copies.map(shelfOf))] : ["Sin copia"];
     for (const p of platforms) map.set(p, [...(map.get(p) ?? []), e]);
   }
-  return [...map.entries()]
-    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "es"))
-    .map(([p, list]) => {
-      const playing = list.filter((e) => e.game.status === "jugando").length;
-      return {
-        key: p,
-        label: p,
-        title: PLATFORM_LONG[p] ?? p,
-        detail: `${list.length} ${list.length === 1 ? "juego" : "juegos"}${playing ? ` · ${playing} jugando` : ""}`,
-        color: p === "Sin copia" ? undefined : platformColor(p.startsWith("PC · ") ? "PC" : p),
-        entries: list,
-      };
-    });
+  let shelves = [...map.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "es"));
+  if (unique) {
+    // Un juego con copias en varias plataformas va solo a la primera balda en la que sale.
+    const seen = new Set<string>();
+    shelves = shelves
+      .map(([p, list]): [string, LibraryEntry[]] => [p, list.filter((e) => !seen.has(e.game.id) && Boolean(seen.add(e.game.id)))])
+      .filter(([, list]) => list.length > 0);
+  }
+  return shelves.map(([p, list]) => {
+    const playing = list.filter((e) => e.game.status === "jugando").length;
+    return {
+      key: p,
+      label: p,
+      title: PLATFORM_LONG[p] ?? p,
+      detail: `${list.length} ${list.length === 1 ? "juego" : "juegos"}${playing ? ` · ${playing} jugando` : ""}`,
+      color: p === "Sin copia" ? undefined : platformColor(p.startsWith("PC · ") ? "PC" : p),
+      entries: list,
+    };
+  });
 }
 
 function FirstRun() {

@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { STAGES, currentStage, keeperLine, progressPercent, reachedStages } from "../../src/app/juego/[id]/progress";
 import { isoToDmy, parseDmy } from "../../src/lib/format";
 import type { Copy, Game } from "../../src/lib/model";
-import { addGame, cards, loadDemo, openApp } from "./helpers";
+import { addGame, cards, contrastRatio, loadDemo, openApp } from "./helpers";
 
 const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, lastPlayedAt: null } as unknown as Game;
 const withData = (patch: Partial<Game>) => ({ ...base, ...patch }) as Game;
@@ -39,6 +39,15 @@ test("la guardiana comenta cómo va el juego", () => {
   expect(keeperLine(withData({ status: "pausado", lastPlayedAt: "2026-10-27" }), today)).toBe("Llevas 12 días sin volver. La aventura te espera.");
   expect(keeperLine(withData({ status: "jugando", lastPlayedAt: "2026-11-08" }), today)).toContain("¡Hoy has jugado!");
   expect(keeperLine(withData({ status: "jugando", completed100: true }), today)).toContain("Al 100 %");
+});
+
+test("la etiqueta «Guardiana» se lee con buen contraste", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Tunic", platform: "PC", format: "Digital" });
+  await cards(page).getByRole("link", { name: /Tunic/ }).click();
+  const name = page.getByRole("status", { name: "Guardiana" }).getByText("Guardiana", { exact: true });
+  const [color, background] = await name.evaluate((el) => [getComputedStyle(el).color, getComputedStyle(el).backgroundColor]);
+  expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(4.5);
 });
 
 test("jugar hoy supera niveles y el 100 % da un trofeo que se conserva", async ({ page }) => {

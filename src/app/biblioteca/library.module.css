@@ -676,6 +676,17 @@
 .row:last-child {
   border-bottom: 0;
 }
+/* En la tabla, cada balda con su cabecera, como en las cabinas. */
+.tableGroup {
+  display: grid;
+}
+.tableGroupHead {
+  margin: 0;
+  padding: 16px 14px 8px;
+}
+.tableGroupHead > span {
+  display: contents;
+}
 .row:hover {
   background: #ffffff08;
 }
