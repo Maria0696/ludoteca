@@ -134,3 +134,16 @@ test("un juego sin copias lo dice y deja añadir una", async ({ page }) => {
   await inventory.getByRole("button", { name: "Añadir copia" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });
+
+test("una copia física no pregunta por caja ni carátula: se dan por hechas; una digital, sí", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });
+  const inventory = await openFicha(page, "Celeste");
+  await expect(inventory.getByRole("button", { name: /^Tienda/ })).toBeVisible();
+  await expect(inventory.getByLabel(/^Tengo caja/)).toHaveCount(0);
+  await expect(inventory.getByLabel("Tiene la carátula completa")).toHaveCount(0);
+  // Al pasarla a digital, la caja decorativa y su carátula vuelven a tener sentido.
+  await inventory.getByRole("radiogroup", { name: "Formato" }).getByRole("radio", { name: "Digital" }).click();
+  await expect(inventory.getByLabel("Tengo caja (decorativa)")).toBeVisible();
+  await expect(inventory.getByLabel("Tiene la carátula completa")).toBeVisible();
+});
