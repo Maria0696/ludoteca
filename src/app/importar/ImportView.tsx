@@ -2,12 +2,10 @@
 
 import { useSearchParams } from "next/navigation";
 import { BackupImport } from "./BackupImport";
-import { GameTrackerImport } from "./GameTrackerImport";
 import { SteamImport } from "./SteamImport";
 
+/** Sin origen (o con uno que ya no existe, como Game Tracker), se abre la copia de seguridad: va la primera. */
 export function ImportView() {
   const origin = useSearchParams().get("origen");
-  if (origin === "gametracker") return <GameTrackerImport />;
-  if (origin === "copia") return <BackupImport />;
-  return <SteamImport />;
+  return origin === "steam" ? <SteamImport /> : <BackupImport />;
 }

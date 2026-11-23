@@ -72,7 +72,7 @@ test("volver a importar no duplica y nunca baja las horas ni pisa lo escrito", (
 
 test("elige, copia y los juegos llegan a la biblioteca", async ({ page }) => {
   await mockSteam(page);
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
 
   await expect(page.getByText("3 juegos para copiar")).toBeVisible();
@@ -97,7 +97,7 @@ test("avisa de los juegos que ya tienes", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await page.getByRole("button", { name: "Probar con datos de demostración" }).waitFor();
   await addGame(page, { title: "Cocina Galáctica", platform: "PS5" });
-  await page.goto("/importar");
+  await page.goto("/importar?origen=steam");
   await searchProfile(page);
   await expect(page.getByRole("button", { name: /Cocina Galáctica/ })).toContainText("Ya la tienes: se añade tu copia de Steam");
   await expect(page.getByRole("button", { name: /Faro sin Mar/ })).not.toContainText("Ya la tienes");
@@ -108,7 +108,7 @@ test("los juegos de la familia llegan sin marcar y entran como prestados", async
   expect(planSteamImport(emptyLibrary(), [{ game: family }]).copies[0]).toMatchObject({ availability: "prestado", store: "Steam" });
 
   await mockSteam(page, [...GAMES, family]);
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   const row = page.getByRole("button", { name: /Granja Orbital/ });
   await expect(row).toHaveAttribute("aria-pressed", "false");
@@ -119,7 +119,7 @@ test("los juegos de la familia llegan sin marcar y entran como prestados", async
 test("un icono que no carga deja la inicial y los minutos sueltos no salen como 0 h", async ({ page }) => {
   await page.route("https://media.steampowered.com/**", (route) => route.fulfill({ status: 404, body: "" }));
   await mockSteam(page, [{ appId: 50, name: "Torre de Naipes", minutes: 2, icon: "https://media.steampowered.com/roto.jpg" }]);
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   const row = page.getByRole("button", { name: /Torre de Naipes/ });
   await expect(row).toContainText("2 min");
@@ -132,7 +132,7 @@ test("un perfil privado explica qué hacer", async ({ page }) => {
   await page.route("**/api/steam", (route) =>
     route.fulfill({ json: { ok: false, reason: "privado", message: "Steam no deja ver tus juegos. Pon «Detalles de los juegos» como público." } }),
   );
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   await expect(page.getByRole("alert").filter({ hasText: "Detalles de los juegos" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
@@ -141,14 +141,14 @@ test("un perfil privado explica qué hacer", async ({ page }) => {
 test("sin clave de Steam, el servidor lo dice sin fallar", async ({ page, request }) => {
   const res = await request.post("/api/steam", { data: { perfil: "alguien" } });
   expect(await res.json()).toMatchObject({ ok: false, reason: "no-configurado" });
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   await expect(page.getByRole("alert").filter({ hasText: "STEAM_API_KEY" })).toBeVisible();
 });
 
 test("la copia de datos va en las letras de la carcasa y se lee", async ({ page }) => {
   await mockSteam(page);
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   const family = (el: import("@playwright/test").Locator) => el.evaluate((e) => getComputedStyle(e).fontFamily);
   expect(await family(page.getByRole("heading", { level: 1, name: "Copiar desde Steam" }))).toMatch(/Press.Start.2P/i);
   await expectCarcasaText(page.locator("main"));
@@ -180,7 +180,7 @@ test("un nombre largo de Steam no desborda la lista en el móvil", async ({ page
   const long = "The Elder Scrolls V: Skyrim Special Edition Anniversary Upgrade Pack";
   await page.setViewportSize({ width: 390, height: 844 });
   await mockSteam(page, [{ appId: 40, name: long, minutes: 6000, icon: null }], {});
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   const row = page.getByRole("button", { name: new RegExp(long.slice(0, 20)) });
   await expect(row).toBeVisible();
@@ -193,7 +193,7 @@ test("en un móvil estrecho, la acción principal va en una línea y el contador
   const many: SteamGame[] = Array.from({ length: 320 }, (_, i) => ({ appId: 1000 + i, name: `Juego ${i + 1}`, minutes: 60, icon: null }));
   await page.setViewportSize({ width: 360, height: 740 });
   await mockSteam(page, many, {});
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
   const go = page.getByRole("button", { name: "Copiar a la ludoteca" });
   await expect(go).toBeVisible();

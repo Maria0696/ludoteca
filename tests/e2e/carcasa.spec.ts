@@ -499,7 +499,7 @@ test("las sugerencias del catálogo al añadir, sin esquinas redondeadas", async
 
 for (const [ruta, nombre, texto] of [
   ["/que-juego", "¿A qué juego?", "Cada propuesta explica por qué"],
-  ["/importar", "Importar de Steam", "no se duplica nada"],
+  ["/importar?origen=steam", "Importar de Steam", "no se duplica nada"],
 ] as const) {
   test(`la guardiana explica ${nombre} la primera vez, y no vuelve tras cerrarla`, async ({ page }) => {
     await page.addInitScript(() => {

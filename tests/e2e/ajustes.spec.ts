@@ -18,13 +18,13 @@ test("cada apartado dice su estado sin abrirlo y se abre al lado", async ({ page
   await expect(page.locator("main section.window")).toHaveCount(1);
   await expect(page.getByRole("region", { name: "Partida guardada" })).toBeVisible();
 
-  // Traer juegos lleva a la pantalla de importar, que ya tiene también la copia de seguridad.
+  // Traer juegos lleva a la pantalla de importar: primero la copia de seguridad, luego Steam.
   await tiles(page).getByRole("link", { name: /^Traer juegos/ }).click();
   await expect(page).toHaveURL(/\?apartado=traer$/);
   const traer = page.getByRole("region", { name: "Traer juegos" });
-  await expect(traer.getByRole("link", { name: /^Steam/ })).toHaveAttribute("href", "/importar?origen=steam");
-  await expect(traer.getByRole("link", { name: /^Game Tracker/ })).toHaveAttribute("href", "/importar?origen=gametracker");
+  await expect(traer.getByRole("link")).toHaveText([/^Copia de seguridad/, /^Steam/]);
   await expect(traer.getByRole("link", { name: /^Copia de seguridad/ })).toHaveAttribute("href", "/importar?origen=copia");
+  await expect(traer.getByRole("link", { name: /^Steam/ })).toHaveAttribute("href", "/importar?origen=steam");
 
   // Los enlaces de antes siguen llevando a su sitio.
   for (const [old, name] of [["copia", "Partida guardada"], ["datos", "Cuenta"], ["steam", "Traer juegos"], ["catalogo", "Ayuda"], ["eliminar", "Borrar todo"], ["creditos", "Demostración"]]) {
@@ -35,13 +35,21 @@ test("cada apartado dice su estado sin abrirlo y se abre al lado", async ({ page
   await expect(page.getByRole("region", { name: "Ayuda" }).getByRole("link", { name: "Abrir el manual" })).toHaveAttribute("href", "/manual");
 });
 
-test("la copia se recupera desde Importar, junto a Steam y Game Tracker", async ({ page }) => {
-  await openApp(page, "/importar?origen=copia");
+test("Importar: primero la copia de seguridad y luego Steam, con el mismo formato", async ({ page }) => {
+  // Sin decir de dónde, se abre la copia de seguridad, que va la primera.
+  await openApp(page, "/importar");
   const origins = page.getByRole("navigation", { name: "Origen de la importación" });
-  await expect(origins.getByRole("link")).toHaveText(["Steam", "Game Tracker", "Copia de seguridad"]);
+  await expect(origins.getByRole("link")).toHaveText(["Copia de seguridad", "Steam"]);
   await expect(origins.getByRole("link", { name: "Copia de seguridad" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { level: 1, name: "Recuperar una copia de seguridad" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Copiar desde tu copia de seguridad" })).toBeVisible();
   await expect(page.getByTestId("importar-archivo")).toBeAttached();
+  // Como en Steam: la bahía del origen y la de la ludoteca, con su botón.
+  await expect(page.getByRole("region", { name: /^Copia de seguridad/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ludoteca" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
+  // Game Tracker ya no está; un enlace antiguo lleva a la copia de seguridad.
+  await openApp(page, "/importar?origen=gametracker");
+  await expect(page.getByRole("heading", { level: 1, name: "Copiar desde tu copia de seguridad" })).toBeVisible();
 });
 
 test("la pantalla de título sale siempre, una vez al día o nunca", async ({ page }) => {

@@ -1,25 +1,53 @@
-/* El diálogo de importar una copia: las coincidencias con tu biblioteca, cada una con su decisión. */
+/* Recuperar una copia: las coincidencias con tu biblioteca, cada una con su decisión, dentro de la bahía azul. */
 .conflicts {
   display: grid;
-  gap: 12px;
-}
-.conflictsHead {
-  display: grid;
-  gap: 8px;
-}
-.conflictsHead h3 {
-  font-size: var(--size-lead);
-  font-weight: 400;
-  color: var(--white);
 }
 .conflict {
   display: grid;
   gap: 8px;
   padding: 12px 0;
-  border-bottom: 2px solid var(--line);
+  border-bottom: 2px solid #ffffff22;
+}
+.conflict p {
+  overflow-wrap: anywhere;
+}
+.all,
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.all {
+  margin-bottom: 4px;
+}
+/* Los botones, como los de Steam (Todos, Ninguno): con borde y sin relleno; el elegido, en oro. */
+.all button,
+.choices button {
+  padding: 6px 10px;
+  border: 2px solid var(--edge);
+  background: transparent;
+  cursor: pointer;
+}
+.all button:hover:not(:disabled),
+.choices button:hover:not(:disabled):not([aria-checked="true"]) {
+  background: var(--row-on);
+}
+.summary {
+  margin: 0 0 8px;
+}
+.choices button[aria-checked="true"] {
+  background: #ffd76a;
+  border-color: #ffd76a;
+  color: #1b1400;
 }
 .errors {
   list-style: disc;
   padding-left: 18px;
   margin-top: 6px;
+}
+@media (max-width: 760px) {
+  .all button,
+  .choices button {
+    min-height: 44px;
+  }
 }

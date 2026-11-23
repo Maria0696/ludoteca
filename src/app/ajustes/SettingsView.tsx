@@ -167,7 +167,7 @@ export function SettingsView() {
                 />
               </div>
               <p className={styles.note}>
-                ¿Recuperar una copia? Está en <Link href="/importar?origen=copia">Traer juegos</Link>, junto a Steam y Game Tracker.
+                ¿Recuperar una copia? Está en <Link href="/importar?origen=copia">Traer juegos</Link>, junto a Steam.
               </p>
             </>
           )}
@@ -175,21 +175,15 @@ export function SettingsView() {
           {current === "traer" && (
             <ul className={styles.sources}>
               <li>
-                <Link href="/importar?origen=steam">
-                  <b>Steam</b>
-                  <span>Tus juegos y tus horas</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/importar?origen=gametracker">
-                  <b>Game Tracker</b>
-                  <span>Desde su archivo CSV</span>
-                </Link>
-              </li>
-              <li>
                 <Link href="/importar?origen=copia">
                   <b>Copia de seguridad</b>
                   <span>Recuperar tu partida guardada</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/importar?origen=steam">
+                  <b>Steam</b>
+                  <span>Tus juegos y tus horas</span>
                 </Link>
               </li>
             </ul>

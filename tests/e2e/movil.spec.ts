@@ -1,4 +1,3 @@
-import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
 
@@ -459,7 +458,7 @@ test("en el móvil, «Ficha técnica» y «Más datos» empiezan plegados y se a
 });
 
 test("en el móvil, el campo del perfil de Steam va a lo ancho y se lee entero", async ({ page }) => {
-  await openApp(page, "/importar");
+  await openApp(page, "/importar?origen=steam");
   const field = page.getByLabel("Tu perfil de Steam");
   const room = await field.evaluate((el) => {
     const s = getComputedStyle(el);
@@ -473,13 +472,10 @@ test("en el móvil, el campo del perfil de Steam va a lo ancho y se lee entero",
   expect(Math.round(button.height)).toBeGreaterThanOrEqual(44);
 });
 
-test("en el móvil, copiar desde Game Tracker cabe sin desplazarse de lado", async ({ page }) => {
-  await openApp(page, "/importar?origen=gametracker");
-  await page.getByLabel("Archivo de Game Tracker").setInputFiles(path.join(__dirname, "fixtures", "gametracker-muestra.csv"));
-  await expect(page.getByRole("region", { name: "Para revisar" })).toBeVisible();
+test("en el móvil, copiar desde la copia de seguridad cabe sin desplazarse de lado", async ({ page }) => {
+  await openApp(page, "/importar?origen=copia");
+  await expect(page.getByRole("region", { name: "Ludoteca" })).toBeVisible();
   // Si algo no cabe, el móvil ensancha la página entera en vez de desplazarla: se compara con el ancho del aparato.
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
-  const remove = page.getByRole("region", { name: "Para revisar" }).getByRole("button", { name: /^Quitar / }).first();
-  expect(Math.round((await remove.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
   await expectCarcasaText(page.locator("main"));
 });
