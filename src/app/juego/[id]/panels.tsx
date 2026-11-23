@@ -4,7 +4,7 @@ import { ImageUp, Infinity as InfinityIcon, Plus, Search, Trash2, Trophy } from 
 import { useState } from "react";
 import { TROPHY_URL } from "@/components/pixel/sprites";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
-import { formatDate, formatMoney, formatNumber, relativeDay } from "@/lib/format";
+import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
 import {
   type Copy,
   type Game,
@@ -23,7 +23,7 @@ type Update = (patch: Partial<Game>) => void;
 const RECORD_COLORS = ["#ff6b6b", "#ffb13d", "#ffe45c", "#5dff8b", "#57e6ff", "#a79bff", "#ff7ad9", "#f4f4f5"];
 
 const copyLine = (c: Copy) =>
-  [FORMAT_LABEL[c.format], c.edition, c.pricePaid != null ? formatMoney(c.pricePaid) : null, c.store, c.acquiredAt ? formatDate(c.acquiredAt) : null]
+  [FORMAT_LABEL[c.format], c.edition, priceText(c), c.store, c.acquiredAt ? formatDate(c.acquiredAt) : null]
     .filter(Boolean)
     .join(" · ");
 
@@ -292,7 +292,7 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
     },
     // Sin nota ni catálogo de donde traerla, la fila solo diría «---».
     ...(game.criticRating != null || game.igdbId ? [{ name: "Crítica IGDB", value: <CriticRating game={game} update={update} /> }] : []),
-    ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], c.pricePaid != null ? formatMoney(c.pricePaid) : null].filter(Boolean).join(" · ") })),
+    ...copies.map((c) => ({ name: c.platform, value: [FORMAT_LABEL[c.format], priceText(c)].filter(Boolean).join(" · ") })),
     { name: "En tu ludoteca", value: firstOwned ? formatDate(firstOwned) : "---", stage: 0 },
   ];
   return (

@@ -67,6 +67,6 @@ test("de dónde vienen, géneros, nota y año de salida", async ({ page }) => {
   // Las horas y el gasto, en su ventana, con cuánto falta por anotar.
   const ledger = page.getByRole("region", { name: "Horas y gasto" });
   await expect(ledger).toContainText("14 de 22 juegos con horas");
-  await expect(ledger).toContainText("22 de 22 copias compradas con precio");
+  await expect(ledger).toContainText("22 de 22 copias compradas con precio o motivo");
   await expect(page.getByText(/^Lo anotado a mano/)).toHaveCount(0);
 });

@@ -1,4 +1,4 @@
-import { type Copy, FORMAT_LABEL } from "./model";
+import { type Copy, FORMAT_LABEL, PRICE_KIND_LABEL } from "./model";
 
 const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 const number1 = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 });
@@ -55,6 +55,12 @@ export function relativeDay(iso: string | null | undefined, today = new Date()):
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** El precio de una copia en una palabra: el importe, o por qué no lo tiene. */
+export function priceText(c: Copy): string | null {
+  if (c.priceKind) return PRICE_KIND_LABEL[c.priceKind];
+  return c.pricePaid != null ? formatMoney(c.pricePaid) : null;
 }
 
 /** Resumen corto de las copias para mostrar bajo una carátula. */
