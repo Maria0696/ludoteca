@@ -18,14 +18,6 @@ type TextField = "edition" | "subscriptionService" | "store" | "shelfLocation" |
 
 const iconFor = (copy: Copy) => (copy.format === "fisico" ? CARTRIDGE_URL : DIGITAL_URL);
 
-const linkHost = (url: string) => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "Enlace guardado";
-  }
-};
-
 export function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className={styles.statRow}>
@@ -166,9 +158,12 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
           <div>
             <h4 className={styles.statName}>Compra</h4>
             <dl className={styles.stats}>
-              <Row label="Fecha">
-                <Editable kind="date" quiet label="Fecha de adquisición" value={copy.acquiredAt} display={copy.acquiredAt ? formatDate(copy.acquiredAt) : null} empty="Añadir" onSave={(acquiredAt) => save({ acquiredAt })} />
-              </Row>
+              {/* Si no sabes el precio, tampoco sabes cuándo lo conseguiste: la fecha no se pregunta (y lo anotado se conserva). */}
+              {copy.priceKind !== "desconocido" && (
+                <Row label="Fecha">
+                  <Editable kind="date" quiet label="Fecha de adquisición" value={copy.acquiredAt} display={copy.acquiredAt ? formatDate(copy.acquiredAt) : null} empty="Añadir" onSave={(acquiredAt) => save({ acquiredAt })} />
+                </Row>
+              )}
               {/* El precio es un importe o el motivo de no tenerlo: un regalo, gratis, en un pack o «no lo sé».
                   Con importe ya se sabe que se pagó: el motivo solo se pregunta si no lo hay. */}
               <Row label="Precio">
@@ -213,22 +208,6 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
               {copy.lentTo && (
                 <Row label="Desde">
                   <Editable kind="date" quiet label="Prestada desde" value={copy.lentAt} display={copy.lentAt ? formatDate(copy.lentAt) : null} empty="Añadir" onSave={(lentAt) => save({ lentAt })} />
-                </Row>
-              )}
-              {/* La carátula imprimible es para la caja decorativa de una copia digital: una física ya trae la suya. */}
-              {digital && (
-                <Row label="Carátula imprimible">
-                  <Editable
-                    kind="text"
-                    quiet
-                    label="Enlace de la carátula imprimible"
-                    value={copy.artworkUrl}
-                    display={copy.artworkUrl ? linkHost(copy.artworkUrl) : null}
-                    empty="Añadir enlace"
-                    maxLength={2000}
-                    validate={(url) => (/^https?:\/\//i.test(url) ? null : "El enlace debe empezar por http:// o https://.")}
-                    onSave={(artworkUrl) => save({ artworkUrl })}
-                  />
                 </Row>
               )}
             </dl>

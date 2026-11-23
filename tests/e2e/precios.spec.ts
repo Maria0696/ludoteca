@@ -42,6 +42,14 @@ test("el precio puede ser un importe, un regalo, gratis, de un pack o no saberse
   await expect(how).toHaveValue("pack");
   await expect(inventory.getByRole("button", { name: /^En un pack con: Hades/ })).toBeVisible();
 
+  // Si no sabes el precio, tampoco sabes cuándo lo conseguiste: la fecha no se pregunta.
+  const date = inventory.getByRole("button", { name: /^Fecha de adquisición/ });
+  await expect(date).toBeVisible();
+  await how.selectOption({ label: "No lo sé" });
+  await expect(date).toHaveCount(0);
+  await how.selectOption({ label: "Regalo" });
+  await expect(date).toBeVisible();
+
   // Volver a «Pagado» deja anotar el importe otra vez, y el pack se olvida.
   await how.selectOption({ label: "Pagado" });
   await expect(inventory.getByRole("button", { name: /^Precio: añadir/i })).toBeVisible();
