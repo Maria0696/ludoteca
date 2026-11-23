@@ -9,6 +9,8 @@ test("cada apartado dice su estado sin abrirlo y se abre al lado", async ({ page
   await loadDemo(page);
   await page.goto("/ajustes");
   await expect(tiles(page).getByRole("link")).toHaveText([/^Partida guardada/, /^Traer juegos/, /^Pantalla/, /^Ayuda/, /^Cuenta/, /^Demostración/, /^Borrar todo/]);
+  // En el orden de Importar: primero la copia, luego Steam.
+  await expect(tiles(page).getByRole("link", { name: /^Traer juegos/ })).toContainText("De un archivo o de Steam");
   await expect(tiles(page).getByRole("link", { name: /^Partida guardada/ })).toContainText("Sin copia todavía");
   await expect(tiles(page).getByRole("link", { name: /^Pantalla/ })).toContainText("Título una vez al día");
   await expect(tiles(page).getByRole("link", { name: /^Cuenta/ })).toContainText("Modo local");

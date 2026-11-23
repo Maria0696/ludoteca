@@ -67,7 +67,7 @@ export function SettingsView() {
 
   const sections: { slug: Slug; label: string; status: string; danger?: boolean }[] = [
     { slug: "partida", label: "Partida guardada", status: backupShort(backup?.daysSinceBackup) },
-    { slug: "traer", label: "Traer juegos", status: "De Steam o un archivo" },
+    { slug: "traer", label: "Traer juegos", status: "De un archivo o de Steam" },
     { slug: "pantalla", label: "Pantalla", status: TITLE_STATUS[titleMode] },
     { slug: "ayuda", label: "Ayuda", status: `Manual de ${manualPageCount()} páginas` },
     { slug: "cuenta", label: "Cuenta", status: mode === "local" ? "Modo local" : "Sincronizada" },

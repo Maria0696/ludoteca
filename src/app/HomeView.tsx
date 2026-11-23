@@ -4,7 +4,7 @@ import { HardDrive, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
-import { BackupReminder } from "@/components/home/BackupReminder";
+import { BackupReminder, useBackupReminderDue } from "@/components/home/BackupReminder";
 import { MainMenu } from "@/components/home/MainMenu";
 import { CHEST_CLOSED_URL } from "@/components/pixel/sprites";
 import { buildEntries } from "@/lib/filters";
@@ -39,6 +39,7 @@ export function HomeView() {
   const { open } = useAddGame();
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [noticeClosed, closeNotice] = useLocalNoticeClosed();
+  const reminding = useBackupReminderDue(library);
   const entries = useMemo(() => buildEntries(library), [library]);
   const stats = useMemo(() => computeStats(library), [library]);
 
@@ -139,8 +140,9 @@ export function HomeView() {
         }}
         notices={
           <>
-            <BackupReminder library={library} />
-            {mode === "local" && !noticeClosed && localNotice(styles.localNotice, closeNotice)}
+            {/* Un solo aviso a la vez: si toca la copia, ese ya dice que todo está en este navegador. */}
+            <BackupReminder library={library} local={mode === "local"} />
+            {mode === "local" && !noticeClosed && !reminding && localNotice(styles.localNotice, closeNotice)}
           </>
         }
       />

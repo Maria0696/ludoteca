@@ -58,7 +58,9 @@ test("de dónde vienen, géneros, nota y año de salida", async ({ page }) => {
 
   // Géneros como clasificación: con puesto y enlace a la biblioteca filtrada.
   const genres = page.getByRole("region", { name: "Géneros" }).getByRole("listitem");
-  await expect(genres.first()).toContainText(/1º\s*Aventura\s*5/);
+  // El puesto con punto: en la letra de píxeles, «1º» se lee «19».
+  await expect(genres.first()).toContainText(/^1\.\s*Aventura\s*5/);
+  await expect(page.getByRole("region", { name: "Géneros" })).not.toContainText("º");
   await expect(genres.first().getByRole("link", { name: "Aventura" })).toHaveAttribute("href", "/biblioteca?genero=Aventura");
 
   await expect(page.getByRole("region", { name: "Nota en Metacritic" })).toContainText(/Media \d+(,\d)? en 22 juegos con nota/);

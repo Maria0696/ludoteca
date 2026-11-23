@@ -119,18 +119,6 @@ export function PickerView() {
             </button>
           </div>
 
-          {result.limitations.length > 0 && (
-            <div className="notice">
-              <Info aria-hidden />
-              <div>
-                {result.limitations.map((l) => (
-                  <p key={l}>{l}</p>
-                ))}
-                <p>Completa esos datos en la ficha de cada juego para afinar.</p>
-              </div>
-            </div>
-          )}
-
           {result.picks.length === 0 ? (
             <EmptyPicks
               excluded={result.excluded}
@@ -186,6 +174,19 @@ export function PickerView() {
                 </li>
               ))}
             </ol>
+          )}
+
+          {/* Lo que falta por saber va después: en el móvil, la primera propuesta se ve sin bajar. */}
+          {result.limitations.length > 0 && (
+            <div className="notice">
+              <Info aria-hidden />
+              <div>
+                {result.limitations.map((l) => (
+                  <p key={l}>{l}</p>
+                ))}
+                <p>Completa esos datos en la ficha de cada juego para afinar.</p>
+              </div>
+            </div>
           )}
         </section>
       </div>

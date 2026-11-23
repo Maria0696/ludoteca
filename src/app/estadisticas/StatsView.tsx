@@ -144,7 +144,8 @@ export function StatsView() {
             {s.endless.total > 0 && (
               <li className={styles.endlessKey}>
                 <i aria-hidden />
-                Sin final {formatNumber(s.endless.total)}
+                {/* Ya cuentan en su estado: la leyenda no los suma otra vez. */}
+                Sin final {formatNumber(s.endless.total)} ({s.endless.total === 1 ? "ya contado" : "ya contados"})
               </li>
             )}
           </ul>
@@ -266,7 +267,7 @@ export function StatsView() {
             <ol className={styles.ranking}>
               {s.genres.map((g, i) => (
                 <li key={g.genre}>
-                  <span className={styles.rank}>{i + 1}º</span>
+                  <span className={styles.rank}>{i + 1}.</span>
                   <Link href={`/biblioteca?genero=${encodeURIComponent(g.genre)}`}>{g.genre}</Link>
                   <span className={styles.dots} aria-hidden />
                   <span className="num">{formatNumber(g.titles)}</span>

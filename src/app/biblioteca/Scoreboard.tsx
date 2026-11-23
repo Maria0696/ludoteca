@@ -68,7 +68,7 @@ export function HiScore({ entries }: { entries: LibraryEntry[] }) {
       <ol className={styles.hiscore}>
         {top.map(({ game }, i) => (
           <li key={game.id}>
-            <span>{i + 1}º</span>
+            <span>{i + 1}.</span>
             <Link href={`/juego/${game.id}`}>{game.title}</Link>
             <span>{formatHours(game.hoursPlayed ?? 0)}</span>
           </li>
