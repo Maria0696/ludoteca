@@ -75,10 +75,10 @@ test("elige, copia y los juegos llegan a la biblioteca", async ({ page }) => {
   await openApp(page, "/importar?origen=steam");
   await searchProfile(page);
 
-  await expect(page.getByText("3 juegos para copiar")).toBeVisible();
+  await expect(page.getByText("3 para copiar")).toBeVisible();
   await page.getByRole("button", { name: /Reino Pendiente/ }).click();
   await expect(page.getByRole("button", { name: /Reino Pendiente/ })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByText("2 juegos para copiar")).toBeVisible();
+  await expect(page.getByText("2 para copiar")).toBeVisible();
 
   await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
   const done = page.getByRole("status").filter({ hasText: "Copia terminada" });
@@ -113,7 +113,7 @@ test("los juegos de la familia llegan sin marcar y entran como prestados", async
   const row = page.getByRole("button", { name: /Granja Orbital/ });
   await expect(row).toHaveAttribute("aria-pressed", "false");
   await expect(row).toContainText("De tu familia de Steam");
-  await expect(page.getByText("3 juegos para copiar")).toBeVisible();
+  await expect(page.getByText("3 para copiar")).toBeVisible();
 });
 
 test("un icono que no carga deja la inicial y los minutos sueltos no salen como 0 h", async ({ page }) => {
@@ -157,7 +157,7 @@ test("la copia de datos va en las letras de la carcasa y se lee", async ({ page 
   expect(contrastRatio(label, "rgb(39, 80, 172)")).toBeGreaterThanOrEqual(4.5);
 
   await searchProfile(page);
-  await expect(page.getByText("3 juegos para copiar")).toBeVisible();
+  await expect(page.getByText("3 para copiar")).toBeVisible();
   await expectCarcasaText(page.locator("main"));
   const oldFonts = await page.locator("main").evaluate((root) =>
     [root, ...root.querySelectorAll("*")].filter((el) => /Oxanium|Share Tech/i.test(getComputedStyle(el).fontFamily)).length,
