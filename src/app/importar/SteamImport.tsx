@@ -303,7 +303,7 @@ export function SteamImport() {
               <i style={{ transform: `scaleX(${progress})` }} />
             </div>
             <p className={styles.status} aria-live="polite">
-              {copying ? `Copiando ${copied.size} de ${queue.length}. No cierres esta pantalla.` : `${games(queue.length)} para copiar`}
+              {copying ? `Copiando ${copied.size} de ${queue.length}. No cierres esta pantalla.` : `${queue.length} para copiar` /* igual que en la copia de seguridad */}
             </p>
             {!copying && <p className={styles.fine}>Los nuevos entran como Pendiente, con una copia digital de PC en la tienda Steam.</p>}
             <button type="button" className={styles.go} disabled={copying || queue.length === 0} onClick={() => void copyGames()}>

@@ -15,6 +15,8 @@ test("la carcasa común: fondo morado oscuro y las dos letras cargadas", async (
   });
   expect(vars[0]).toMatch(/Press.Start.2P/i);
   expect(vars[1]).toMatch(/VT323/i);
+  // Los párrafos reparten las líneas: ninguna palabra se queda sola al final.
+  expect(await page.locator("main p").first().evaluate((el) => getComputedStyle(el).textWrap)).toBe("pretty");
 });
 
 test("las piezas comunes: diálogo, botones y campos en la carcasa", async ({ page }) => {
@@ -305,6 +307,12 @@ test("Deseos: el precio es una etiqueta bajo el título y solo «Ya lo tengo» v
   const background = (name: string | RegExp) => silksong.getByRole("button", { name }).evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(await background("Ya lo tengo")).not.toBe("rgba(0, 0, 0, 0)");
   for (const name of [/^Precio/, /^Editar/, /^Quitar/]) expect(await background(name)).toBe("rgba(0, 0, 0, 0)");
+  // Las calladas, bajo el título, junto a lo que cambian; «Ya lo tengo», sola a la derecha.
+  const edit = (await silksong.getByRole("button", { name: /^Editar/ }).boundingBox())!;
+  const have = (await silksong.getByRole("button", { name: "Ya lo tengo" }).boundingBox())!;
+  expect(edit.y).toBeGreaterThan(tagBox.y);
+  expect(edit.x - title.x).toBeLessThan(200);
+  expect(have.x).toBeGreaterThan(edit.x + 300);
 });
 
 test("Deseos: un deseo sin carátula no enseña texto diminuto en la miniatura", async ({ page }) => {

@@ -108,6 +108,10 @@ body {
 h1, h2, h3, h4, p, figure, ul, ol, dl, dd {
   margin: 0;
 }
+/* Los párrafos reparten las líneas: ninguna palabra se queda sola al final. */
+p {
+  text-wrap: pretty;
+}
 ul, ol {
   padding: 0;
   list-style: none;

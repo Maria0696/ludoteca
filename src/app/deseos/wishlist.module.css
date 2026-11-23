@@ -68,7 +68,8 @@
 .item {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr) auto;
-  gap: 28px;
+  grid-template-areas: "cover info have" "cover sec have";
+  gap: 0 28px;
   align-items: center;
   padding: 16px 4px;
   border-bottom: 2px solid var(--line);
@@ -81,6 +82,7 @@
   border-bottom: 0;
 }
 .cover {
+  grid-area: cover;
   width: 76px;
   box-shadow: var(--pixel-frame-soft);
 }
@@ -90,6 +92,7 @@
   display: none;
 }
 .info {
+  grid-area: info;
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -157,15 +160,17 @@
 }
 /* «Ya lo tengo» enmarcado arriba; precio, editar y quitar, callados debajo. */
 .actions {
+  grid-area: have;
   display: grid;
-  gap: 4px;
   justify-items: end;
 }
+/* Las calladas, bajo el título: el texto del primer botón, alineado con el del título. */
 .secondary {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  grid-area: sec;
   gap: 2px;
+  margin: 4px 0 0 -12px;
 }
 .secondary :global(.btn) {
   padding-inline: 8px;
@@ -238,24 +243,22 @@
   }
   .item {
     grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-areas: "cover info" "have have" "sec sec";
     gap: 12px 16px;
   }
   .cover {
     width: 64px;
   }
-  /* En el móvil, a lo ancho y en fila: «Ya lo tengo» y, detrás, las calladas. */
+  /* En el móvil, debajo y a lo ancho: «Ya lo tengo» y, tras ella, las calladas. */
   .actions {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
+    justify-items: start;
   }
   .secondary {
-    justify-content: flex-start;
+    margin: -8px 0 0 -12px;
   }
   /* Se tocan con el pulgar: 44 px de alto. */
-  .actions :global(.btn) {
+  .actions :global(.btn),
+  .secondary :global(.btn) {
     height: 44px;
   }
   .cols {

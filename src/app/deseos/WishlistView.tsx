@@ -189,26 +189,27 @@ export function WishlistView() {
                       )}
                       {w.notes && <p className={styles.notes}>{w.notes}</p>}
                     </div>
-                    {/* La acción principal, enmarcada; las demás, calladas debajo. */}
+                    {/* Las calladas, bajo el título (en el móvil, a lo ancho, tras «Ya lo tengo»). */}
+                    <div className={styles.secondary}>
+                      <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
+                        <Tag aria-hidden />
+                        Precio
+                      </button>
+                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
+                        <Pencil aria-hidden />
+                        Editar
+                      </button>
+                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
+                        <Trash2 aria-hidden />
+                        Quitar
+                      </button>
+                    </div>
+                    {/* La acción principal, enmarcada y sola a la derecha. */}
                     <div className={styles.actions}>
                       <button type="button" className="btn btn-sm" onClick={() => setDialog({ kind: "convert", wish: w })}>
                         <PackageCheck aria-hidden />
                         Ya lo tengo
                       </button>
-                      <div className={styles.secondary}>
-                        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
-                          <Tag aria-hidden />
-                          Precio
-                        </button>
-                        <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
-                          <Pencil aria-hidden />
-                          Editar
-                        </button>
-                        <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
-                          <Trash2 aria-hidden />
-                          Quitar
-                        </button>
-                      </div>
                     </div>
                   </li>
                 );
