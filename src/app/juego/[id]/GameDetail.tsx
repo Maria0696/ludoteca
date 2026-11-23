@@ -1,6 +1,6 @@
 "use client";
 
-import { Infinity as InfinityIcon, Star, Trophy } from "lucide-react";
+import { Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -167,16 +167,6 @@ export function GameDetail({ id }: { id: string }) {
               <button type="button" className={styles.action} aria-pressed={game.completed100} onClick={toggle100}>
                 <Trophy aria-hidden fill={game.completed100 ? "currentColor" : "none"} />
                 {game.completed100 ? "Al 100 %" : "100 %"}
-              </button>
-              <button
-                type="button"
-                className={styles.action}
-                aria-pressed={game.endless}
-                title="Juegos como Mario Kart o Stardew: no se terminan, se juegan"
-                onClick={() => update({ endless: !game.endless })}
-              >
-                <InfinityIcon aria-hidden />
-                Sin final
               </button>
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}
             </div>
