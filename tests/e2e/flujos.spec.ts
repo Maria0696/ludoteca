@@ -98,14 +98,15 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   await addGame(other, { title: "Celeste", platform: "PS4", format: "Digital" });
   await other.goto("/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
-  const dialog = other.getByRole("dialog");
-  await expect(dialog.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
-  await expect(dialog.getByText(/mismo título que «Celeste»/)).toBeVisible();
-  await expectCarcasaText(dialog); // la lista de duplicados, en la carcasa
+  // Como en Steam: lo del archivo en su bahía y, al lado, lo que entra en la ludoteca.
+  const bay = other.getByRole("region", { name: /^Copia de seguridad/ });
+  await expect(bay.getByText(/Nuevo: 1 juego, 2 copias/)).toBeVisible();
+  await expect(bay.getByText(/mismo título que «Celeste»/)).toBeVisible();
+  await expectCarcasaText(bay); // la lista de duplicados, en la carcasa
   // Por defecto se mantiene lo propio; aquí elegimos conservar los dos.
-  await expect(dialog.getByRole("radio", { name: "Mantener el mío" })).toHaveAttribute("aria-checked", "true");
-  await dialog.getByRole("radio", { name: "Conservar los dos" }).click();
-  await dialog.getByRole("button", { name: "Importar" }).click();
+  await expect(bay.getByRole("radio", { name: "Mantener el mío" })).toHaveAttribute("aria-checked", "true");
+  await bay.getByRole("radio", { name: "Conservar los dos" }).click();
+  await other.getByRole("button", { name: "Copiar a la ludoteca" }).click();
   await expect(other.getByText(/Importado: 2 juegos, 2 copias/)).toBeVisible();
   await other.goto("/biblioteca");
   await expect(other.getByText("3 títulos · 3 copias")).toBeVisible();
@@ -113,8 +114,8 @@ test("exportar e importar una copia de seguridad, resolviendo duplicados", async
   // Importar el mismo archivo otra vez no duplica nada.
   await other.goto("/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
-  await expect(other.getByRole("dialog").getByText(/ya los tienes iguales/)).toBeVisible();
-  await other.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
+  await expect(other.getByRole("region", { name: /^Copia de seguridad/ }).getByText(/ya los tienes iguales/)).toBeVisible();
+  await expect(other.getByRole("button", { name: "Copiar a la ludoteca" })).toBeDisabled();
 
   // Un archivo que no es una copia se rechaza sin tocar nada.
   const bad = test.info().outputPath("malo.json");
@@ -136,17 +137,17 @@ test("una copia de antes, con listas, se sigue importando y las listas se ignora
   backup.data.lists = [
     { id: "lista-antigua", name: "Para el verano", gameIds: [backup.data.games[0].id], createdAt: backup.exportedAt, updatedAt: backup.exportedAt },
   ];
-  const path = test.info().outputPath("copia-con-listas.json");
+  const path = test.info().outputPath("copia-antigua.json");
   await writeFile(path, JSON.stringify(backup));
 
   const context = await browser.newContext({ locale: "es-ES" });
   const other = await context.newPage();
   await openApp(other, "/importar?origen=copia");
   await other.getByTestId("importar-archivo").setInputFiles(path);
-  const dialog = other.getByRole("dialog");
-  await expect(dialog.getByText(/Nuevo: 1 juego, 1 copia y 0 deseos\./)).toBeVisible();
-  await expect(dialog).not.toContainText("lista");
-  await dialog.getByRole("button", { name: "Importar" }).click();
+  const bay = other.getByRole("region", { name: /^Copia de seguridad/ });
+  await expect(bay.getByText(/Nuevo: 1 juego, 1 copia y 0 deseos\./)).toBeVisible();
+  await expect(bay).not.toContainText("lista");
+  await other.getByRole("button", { name: "Copiar a la ludoteca" }).click();
   await expect(other.getByText("Importado: 1 juego, 1 copia y 0 deseos")).toBeVisible();
   await other.goto("/biblioteca");
   await expect(other.getByText("1 título · 1 copia")).toBeVisible();

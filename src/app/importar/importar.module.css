@@ -457,7 +457,7 @@
   color: var(--gold);
 }
 
-/* Game Tracker: las mismas dos bahías que Steam. */
+/* Copia de seguridad: las mismas dos bahías que Steam, con el archivo que se suelta o se elige. */
 .card[data-arrastrando] {
   border-color: var(--gold);
   border-style: dashed;
@@ -533,126 +533,13 @@
 .cellDone img {
   object-fit: cover;
 }
-.items {
-  display: grid;
-  gap: 3px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.item {
-  padding: 6px 8px;
-  background: var(--row);
-  content-visibility: auto;
-  contain-intrinsic-size: auto 44px;
-}
-.itemHead {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-height: 32px;
-  cursor: pointer;
-}
-.itemHead input {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  accent-color: var(--gold);
-}
-/* Carátula pequeña: distingue juegos de nombre parecido. */
-.thumb {
-  flex: none;
-  width: 36px;
-  height: 48px;
-  object-fit: cover;
-  background: var(--row-on);
-  outline: 1px solid var(--edge-dim);
-}
-.itemHead span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.itemHead small {
-  display: block;
-  color: var(--dim);
-  font-size: var(--size-note);
-}
-.copies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 0 32px;
-  padding: 0;
-  list-style: none;
-}
-.copies li {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  padding-left: 8px;
-  border: 2px solid var(--edge-dim);
-}
-.copies button,
-.addCopy button {
-  display: inline-grid;
-  place-items: center;
-  min-width: 36px;
-  min-height: 36px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.copies button:hover:not(:disabled),
-.addCopy button:hover:not(:disabled) {
-  background: var(--row-on);
-}
-.copies svg {
-  width: 16px;
-  height: 16px;
-}
-.addCopy {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 0 32px;
-}
-.addCopy select {
-  padding: 6px 8px;
-  border: 2px solid var(--edge);
-  background: var(--panel);
-}
-.addCopy button {
-  padding: 0 12px;
-  border: 2px solid var(--edge);
-}
-.owned {
-  padding: 10px 14px;
-  border: 2px solid var(--edge-dim);
-  background: var(--panel);
-}
-.owned summary {
-  cursor: pointer;
-}
-.owned ul {
-  columns: 16rem;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-}
 .card .fine a {
   color: var(--gold);
 }
 @media (max-width: 760px) {
   .origin a,
-  .pickFile,
-  .copies button,
-  .addCopy button,
-  .addCopy select {
+  .pickFile {
     min-height: 44px;
-  }
-  .copies,
-  .addCopy {
-    margin-left: 0;
   }
 }
 
