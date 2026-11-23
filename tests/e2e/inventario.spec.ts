@@ -57,16 +57,6 @@ test("cada copia enseña sus datos y se cambian sin abrir ninguna ventana", asyn
   await inventory.getByLabel("Nombre de la plataforma").press("Enter");
   await expect(inventory.getByRole("heading", { level: 3, name: "Neo Geo" })).toBeVisible();
 
-  // Un enlace mal escrito avisa y no se guarda. La carátula imprimible es de las copias digitales (su caja decorativa).
-  await inventory.getByRole("button", { name: "PC, Digital" }).click();
-  await inventory.getByRole("button", { name: /^Enlace de la carátula/ }).click();
-  await inventory.getByRole("textbox", { name: "Enlace de la carátula imprimible" }).fill("caratulas.com");
-  await inventory.getByRole("textbox", { name: "Enlace de la carátula imprimible" }).press("Enter");
-  await expect(inventory.getByText("El enlace debe empezar por http:// o https://.")).toBeVisible();
-  await inventory.getByRole("textbox", { name: "Enlace de la carátula imprimible" }).fill("https://www.caratulas.com/celeste");
-  await inventory.getByRole("textbox", { name: "Enlace de la carátula imprimible" }).press("Enter");
-  await expect(inventory.getByRole("button", { name: /^Enlace de la carátula imprimible: caratulas\.com/ })).toBeVisible();
-
   await page.reload();
   await expect(inventory.getByRole("button", { name: "Neo Geo, Físico" })).toBeVisible();
   await expect(inventory.getByRole("button", { name: /^Tienda: GAME/ })).toBeVisible();
@@ -136,7 +126,7 @@ test("un juego sin copias lo dice y deja añadir una", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
-test("una copia física no pregunta por caja, carátula ni carátula imprimible: se dan por hechas; una digital, sí", async ({ page }) => {
+test("una copia física no pregunta por caja ni carátula: se dan por hechas; una digital, sí", async ({ page }) => {
   await openApp(page, "/biblioteca");
   await addGame(page, { title: "Celeste", platform: "Switch", format: "Físico" });
   const inventory = await openFicha(page, "Celeste");
@@ -148,5 +138,6 @@ test("una copia física no pregunta por caja, carátula ni carátula imprimible:
   await inventory.getByRole("radiogroup", { name: "Formato" }).getByRole("radio", { name: "Digital" }).click();
   await expect(inventory.getByLabel("Tengo caja (decorativa)")).toBeVisible();
   await expect(inventory.getByLabel("Tiene la carátula completa")).toBeVisible();
-  await expect(inventory.getByText("Carátula imprimible")).toBeVisible();
+  // El enlace a una carátula imprimible ya no se pide en ninguna copia.
+  await expect(inventory.getByText("Carátula imprimible")).toHaveCount(0);
 });
