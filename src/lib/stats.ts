@@ -41,7 +41,11 @@ export interface CollectionStats {
   completedWithoutDate: number;
   completed100: number;
   hours: { total: number; withData: number; missing: number };
-  spend: { total: number; withData: number; missing: number };
+  /**
+   * Gasto de las copias compradas: la suma de los importes y cuántas no tienen importe porque fueron
+   * regalo, gratis, de un pack o no se sabe; «missing» son las que aún no dicen nada.
+   */
+  spend: { total: number; withData: number; missing: number; regalo: number; gratis: number; pack: number; desconocido: number };
   wishlist: number;
   lentOut: number;
 }
@@ -108,7 +112,7 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
   const platformMap = new Map<string, { copies: number; games: Set<string> }>();
   const storeMap = new Map<string, number>();
   const copiesByFormat: Record<Format, number> = { fisico: 0, digital: 0 };
-  const spend = { total: 0, withData: 0, missing: 0 };
+  const spend = { total: 0, withData: 0, missing: 0, regalo: 0, gratis: 0, pack: 0, desconocido: 0 };
   let lentOut = 0;
 
   for (const c of library.copies) {
@@ -120,7 +124,9 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
     if (c.platform === "PC" && c.store) storeMap.set(c.store, (storeMap.get(c.store) ?? 0) + 1);
     if (c.lentTo) lentOut++;
     if (c.availability === "comprado") {
-      if (c.pricePaid != null) {
+      if (c.priceKind) {
+        spend[c.priceKind]++;
+      } else if (c.pricePaid != null) {
         spend.total += c.pricePaid;
         spend.withData++;
       } else {

@@ -40,6 +40,11 @@ export const AVAILABILITY_LABEL: Record<Availability, string> = {
   suscripcion: "Suscripción",
 };
 
+/** Por qué una copia no tiene importe. Sin motivo, es que se pagó (o falta anotar cuánto). */
+export const PRICE_KINDS = ["regalo", "gratis", "pack", "desconocido"] as const;
+export type PriceKind = (typeof PRICE_KINDS)[number];
+export const PRICE_KIND_LABEL: Record<PriceKind, string> = { regalo: "Regalo", gratis: "Gratis", pack: "En un pack", desconocido: "No lo sé" };
+
 export const MODE_LABEL: Record<PlayMode, string> = {
   solo: "Un jugador",
   coop_local: "Cooperativo local",
@@ -121,6 +126,9 @@ export const copySchema = z.object({
   subscriptionService: optionalText,
   acquiredAt: isoDate.nullish(),
   pricePaid: z.number().min(0).max(100000).nullish(),
+  priceKind: z.enum(PRICE_KINDS).nullish(),
+  /** Con qué juego venía, si llegó en un pack. */
+  bundleWith: optionalText,
   store: optionalText,
   // Estantería: campos opcionales, válidos también para copias digitales con caja decorativa.
   hasCase: z.boolean().nullish(),
@@ -226,6 +234,8 @@ export function createCopy(gameId: string, input: NewCopyInput): Copy {
     subscriptionService: null,
     acquiredAt: null,
     pricePaid: null,
+    priceKind: null,
+    bundleWith: null,
     store: null,
     hasCase: null,
     hasFullArtwork: null,

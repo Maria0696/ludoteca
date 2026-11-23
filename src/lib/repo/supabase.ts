@@ -22,7 +22,7 @@ const gameCols: [keyof Game, string][] = [
 const copyCols: [keyof Copy, string][] = [
   ["id", "id"], ["gameId", "game_id"], ["platform", "platform"], ["edition", "edition"], ["format", "format"],
   ["availability", "availability"], ["subscriptionService", "subscription_service"], ["acquiredAt", "acquired_at"],
-  ["pricePaid", "price_paid"], ["store", "store"], ["hasCase", "has_case"], ["hasFullArtwork", "has_full_artwork"],
+  ["pricePaid", "price_paid"], ["priceKind", "price_kind"], ["bundleWith", "bundle_with"], ["store", "store"], ["hasCase", "has_case"], ["hasFullArtwork", "has_full_artwork"],
   ["artworkUrl", "artwork_url"], ["shelfLocation", "shelf_location"],
   ["lentTo", "lent_to"], ["lentAt", "lent_at"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];

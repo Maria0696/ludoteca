@@ -366,6 +366,10 @@
   color: var(--muted);
   font-size: var(--size-meta);
 }
+.coverageDetail {
+  color: var(--faint);
+  font-size: var(--size-note);
+}
 .meter {
   display: block;
   max-width: 320px;

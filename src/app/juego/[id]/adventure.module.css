@@ -1085,6 +1085,14 @@ button.slot:hover {
 .valueEmpty {
   color: #b9b2d6;
 }
+/* El precio: el importe y, al lado, el motivo («Pagado», «Regalo»…), en la misma línea. */
+.priceLine {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 4px 12px;
+}
 .statSelect {
   max-width: 100%;
   padding: 0 2px;

@@ -6,7 +6,7 @@ import { useAddGame } from "@/components/game/AddGameProvider";
 import { usePlatformOptions } from "@/components/game/PlatformField";
 import { CARTRIDGE_URL, DIGITAL_URL } from "@/components/pixel/sprites";
 import { formatDate, formatMoney } from "@/lib/format";
-import { type Copy, AVAILABILITIES, AVAILABILITY_LABEL, FORMAT_LABEL } from "@/lib/model";
+import { type Copy, type PriceKind, AVAILABILITIES, AVAILABILITY_LABEL, FORMAT_LABEL, PRICE_KIND_LABEL, PRICE_KINDS } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { Editable } from "./Editable";
@@ -14,7 +14,7 @@ import { Editable } from "./Editable";
 const MIN_SLOTS = 9;
 const OTHER = "__otra__";
 
-type TextField = "edition" | "subscriptionService" | "store" | "shelfLocation";
+type TextField = "edition" | "subscriptionService" | "store" | "shelfLocation" | "bundleWith";
 
 const iconFor = (copy: Copy) => (copy.format === "fisico" ? CARTRIDGE_URL : DIGITAL_URL);
 
@@ -169,9 +169,31 @@ function ItemSheet({ copy, onDelete }: { copy: Copy; onDelete: () => void }) {
               <Row label="Fecha">
                 <Editable kind="date" quiet label="Fecha de adquisición" value={copy.acquiredAt} display={copy.acquiredAt ? formatDate(copy.acquiredAt) : null} empty="Añadir" onSave={(acquiredAt) => save({ acquiredAt })} />
               </Row>
+              {/* El precio es un importe o el motivo de no tenerlo: un regalo, gratis, en un pack o «no lo sé». */}
               <Row label="Precio">
-                <Editable kind="number" quiet label="Precio" value={copy.pricePaid} display={copy.pricePaid != null ? formatMoney(copy.pricePaid) : null} empty="Añadir" max={100000} onSave={(pricePaid) => save({ pricePaid })} />
+                <span className={styles.priceLine}>
+                  {!copy.priceKind && (
+                    <Editable kind="number" quiet label="Precio" value={copy.pricePaid} display={copy.pricePaid != null ? formatMoney(copy.pricePaid) : null} empty="Añadir" max={100000} onSave={(pricePaid) => save({ pricePaid })} />
+                  )}
+                  <select
+                    className={styles.statSelect}
+                    aria-label="Cómo lo conseguiste"
+                    value={copy.priceKind ?? "pagado"}
+                    onChange={(e) => {
+                      const kind = e.target.value === "pagado" ? null : (e.target.value as PriceKind);
+                      save({ priceKind: kind, pricePaid: kind ? null : copy.pricePaid, bundleWith: kind === "pack" ? copy.bundleWith : null });
+                    }}
+                  >
+                    <option value="pagado">Pagado</option>
+                    {PRICE_KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {PRICE_KIND_LABEL[k]}
+                      </option>
+                    ))}
+                  </select>
+                </span>
               </Row>
+              {copy.priceKind === "pack" && <Row label="En un pack con">{text("En un pack con", "bundleWith")}</Row>}
               <Row label="Tienda">{text("Tienda", "store")}</Row>
             </dl>
           </div>

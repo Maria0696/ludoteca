@@ -49,6 +49,21 @@ export function StatsView() {
   }
 
   const statuses = GAME_STATUSES.filter((st) => s.byStatus[st] > 0);
+  // Un regalo, un juego gratis, uno de un pack o uno que no se sabe no son precios que falten.
+  const reasons = s.spend.regalo + s.spend.gratis + s.spend.pack + s.spend.desconocido;
+  const answered = s.spend.withData + reasons;
+  const priceDetail =
+    reasons > 0
+      ? [
+          `${formatNumber(s.spend.withData)} con precio`,
+          s.spend.gratis > 0 && `${formatNumber(s.spend.gratis)} gratis`,
+          s.spend.regalo > 0 && count(s.spend.regalo, "regalo", "regalos"),
+          s.spend.pack > 0 && `${formatNumber(s.spend.pack)} en pack`,
+          s.spend.desconocido > 0 && `${formatNumber(s.spend.desconocido)} sin saber`,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : undefined;
   const maxMonth = Math.max(1, ...s.finishedByMonth);
   const maxScore = Math.max(1, ...s.metacritic.buckets.map((b) => b.titles));
   const maxDecade = Math.max(1, ...s.decades.map((d) => d.titles));
@@ -333,19 +348,20 @@ export function StatsView() {
           <Ledger
             label="Gasto"
             value={formatMoney(s.spend.total)}
-            have={s.spend.withData}
-            of={s.spend.withData + s.spend.missing}
-            what={s.spend.withData + s.spend.missing === 1 ? "copia comprada con precio" : "copias compradas con precio"}
+            have={answered}
+            of={answered + s.spend.missing}
+            what={answered + s.spend.missing === 1 ? "copia comprada con precio o motivo" : "copias compradas con precio o motivo"}
+            detail={priceDetail}
           />
         </div>
-        <p className={styles.note}>Se suman a medida que las anotas en la ficha de cada juego. El gasto no incluye copias prestadas ni de suscripción.</p>
+        <p className={styles.note}>Se suman a medida que las anotas en la ficha de cada juego. El gasto no incluye copias prestadas ni de suscripción; los regalos y los juegos gratis cuentan como respondidos.</p>
       </section>
     </div>
   );
 }
 
 /** Una cifra que casi nunca está completa: el total y cuántos registros lo tienen anotado. */
-function Ledger({ label, value, have, of, what }: { label: string; value: string; have: number; of: number; what: string }) {
+function Ledger({ label, value, have, of, what, detail }: { label: string; value: string; have: number; of: number; what: string; detail?: string }) {
   return (
     <div>
       <dl>
@@ -358,6 +374,7 @@ function Ledger({ label, value, have, of, what }: { label: string; value: string
         </span>
         {formatNumber(have)} de {formatNumber(of)} {what}
       </p>
+      {detail && <p className={styles.coverageDetail}>{detail}</p>}
     </div>
   );
 }
