@@ -437,6 +437,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             notes: notes || null,
             startedAt: null,
             finishedAt: null,
+            pastRuns: [],
             lastPlayedAt: null,
             modes: [],
             moods: [],

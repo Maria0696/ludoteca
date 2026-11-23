@@ -161,6 +161,7 @@ export function createDemoLibrary(today = new Date()): Library {
           ? isoDaysAgo(today, Math.max(d.lastPlayedDaysAgo ?? 0, (d.finishedMonthsAgo ?? 0) * 30) + 40)
           : null,
       finishedAt: d.finishedMonthsAgo != null ? isoDaysAgo(today, d.finishedMonthsAgo * 30) : null,
+      pastRuns: [],
       lastPlayedAt: d.lastPlayedDaysAgo != null ? isoDaysAgo(today, d.lastPlayedDaysAgo) : d.finishedMonthsAgo != null ? isoDaysAgo(today, d.finishedMonthsAgo * 30) : null,
       modes: d.modes,
       moods: d.moods,

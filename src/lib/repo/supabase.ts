@@ -14,7 +14,7 @@ const gameCols: [keyof Game, string][] = [
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["endless", "endless"], ["favorite", "favorite"],
   ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["saga", "saga"],
   ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
-  ["finishedAt", "finished_at"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
+  ["finishedAt", "finished_at"], ["pastRuns", "past_runs"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
   ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
