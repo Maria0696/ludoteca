@@ -1,6 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
-import { type SagaExtra, createGame, emptyLibrary } from "../../src/lib/model";
+import { type Game, type SagaExtra, createGame, emptyLibrary } from "../../src/lib/model";
+import { buildStories, missingFrom, orderStory, placeInStory, storyStops } from "../../src/lib/sagas";
 import { loadDemo, openApp } from "./helpers";
 
 /* Sagas a mano: juegos de una saga que no tienes (guardados aparte), buscados en IGDB, con «Añadir a deseos». */
@@ -80,4 +81,37 @@ test("un juego que faltaba en una saga llega desde Deseos y ocupa su sitio", asy
   await expect(stops).toHaveCount(2);
   await expect(stops.filter({ hasText: "No lo tienes" })).toHaveCount(0);
   await expect(stops.nth(1)).toContainText("Hades II");
+});
+
+const game = (title: string, patch: Partial<Game>): Game => ({ ...createGame({ title }), ...patch });
+const fallen = game("Jedi: Fallen Order", { series: "Jedi", releaseDate: "2019-11-15", igdbId: 1 });
+const survivor = game("Jedi: Survivor", { series: "Jedi", releaseDate: "2023-04-28", igdbId: 2 });
+const prequel = extra({ title: "Jedi: precuela", releaseDate: "2015-01-01", igdbId: 3 });
+const titleOf = (s: { kind: string; game?: Game; extra?: SagaExtra }) => (s.kind === "juego" ? s.game!.title : s.extra!.title);
+
+test("las paradas mezclan los tuyos y los que faltan, en su orden", () => {
+  const [story] = buildStories([survivor, fallen], [prequel]);
+  expect(storyStops(story, "lanzamiento", true).map(titleOf)).toEqual(["Jedi: precuela", "Jedi: Fallen Order", "Jedi: Survivor"]);
+  expect(storyStops(story, "lanzamiento", false).map(titleOf)).toEqual(["Jedi: Fallen Order", "Jedi: Survivor"]);
+  // Los tuyos, solos, para el puesto y «Siguiente».
+  expect(orderStory(story, "lanzamiento").map((g) => g.title)).toEqual(["Jedi: Fallen Order", "Jedi: Survivor"]);
+  // Uno tuyo y uno que falta ya son una historia.
+  expect(buildStories([fallen], [prequel])).toHaveLength(1);
+});
+
+test("con los que faltan ocultos, mover uno tuyo no los mueve", () => {
+  const [story] = buildStories([fallen, survivor], [prequel]);
+  expect(placeInStory(story, survivor.id, 0, false)).toEqual([
+    { kind: "falta", id: prequel.id, seriesOrder: 1 },
+    { kind: "juego", id: survivor.id, seriesOrder: 2 },
+    { kind: "juego", id: fallen.id, seriesOrder: 3 },
+  ]);
+  // Con todos a la vista, se coloca entre todos.
+  expect(placeInStory(story, prequel.id, 2, true).map((p) => p.id)).toEqual([fallen.id, survivor.id, prequel.id]);
+});
+
+test("lo que falta en IGDB descarta lo que ya tienes o ya está", () => {
+  const [story] = buildStories([fallen, survivor], [prequel]);
+  const catalog = [1, 2, 3, 4].map((igdbId) => ({ igdbId, title: `Juego ${igdbId}`, coverUrl: null, releaseDate: null }));
+  expect(missingFrom(story, catalog, [fallen, survivor]).map((c) => c.igdbId)).toEqual([4]);
 });
