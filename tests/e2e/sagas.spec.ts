@@ -327,29 +327,66 @@ test("en el ordenador, la cronología se ordena arrastrando", async ({ page }) =
   await expect(storyGames(page)).toHaveText([/Hades/, /Hollow Knight/, /Celeste/]);
 });
 
-test("quitar una saga deja sus juegos, se puede deshacer y Traer la vuelve a proponer", async ({ page }) => {
+test("quitar una saga solo la quita de este apartado: la ficha la conserva, se puede deshacer y Traer la vuelve a proponer", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { saga: "Prueba", igdbId: 101 }, Celeste: { saga: "Prueba", igdbId: 102 }, "Hollow Knight": { saga: "Otra" }, Spiritfarer: { saga: "Otra" } });
-  await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, sagas: { "101": "Prueba", "102": "Prueba" } } }));
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Otra" }, Spiritfarer: { saga: "Otra" } });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar saga" }).click();
   const alert = page.getByRole("region", { name: "Prueba" }).getByRole("alert");
-  await expect(alert).toContainText("Sus 2 juegos se quedan en tu biblioteca");
-  await expect(alert).toContainText("Traer de IGDB te la puede volver a proponer.");
-  await page.getByRole("region", { name: "Prueba" }).getByRole("alert").getByRole("button", { name: "Quitar saga" }).click();
+  await expect(alert).toContainText("Sus 2 juegos la conservan en su ficha");
+  await expect(alert).toContainText("Traer sagas de IGDB te la vuelve a proponer.");
+  await alert.getByRole("button", { name: "Quitar saga" }).click();
   const sagas = page.getByRole("region", { name: "Sagas" });
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Deshacer" }).click();
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toBeVisible();
-  // Quitada de verdad: sus juegos siguen en la biblioteca, sin saga, y Traer la vuelve a proponer, marcada.
   await page.getByRole("button", { name: "Quitar saga" }).click();
   await page.getByRole("region", { name: "Prueba" }).getByRole("alert").getByRole("button", { name: "Quitar saga" }).click();
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toHaveCount(0);
+  // La ficha sigue diciendo su saga; solo deja de enlazar al apartado.
+  await openGame(page, "Hades");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Prueba/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Saga: Prueba ·/ })).toHaveCount(0);
+  // Traer la vuelve a proponer, marcada, sin preguntar a IGDB.
+  await openApp(page, "/sagas");
   await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
   const review = page.getByRole("dialog", { name: "IGDB propone 1 saga" });
   await expect(review.getByRole("radiogroup", { name: "Prueba" }).getByRole("radio", { name: "Añadir" })).toHaveAttribute("aria-checked", "true");
   await review.getByRole("button", { name: "Añadir 1 saga" }).click();
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toContainText("2 juegos");
+});
+
+test("borrar todas las sagas las quita de este apartado, no de las fichas, y Traer las vuelve a proponer", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Otra" }, Spiritfarer: { saga: "Otra" } });
+  await openApp(page, "/sagas");
+  await page.getByRole("button", { name: "Borrar todas las sagas" }).click();
+  const alert = page.getByRole("region", { name: "Sagas" }).getByRole("alert");
+  await expect(alert).toContainText("¿Borrar las 2 sagas de este apartado?");
+  await alert.getByRole("button", { name: "Borrar todas" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
+  await expect(page.getByText("2 sagas quitadas: Traer te las vuelve a proponer.")).toBeVisible();
+  // Guardado: al volver sigue igual, y las fichas conservan su saga.
+  await openGame(page, "Hollow Knight");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Otra/ })).toBeVisible();
+  await openApp(page, "/sagas");
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  const review = page.getByRole("dialog", { name: "IGDB propone 2 sagas" });
+  await review.getByRole("button", { name: "Añadir 2 sagas" }).click();
+  const sagas = page.getByRole("region", { name: "Sagas" });
+  await expect(sagas.getByRole("link", { name: /^Prueba/ })).toContainText("2 juegos");
+  await expect(sagas.getByRole("link", { name: /^Otra/ })).toContainText("2 juegos");
+});
+
+test("una saga quitada solo cuenta los juegos que siguen ocultos; poner la saga a mano en la ficha la vuelve a enseñar", () => {
+  const a = game("A", { saga: "Prueba", sagaHidden: true });
+  const b = game("B", { saga: "Prueba", sagaHidden: true });
+  const c = game("C", { saga: "Prueba" });
+  expect(buildStories([a, b])).toEqual([]);
+  // Uno a la vista no basta para hacer saga; dos, sí, y solo con los que se ven.
+  expect(buildStories([a, b, c])).toEqual([]);
+  expect(buildStories([a, c, game("D", { saga: "Prueba" })]).map((s) => s.games.map((g) => g.title))).toEqual([["C", "D"]]);
 });
 
 test("lo que no se añade al traer de IGDB no se vuelve a proponer", async ({ page }) => {
@@ -435,13 +472,13 @@ test("la limpieza saca de las sagas que en IGDB son un solo juego, una sola vez"
     Hades: { igdbId: 101, saga: "Hades" },
     Celeste: { igdbId: 102, saga: "Celeste", sagaOrder: 3 },
     "Hollow Knight": { igdbId: 103, saga: "Mi saga" },
-    Spiritfarer: { igdbId: 104, saga: "Mi saga" },
+    Spiritfarer: { igdbId: 104, saga: "Spiritfarer" },
   });
   let calls = 0;
   await page.route("**/api/catalogo/series", (route) => {
     calls++;
     return route.fulfill({
-      json: { ok: true, sagas: { "101": "Hades", "102": "Montaña", "103": null, "104": null }, single: { "102": ["Celeste"], "103": [] } },
+      json: { ok: true, sagas: { "101": "Hades", "102": "Montaña", "103": null, "104": null }, single: { "102": ["Celeste"], "103": [], "104": ["Spiritfarer"] } },
     });
   });
   await openApp(page, "/sagas");
@@ -453,6 +490,9 @@ test("la limpieza saca de las sagas que en IGDB son un solo juego, una sola vez"
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Hades/ })).toBeVisible();
   await openGame(page, "Hollow Knight");
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Mi saga/ })).toBeVisible();
+  // Si IGDB no da otra, la saga de la ficha no se quita nunca.
+  await openGame(page, "Spiritfarer");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Spiritfarer/ })).toBeVisible();
   // Una vez hecha, no se repite.
   const before = calls;
   await openApp(page, "/sagas");

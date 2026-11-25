@@ -12,7 +12,7 @@ type Row = Record<string, unknown>;
 const gameCols: [keyof Game, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["backdropUrl", "backdrop_url"], ["igdbId", "igdb_id"], ["steamAppId", "steam_app_id"], ["genres", "genres"],
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["endless", "endless"], ["favorite", "favorite"],
-  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["franchise", "franchise"], ["saga", "saga"], ["sagaOrder", "saga_order"],
+  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["franchise", "franchise"], ["saga", "saga"], ["sagaOrder", "saga_order"], ["sagaHidden", "saga_hidden"],
   ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
   ["finishedAt", "finished_at"], ["pastRuns", "past_runs"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
@@ -35,7 +35,7 @@ const wishCols: [keyof WishItem, string][] = [
 
 const extraCols: [keyof SagaExtra, string][] = [
   ["id", "id"], ["saga", "saga"], ["igdbId", "igdb_id"], ["title", "title"], ["coverUrl", "cover_url"],
-  ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+  ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["hidden", "hidden"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
 /** Sin la tabla de los juegos de saga que no tienes (migración 0012 sin aplicar), la biblioteca carga igual. */
@@ -50,7 +50,7 @@ function toRow<T>(item: T, cols: [keyof T, string][]): Row {
     const value = item[key];
     row[col] = value === undefined ? null : value;
   }
-  if (row.demo == null) row.demo = false;
+  for (const flag of ["demo", "saga_hidden", "hidden"]) if (flag in row && row[flag] == null) row[flag] = false;
   return row;
 }
 

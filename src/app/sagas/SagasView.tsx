@@ -22,6 +22,7 @@ import {
   buildStories,
   findOwned,
   groupByBrand,
+  hiddenStories,
   isWished,
   missingFrom,
   moveInStory,
@@ -64,6 +65,7 @@ export function SagasView() {
   const [creating, setCreating] = useState<{ name: string; picks: CatalogGame[] } | null>(null);
   const [finding, setFinding] = useState(false);
   const [again, setAgain] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [order, setOrder] = useLocalChoice<StoryOrder>("ludoteca:orden-saga", "lanzamiento", ["lanzamiento", "historia"]);
   const [extrasChoice, setExtrasChoice] = useLocalChoice<"si" | "no">("ludoteca:saga-faltan", "si", ["si", "no"]);
   const showExtras = extrasChoice === "si";
@@ -80,6 +82,8 @@ export function SagasView() {
   const unsorted = library.games.filter((g) => g.igdbId != null && !g.saga?.trim());
   // Los que se dejaron sin saga a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
   const discarded = library.games.filter((g) => g.igdbId != null && isNoStory(g.saga));
+  // Las sagas quitadas del apartado: Traer las vuelve a proponer.
+  const hidden = useMemo(() => hiddenStories(library.games, library.extras), [library.games, library.extras]);
   const go = (name: string | null) => router.push(name ? `/sagas?saga=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
 
   const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
@@ -87,18 +91,20 @@ export function SagasView() {
 
   /**
    * Mete juegos en una saga: si lo tienes, entra como tuyo (y deja su saga anterior); si no, como «no lo
-   * tienes». Un juego solo está en una saga: si ya faltaba en otra, se mueve aquí.
+   * tienes». Un juego solo está en una saga: si ya faltaba en otra, se mueve aquí. Lo que estaba quitado del
+   * apartado vuelve a verse.
    */
   function placeInSaga(name: string, list: CatalogGame[]) {
-    const games: { id: string; patch: { saga: string } }[] = [];
-    const moved: { id: string; patch: { saga: string; sagaOrder: null } }[] = [];
+    const games: { id: string; patch: Partial<Game> }[] = [];
+    const moved: { id: string; patch: Partial<SagaExtra> }[] = [];
     const added: CatalogGame[] = [];
     for (const c of list) {
       const owned = ownedMatch(c);
       const hollow = library.extras.find((x) => x.igdbId === c.igdbId);
-      if (owned) games.push({ id: owned.id, patch: { saga: name } });
+      if (owned) games.push({ id: owned.id, patch: { saga: name, sagaHidden: false } });
       else if (hollow) {
-        if (hollow.saga !== name) moved.push({ id: hollow.id, patch: { saga: name, sagaOrder: null } });
+        if (hollow.saga !== name) moved.push({ id: hollow.id, patch: { saga: name, sagaOrder: null, hidden: false } });
+        else if (hollow.hidden) moved.push({ id: hollow.id, patch: { hidden: false } });
       } else if (!added.some((a) => a.igdbId === c.igdbId)) added.push(c);
     }
     if (games.length) actions.updateGames(games);
@@ -136,7 +142,14 @@ export function SagasView() {
     try {
       const found = unsorted.length ? await seriesOf(unsorted) : {};
       if (!found) return;
-      const list = proposeStories(library.games, found);
+      // Lo nuevo de IGDB y las sagas quitadas del apartado, todas marcadas.
+      const list: Proposal[] = proposeStories(library.games, found);
+      for (const h of hidden) {
+        const same = list.find((p) => p.name === h.name);
+        if (same) Object.assign(same, { games: [...same.games, ...h.games], extras: h.extras });
+        else list.push(h);
+      }
+      list.sort((a, b) => a.name.localeCompare(b.name, "es"));
       if (list.length) {
         setProposals(list.map((p) => ({ ...p, add: true })));
         setAgain(false);
@@ -159,10 +172,14 @@ export function SagasView() {
 
   function applyProposals() {
     if (!proposals) return;
-    // Lo que no se añade se queda en «Sin saga»: así no se vuelve a proponer (lo ya descartado, ni se toca).
+    // Lo nuevo que no se añade se queda en «Sin saga»: así no se vuelve a proponer. Lo ya descartado y las sagas
+    // quitadas que no se añaden, ni se tocan.
     actions.updateGames(
-      proposals.filter((p) => p.add || !again).flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { saga: p.add ? p.name : NO_STORY } }))),
+      proposals.flatMap((p) =>
+        p.games.flatMap((g) => (p.add ? [{ id: g.id, patch: { saga: p.name, sagaHidden: false } }] : again || g.sagaHidden ? [] : [{ id: g.id, patch: { saga: NO_STORY } }])),
+      ),
     );
+    actions.updateExtras(proposals.filter((p) => p.add).flatMap((p) => (p.extras ?? []).map((x) => ({ id: x.id, patch: { hidden: false } }))));
     const added = proposals.filter((p) => p.add).length;
     toast(added ? count(added, "saga añadida", "sagas añadidas") : "No se ha añadido ninguna saga.");
     setProposals(null);
@@ -184,29 +201,41 @@ export function SagasView() {
     }
   }
 
+  /**
+   * Quita sagas del apartado, no de las fichas: sus juegos (y los que no tienes) se ocultan aquí y conservan su
+   * saga. Traer las vuelve a proponer.
+   */
+  function hideStories(list: Story[], hide: boolean) {
+    actions.updateGames(list.flatMap((s) => s.games.map((g) => ({ id: g.id, patch: { sagaHidden: hide } }))));
+    actions.updateExtras(list.flatMap((s) => s.extras.map((x) => ({ id: x.id, patch: { hidden: hide } }))));
+  }
+
   function removeStory(story: Story) {
-    const before = story.games.map((g) => ({ id: g.id, patch: { saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null } }));
-    // Sus juegos se quedan sin saga, no descartados: Traer de IGDB la puede volver a proponer.
-    actions.updateGames(story.games.map((g) => ({ id: g.id, patch: { saga: null, sagaOrder: null } })));
-    // Los que no tienes se van con la saga.
-    const removed = actions.removeExtras(story.extras.map((x) => x.id));
+    hideStories([story], true);
     go(null);
     toast(`Saga «${story.name}» quitada`, {
       action: {
         label: "Deshacer",
         onClick: () => {
-          actions.updateGames(before);
-          actions.restoreExtras(removed);
+          hideStories([story], false);
           go(story.name);
         },
       },
     });
   }
 
+  function removeAll() {
+    const all = stories;
+    hideStories(all, true);
+    setClearing(false);
+    go(null);
+    toast(`${count(all.length, "saga quitada", "sagas quitadas")} del apartado`, { action: { label: "Deshacer", onClick: () => hideStories(all, false) } });
+  }
+
+  /** Quita un juego tuyo del mapa de su saga; su ficha la conserva. */
   function dropGame(g: Game) {
-    const before = { saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null };
-    actions.updateGames([{ id: g.id, patch: { saga: NO_STORY, sagaOrder: null } }]);
-    toast(`«${g.title}» quitado de la saga`, { action: { label: "Deshacer", onClick: () => actions.updateGames([{ id: g.id, patch: before }]) } });
+    actions.updateGames([{ id: g.id, patch: { sagaHidden: true } }]);
+    toast(`«${g.title}» quitado de la saga`, { action: { label: "Deshacer", onClick: () => actions.updateGames([{ id: g.id, patch: { sagaHidden: false } }]) } });
   }
 
   function savePlacements(placements: Placement[]) {
@@ -215,7 +244,7 @@ export function SagasView() {
   }
 
   const fetchButton = (primary: boolean) => (
-    <button type="button" className={`btn ${primary ? "btn-ink" : ""}`} disabled={fetching || unsorted.length + discarded.length === 0} onClick={() => void fetchSeries()}>
+    <button type="button" className={`btn ${primary ? "btn-ink" : ""}`} disabled={fetching || unsorted.length + discarded.length + hidden.length === 0} onClick={() => void fetchSeries()}>
       <DownloadCloud aria-hidden />
       {fetching ? "Trayendo…" : "Traer sagas de IGDB"}
     </button>
@@ -256,7 +285,11 @@ export function SagasView() {
               {newSagaButton}
             </div>
             <p className={styles.hint}>
-              {unsorted.length ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué sagas añadir.` : discarded.length
+              {hidden.length
+                ? `${count(hidden.length, "saga quitada", "sagas quitadas")}: Traer te ${hidden.length === 1 ? "la" : "las"} vuelve a proponer.`
+                : unsorted.length
+                  ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué sagas añadir.`
+                  : discarded.length
                   ? `${count(discarded.length, "juego lo dejaste", "juegos los dejaste")} sin saga: Traer te ofrece recuperarlos.`
                   : "Ninguno de tus juegos espera saga de IGDB."}
             </p>
@@ -274,7 +307,27 @@ export function SagasView() {
               <div className={styles.toolButtons}>
                 {fetchButton(false)}
                 {newSagaButton}
+                <button type="button" className="btn btn-quiet" onClick={() => setClearing(true)}>
+                  <Trash2 aria-hidden />
+                  Borrar todas las sagas
+                </button>
               </div>
+              {clearing && (
+                <div className={styles.confirm} role="alert">
+                  <p>
+                    ¿Borrar {stories.length === 1 ? "la saga" : `las ${stories.length} sagas`} de este apartado? Tus juegos conservan su saga en la ficha y los
+                    que no tienes se guardan. Traer sagas de IGDB te {stories.length === 1 ? "la" : "las"} vuelve a proponer.
+                  </p>
+                  <div className={styles.confirmActions}>
+                    <button type="button" className="btn btn-sm btn-danger" onClick={removeAll}>
+                      Borrar todas
+                    </button>
+                    <button type="button" className="btn btn-sm btn-quiet" onClick={() => setClearing(false)}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             {groups.length === 0 && <p className={styles.none}>Nada con «{q.trim()}».</p>}
             <div className={styles.groups}>
@@ -322,15 +375,16 @@ export function SagasView() {
               onDropExtra={(x) => actions.deleteExtra(x.id)}
               onRename={(name) => {
                 // Si ya hay una saga con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
+                // Los de la otra que estaban quitados del apartado vuelven a verse.
                 const others = library.games.filter((g) => g.saga?.trim() === name && !open.games.includes(g));
                 const merging = others.length > 0 || library.extras.some((x) => x.saga === name);
                 actions.updateGames([
                   ...open.games.map((g) => ({ id: g.id, patch: { saga: name, sagaOrder: merging ? null : (g.sagaOrder ?? null) } })),
-                  ...others.map((g) => ({ id: g.id, patch: { sagaOrder: null } })),
+                  ...others.map((g) => ({ id: g.id, patch: { sagaOrder: null, sagaHidden: false } })),
                 ]);
                 actions.updateExtras([
                   ...open.extras.map((x) => ({ id: x.id, patch: { saga: name, sagaOrder: merging ? null : (x.sagaOrder ?? null) } })),
-                  ...library.extras.filter((x) => x.saga === name).map((x) => ({ id: x.id, patch: { sagaOrder: null } })),
+                  ...library.extras.filter((x) => x.saga === name).map((x) => ({ id: x.id, patch: { sagaOrder: null, hidden: false } })),
                 ]);
                 go(name);
               }}
@@ -773,14 +827,11 @@ function StoryMap({
       {confirming && (
         <div className={styles.confirm} role="alert">
           <p>
-            ¿Quitar la saga «{story.name}»?
+            ¿Quitar la saga «{story.name}» de este apartado?
             {story.games.length > 0 &&
-              (story.games.length === 1
-                ? " Su juego se queda en tu biblioteca; solo deja de estar en una saga."
-                : ` Sus ${story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una saga.`)}
-            {story.extras.length > 0 &&
-              (story.extras.length === 1 ? " El que no tienes desaparece con ella." : ` Los ${story.extras.length} que no tienes desaparecen con ella.`)}{" "}
-            Traer de IGDB te la puede volver a proponer.
+              (story.games.length === 1 ? " Su juego la conserva en su ficha." : ` Sus ${story.games.length} juegos la conservan en su ficha.`)}
+            {story.extras.length > 0 && (story.extras.length === 1 ? " El que no tienes se guarda." : ` Los ${story.extras.length} que no tienes se guardan.`)}{" "}
+            Traer sagas de IGDB te la vuelve a proponer.
           </p>
           <div className={styles.confirmActions}>
             <button type="button" className="btn btn-danger btn-sm" onClick={onRemove}>

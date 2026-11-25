@@ -195,11 +195,13 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
     /**
      * Un cambio a mano. Cambiar de saga saca al juego de su puesto en la cronología de la anterior:
-     * entra en la nueva al final, sin inventar un orden (salvo que el cambio diga ya su puesto).
+     * entra en la nueva al final, sin inventar un orden (salvo que el cambio diga ya su puesto). Y vuelve a verse
+     * en el apartado Sagas, si estaba quitado.
      */
     const patched = (game: Game, patch: Partial<Game>): Game => {
-      const movesStory = "saga" in patch && !("sagaOrder" in patch) && (patch.saga?.trim() ?? null) !== (game.saga?.trim() ?? null);
-      return { ...game, ...patch, ...(movesStory ? { sagaOrder: null } : {}), id: game.id, updatedAt: nowIso() };
+      const changes = "saga" in patch && (patch.saga?.trim() ?? null) !== (game.saga?.trim() ?? null);
+      const moved = changes ? { ...(!("sagaOrder" in patch) ? { sagaOrder: null } : {}), ...(!("sagaHidden" in patch) ? { sagaHidden: false } : {}) } : {};
+      return { ...game, ...patch, ...moved, id: game.id, updatedAt: nowIso() };
     };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
     const withStatus = (previous: Game, status: GameStatus, reopen = true): Game => {

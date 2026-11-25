@@ -30,7 +30,7 @@ function markDone() {
 
 /**
  * Una vez por dispositivo: los juegos que están en una saga que en IGDB es un solo juego (Ocarina of Time y su
- * remake) pasan a la saga que IGDB da ahora. Solo se tocan esas: las sagas puestas a mano se quedan. Si IGDB no
+ * remake) pasan a la saga que IGDB da ahora; si no da otra, se quedan como están. Solo se tocan esas: las sagas puestas a mano se quedan. Si IGDB no
  * responde, se deja para otra vez, sin avisar.
  */
 export function useSagaCleanup() {
@@ -57,8 +57,9 @@ export function useSagaCleanup() {
           for (const g of part) {
             const single = body.single[String(g.igdbId)] ?? [];
             if (!single.some((name) => same(name, g.saga!))) continue;
+            // Solo si IGDB da otra: la saga de la ficha no se quita nunca.
             const next = body.sagas[String(g.igdbId)];
-            fixes.push({ id: g.id, patch: { saga: next && !same(next, g.saga!) ? next : null, sagaOrder: null } });
+            if (next && !same(next, g.saga!)) fixes.push({ id: g.id, patch: { saga: next, sagaOrder: null } });
           }
         }
       } catch {

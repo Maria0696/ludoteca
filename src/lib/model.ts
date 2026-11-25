@@ -105,6 +105,8 @@ export const gameSchema = z.object({
   saga: optionalText,
   /** Su puesto en la cronología de la saga, puesto a mano; sin él, cuenta el de lanzamiento. */
   sagaOrder: z.number().int().min(1).max(10000).nullish(),
+  /** Quitado del apartado Sagas (él o su saga entera): la ficha conserva su saga; Traer lo vuelve a proponer. */
+  sagaHidden: z.boolean().optional(),
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
@@ -182,6 +184,8 @@ export const sagaExtraSchema = z.object({
   coverUrl: z.string().max(2_000_000).nullish(),
   releaseDate: isoDate.nullish(),
   sagaOrder: z.number().int().min(1).max(10000).nullish(),
+  /** Su saga se quitó del apartado Sagas: se guarda para cuando vuelva. */
+  hidden: z.boolean().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),
