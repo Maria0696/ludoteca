@@ -98,3 +98,17 @@ Aprobado por ella tras ver la demo de tres variantes:
 - **Ordenar la cronología arrastrando en el ordenador.** Con ratón, cada parada se arrastra a su sitio; las flechas ↑ ↓ se quedan para el teclado y el móvil. *(Sustituye a «Arrastrar y soltar: fuera del alcance».)*
 - **Quitar una saga.** Con confirmación y «Deshacer». Sus juegos se quedan en la biblioteca; solo dejan de estar en esa historia (quedan en «Sin historia», así Traer de IGDB no la vuelve a proponer).
 - **Traer de IGDB, eligiendo.** IGDB propone las historias de los juegos que no tienen; en cada una, «Añadir» o «No» (con «Marcar todas» / «Ninguna»). Lo que no se añade queda en «Sin historia» y no se vuelve a proponer. Cancelar no cambia nada.
+
+## Tercera vuelta (25/11/2026): sagas y juegos a mano, también los que no tiene
+
+Aprobado por ella:
+
+- **Pantalla vacía: «El mapa en blanco».** Un mapa a medio dibujar con paradas huecas, «Tu primer mapa está por dibujar», una frase y el botón grande «Traer historias de IGDB» (más «Nueva saga»).
+- **Los que no tiene, «En el camino».** En el mapa, en su sitio, con parada hueca («?») y cartón de la carátula atenuado; un interruptor «Los que me faltan» los enseña u oculta. No cuentan para el puesto ni para «Siguiente».
+- **Meter juegos a mano buscando en IGDB** (como al añadir a la biblioteca): en cada saga, «Añadir juego». Si el juego está en su biblioteca, entra como suyo; si no, entra como **juego de saga que no tiene**, con la información de IGDB.
+- **Dónde se guardan los que no tiene: tabla nueva** `saga_extras` en Supabase (opción A elegida), con la misma seguridad por filas que el resto. Entran en la copia de seguridad y se ordenan en la cronología como los demás.
+- **«Buscar los que faltan»** en cada saga: IGDB propone los juegos de esa serie que no tiene y ella elige (Añadir / No), como al traer historias.
+- **Cada parada hueca:** «Añadir a deseos» (luego «En deseos») y «Quitar de la saga». **Cada juego suyo:** «Quitar de la saga» (queda en «Sin historia»).
+- **«Nueva saga»:** nombre y, con el buscador, sus primeros juegos.
+
+Decisiones del agente (para revisar): cuando un juego que estaba como «no lo tiene» llega a la biblioteca (alta, deseo convertido) con el mismo número de IGDB, toma su historia y su puesto y la parada hueca desaparece. Lo que se descarta en «Buscar los que faltan» no se recuerda: se vuelve a proponer la próxima vez. «Borrar todo» borra también los juegos de saga que no tiene.
