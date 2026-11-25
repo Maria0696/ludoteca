@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Cover } from "@/components/ui/Cover";
+import { gameTypeLabel } from "@/lib/game-type";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import styles from "./sagas.module.css";
 
@@ -62,6 +63,7 @@ export function IgdbSearch({ onPick, owned, chosen = [] }: { onPick: (game: Cata
                   <strong>{r.title}</strong>
                   <span>
                     {r.year ?? "Sin fecha"}
+                    {r.gameType ? ` · ${gameTypeLabel(r.gameType)}` : ""}
                     {owned(r) ? " · Ya lo tienes" : ""}
                   </span>
                 </span>

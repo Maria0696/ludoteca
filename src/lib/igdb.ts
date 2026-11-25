@@ -1,5 +1,6 @@
 import "server-only";
 import type { CatalogGame } from "./catalog";
+import type { GameType } from "./model";
 import {
   GENRES_ES,
   type IgdbCollection,
@@ -7,6 +8,9 @@ import {
   PLATFORM_NAMES,
   SERIES_FIELDS,
   SIMPLE_SERIES_FIELDS,
+  TYPE_FIELDS,
+  baseGameOf,
+  gameTypeOf,
   guessMoods,
   mapModes,
   seriesForIgdbGame,
@@ -72,14 +76,14 @@ interface IgdbGame {
   franchise?: { name: string };
   franchises?: { name: string }[];
   collections?: IgdbCollection[];
-  version_parent?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
-  parent_game?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
+  version_parent?: Pick<IgdbGame, "franchise" | "franchises" | "collections"> & { name?: string };
+  parent_game?: Pick<IgdbGame, "franchise" | "franchises" | "collections"> & { name?: string };
+  game_type?: number;
   involved_companies?: { developer?: boolean; company?: { name: string } }[];
   age_ratings?: { organization?: { name: string }; rating_category?: { rating: string } }[];
 }
 
-const BASE_FIELDS =
-  "name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating";
+const BASE_FIELDS = `name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating,${TYPE_FIELDS}`;
 const DETAIL_FIELDS = `summary,${SERIES_FIELDS},involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating`;
 
 const PEGI_AGES: Record<string, string> = { Three: "3", Seven: "7", Twelve: "12", Sixteen: "16", Eighteen: "18" };
@@ -131,6 +135,8 @@ export async function fetchCatalogGames(query: (fields: string) => string, optio
       developer: (g.involved_companies ?? []).flatMap((c) => (c.developer && c.company ? [c.company.name] : [])).join(", ").slice(0, 2000) || null,
       franchise: franchiseOf(g),
       saga: seriesForIgdbGame(g),
+      gameType: gameTypeOf(g),
+      baseGame: baseGameOf(g),
       releaseDate: g.first_release_date ? new Date(g.first_release_date * 1000).toISOString().slice(0, 10) : null,
       ageRating: pegiRating(g.age_ratings),
     };
@@ -151,6 +157,12 @@ export async function seriesByIgdbIds(ids: number[]): Promise<{ sagas: Record<st
   // Si IGDB no acepta tanto detalle, con menos (sin el juego original, si hace falta) y sin saber qué series son un solo juego.
   const games = await igdb<IgdbGame[]>("games", query(SIMPLE_SERIES_FIELDS)).catch(() => igdb<IgdbGame[]>("games", query(OWN_SERIES_FIELDS)));
   return { sagas: sagas(games) };
+}
+
+/** Qué es cada juego de IGDB y de cuál, por su número: para completar el tipo de los que ya tienes. */
+export async function typesByIgdbIds(ids: number[]): Promise<Record<string, { gameType: GameType | null; baseGame: string | null }>> {
+  const games = await igdb<IgdbGame[]>("games", `fields ${TYPE_FIELDS}; where id = (${ids.join(",")}); limit ${ids.length};`);
+  return Object.fromEntries(games.map((g) => [String(g.id), { gameType: gameTypeOf(g), baseGame: baseGameOf(g) }]));
 }
 
 /**

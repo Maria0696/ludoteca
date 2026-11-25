@@ -1,4 +1,4 @@
-import type { Mood, PlayMode } from "./model";
+import type { GameType, Mood, PlayMode } from "./model";
 
 /*
  * Tablas del catálogo de IGDB compartidas por el servidor y el navegador:
@@ -185,3 +185,38 @@ export const SERIES_FIELDS = parents(SERIES).join(",");
 /** Por si IGDB no acepta tanto: sin saber qué juegos de la serie son el mismo. */
 export const SIMPLE_SERIES_FIELDS = parents(["franchise.name", "franchises.name", "collections.name", "collections.games"]).join(",");
 export const OWN_SERIES_FIELDS = "franchise.name,franchises.name,collections.name,collections.games";
+
+/** Los tipos de juego de IGDB (`game_type`), por su número. */
+const IGDB_GAME_TYPES: Record<number, GameType> = {
+  0: "main",
+  1: "dlc",
+  2: "expansion",
+  3: "bundle",
+  4: "standalone_expansion",
+  5: "mod",
+  6: "episode",
+  7: "season",
+  8: "remake",
+  9: "remaster",
+  10: "expanded",
+  11: "port",
+  12: "fork",
+  13: "pack",
+  14: "update",
+};
+type IgdbTypeInfo = { game_type?: number; version_parent?: { name?: string } | null; parent_game?: { name?: string } | null };
+
+/** Qué es un juego de IGDB. Una versión de otro (Definitive, GOTY…) es una «edición», diga lo que diga su tipo. */
+export function gameTypeOf(g: IgdbTypeInfo): GameType | null {
+  if (g.version_parent) return "edition";
+  return g.game_type != null ? (IGDB_GAME_TYPES[g.game_type] ?? null) : null;
+}
+
+/** De qué juego es: el original de una edición, o el juego de un DLC o una expansión. */
+export function baseGameOf(g: IgdbTypeInfo): string | null {
+  return g.version_parent?.name ?? g.parent_game?.name ?? null;
+}
+
+/** Lo justo para saber qué es un juego de IGDB y de cuál. */
+export const TYPE_FIELDS = "game_type,version_parent.name,parent_game.name";
+

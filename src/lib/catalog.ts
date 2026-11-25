@@ -1,4 +1,4 @@
-import type { Mood, PlayMode } from "./model";
+import type { GameType, Mood, PlayMode } from "./model";
 
 /** Resultado del catálogo tal como lo usa la app (sin datos propios de IGDB). */
 export interface CatalogGame {
@@ -23,6 +23,10 @@ export interface CatalogGame {
   franchise: string | null;
   /** La saga dentro de la franquicia: la serie más concreta de IGDB (Star Wars Jedi dentro de Star Wars). */
   saga: string | null;
+  /** Qué es: juego base, DLC, remake… */
+  gameType: GameType | null;
+  /** De qué juego es, si es DLC, expansión, edición… */
+  baseGame: string | null;
   /** Primer lanzamiento, en formato AAAA-MM-DD. */
   releaseDate: string | null;
   /** Por ejemplo, «PEGI 16». */
@@ -39,6 +43,11 @@ export type CatalogResponse =
  */
 export type SeriesResponse =
   | { ok: true; sagas: Record<string, string | null>; single?: Record<string, string[]> }
+  | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
+
+/** Respuesta de /api/catalogo/tipos: qué es cada juego y de cuál, por su número de IGDB. */
+export type TypesResponse =
+  | { ok: true; types: Record<string, { gameType: GameType | null; baseGame: string | null }> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
 
 /** Respuesta de /api/catalogo/serie: los juegos de una serie de IGDB. */
