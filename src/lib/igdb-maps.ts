@@ -118,3 +118,14 @@ export function guessMoods(list: string[]): Mood[] {
   if (names.has("Arcade") || names.has("Party") || names.has("Racing")) out.add("rapida");
   return [...out];
 }
+
+/**
+ * La historia de un juego entre sus series de IGDB: la que no se llama como su marca y, de esas, la de menos juegos
+ * (Star Wars Jedi mejor que Star Wars). Si todas se llaman como la marca, esa; sin series, ninguna.
+ */
+export function pickSeries(collections: { name: string; games?: number[] }[] | undefined, brand: string | null): string | null {
+  if (!collections?.length) return null;
+  const same = (name: string) => brand != null && name.trim().toLowerCase() === brand.trim().toLowerCase();
+  const own = collections.filter((c) => !same(c.name)).sort((a, b) => (a.games?.length ?? Infinity) - (b.games?.length ?? Infinity));
+  return (own[0] ?? collections[0]).name;
+}

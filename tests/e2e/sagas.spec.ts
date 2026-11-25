@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { type Game, createGame, gameSchema } from "../../src/lib/model";
+import { pickSeries } from "../../src/lib/igdb-maps";
 import { buildStories, groupByBrand, moveInStory, nextInStory, orderStory } from "../../src/lib/sagas";
 
 /* Sagas: los juegos de cada historia, en orden de lanzamiento o en el de la historia (puesto a mano). */
@@ -66,4 +67,14 @@ test("una copia antigua, sin historia, se sigue leyendo", () => {
   const parsed = gameSchema.parse(old);
   expect(parsed.series ?? null).toBeNull();
   expect(parsed.seriesOrder ?? null).toBeNull();
+});
+
+test("de varias series de IGDB, la más concreta", () => {
+  const many = Array.from({ length: 40 }, (_, i) => i + 1);
+  expect(pickSeries([{ name: "Star Wars", games: many }, { name: "Star Wars Jedi", games: [1, 2] }], "Star Wars")).toBe("Star Wars Jedi");
+  // Si la única serie se llama como la marca, es esa.
+  expect(pickSeries([{ name: "Resident Evil", games: many }], "Resident Evil")).toBe("Resident Evil");
+  // Entre varias que no se llaman como la marca, la de menos juegos.
+  expect(pickSeries([{ name: "LEGO Star Wars", games: [1, 2, 3] }, { name: "Star Wars: Squadrons", games: [1] }], "Star Wars")).toBe("Star Wars: Squadrons");
+  expect(pickSeries(undefined, "Star Wars")).toBeNull();
 });

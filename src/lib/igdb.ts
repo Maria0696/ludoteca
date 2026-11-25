@@ -1,6 +1,6 @@
 import "server-only";
 import type { CatalogGame } from "./catalog";
-import { GENRES_ES, PLATFORM_NAMES, guessMoods, mapModes } from "./igdb-maps";
+import { GENRES_ES, PLATFORM_NAMES, guessMoods, mapModes, pickSeries } from "./igdb-maps";
 
 /*
  * Consultas al catálogo de IGDB (gratuito para uso no comercial con una
@@ -60,7 +60,7 @@ interface IgdbGame {
   summary?: string;
   franchise?: { name: string };
   franchises?: { name: string }[];
-  collections?: { name: string }[];
+  collections?: { name: string; games?: number[] }[];
   involved_companies?: { developer?: boolean; company?: { name: string } }[];
   age_ratings?: { organization?: { name: string }; rating_category?: { rating: string } }[];
 }
@@ -68,7 +68,7 @@ interface IgdbGame {
 const BASE_FIELDS =
   "name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating";
 const DETAIL_FIELDS =
-  "summary,franchise.name,franchises.name,collections.name,involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating";
+  "summary,franchise.name,franchises.name,collections.name,collections.games,involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating";
 
 const PEGI_AGES: Record<string, string> = { Three: "3", Seven: "7", Twelve: "12", Sixteen: "16", Eighteen: "18" };
 
@@ -117,11 +117,23 @@ export async function fetchCatalogGames(query: (fields: string) => string, optio
       criticRating: critics != null && critics >= 0 && critics <= 100 ? Math.round(critics) : null,
       summary: g.summary?.trim().slice(0, 2000) || null,
       developer: (g.involved_companies ?? []).flatMap((c) => (c.developer && c.company ? [c.company.name] : [])).join(", ").slice(0, 2000) || null,
-      saga: g.franchise?.name ?? g.franchises?.[0]?.name ?? g.collections?.[0]?.name ?? null,
+      saga: sagaOf(g),
+      series: pickSeries(g.collections, sagaOf(g)),
       releaseDate: g.first_release_date ? new Date(g.first_release_date * 1000).toISOString().slice(0, 10) : null,
       ageRating: pegiRating(g.age_ratings),
     };
   });
+}
+
+const sagaOf = (g: IgdbGame) => g.franchise?.name ?? g.franchises?.[0]?.name ?? g.collections?.[0]?.name ?? null;
+
+/** La historia de cada juego de IGDB, por su número: solo lo necesario para elegirla. */
+export async function seriesByIgdbIds(ids: number[]): Promise<Record<string, string | null>> {
+  const games = await igdb<IgdbGame[]>(
+    "games",
+    `fields franchise.name,franchises.name,collections.name,collections.games; where id = (${ids.join(",")}); limit ${ids.length};`,
+  );
+  return Object.fromEntries(games.map((g) => [String(g.id), pickSeries(g.collections, sagaOf(g))]));
 }
 
 interface SteamLink {

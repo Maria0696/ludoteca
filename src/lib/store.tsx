@@ -38,6 +38,8 @@ interface Actions {
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
   setStatus(id: string, status: GameStatus): void;
+  /** Rellena la historia de los juegos que no la tienen con la que trae IGDB; lo puesto a mano no se toca. Devuelve cuántos. */
+  fillSeries(found: Record<string, string | null>): number;
   /** Empieza otra vuelta de un juego ya superado: lo terminado se guarda y no se pierde. */
   replay(id: string): void;
   /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
@@ -257,6 +259,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
           action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
         });
+      },
+
+      fillSeries(found) {
+        const filled = libRef.current.games.flatMap((g) => {
+          const series = g.igdbId != null ? found[String(g.igdbId)] : null;
+          return series && !g.series?.trim() ? [{ ...g, series, updatedAt: nowIso() }] : [];
+        });
+        if (filled.length) void saveGames(filled);
+        return filled.length;
       },
 
       replay(id) {
