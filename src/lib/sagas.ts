@@ -3,7 +3,7 @@ import { timesFinished } from "./runs";
 
 /*
  * Sagas: los juegos de cada saga (Star Wars Jedi, Half-Life…), agrupadas bajo su franquicia (Star Wars). En el código,
- * una saga es una «story» y su franquicia, su «brand»; en los datos, la saga es `series` y la franquicia, `saga`.
+ * una saga es una «story» y su franquicia, su «brand»; en los datos, `saga` y `franchise`.
  * La cronología lo pone la propietaria; sin ponerlo, es el de lanzamiento. La app no inventa cronologías.
  */
 
@@ -11,18 +11,15 @@ export type StoryOrder = "lanzamiento" | "historia";
 
 /** Lo que guarda la ficha al quitar una saga a mano: así traer de IGDB no la vuelve a poner. */
 export const NO_STORY = "Sin saga";
-/** Como se llamaba antes «Sin saga»: los juegos que ya lo tienen siguen descartados. */
-const OLD_NO_STORY = "Sin historia";
 
-/** Si la saga se quitó a propósito («Sin saga», o «Sin historia» de antes). */
-export function isNoStory(series: string | null | undefined): boolean {
-  const name = series?.trim().toLowerCase();
-  return name === NO_STORY.toLowerCase() || name === OLD_NO_STORY.toLowerCase();
+/** Si la saga se quitó a propósito. */
+export function isNoStory(saga: string | null | undefined): boolean {
+  return saga?.trim().toLowerCase() === NO_STORY.toLowerCase();
 }
 
 /** La saga del juego; «Sin saga» y vacío no son saga. */
 export function storyOf(game: Game): string | null {
-  const name = game.series?.trim();
+  const name = game.saga?.trim();
   return name && !isNoStory(name) ? name : null;
 }
 /** Una saga: sus juegos (los tuyos) y los de la saga que no tienes. */
@@ -30,14 +27,13 @@ export type Story = { name: string; brand: string | null; games: Game[]; extras:
 
 /** Una parada del mapa: un juego tuyo o uno de la saga que no tienes. */
 export type Stop = { kind: "juego"; id: string; game: Game } | { kind: "falta"; id: string; extra: SagaExtra };
-export type Placement = { kind: Stop["kind"]; id: string; seriesOrder: number };
+export type Placement = { kind: Stop["kind"]; id: string; sagaOrder: number };
 
 const byName = (a: string, b: string) => a.localeCompare(b, "es");
 
-/** La franquicia del juego; «Sin saga» (herencia de una importación) y vacío no son franquicia. */
+/** La franquicia del juego; vacío no es franquicia. */
 export function brandOf(game: Game): string | null {
-  const saga = game.saga?.trim();
-  return saga && saga.toLowerCase() !== "sin saga" ? saga : null;
+  return game.franchise?.trim() || null;
 }
 
 /** Las sagas con dos o más paradas (tuyas o que faltan), por nombre; su franquicia, la más repetida entre tus juegos. */
@@ -49,7 +45,7 @@ export function buildStories(games: Game[], extras: SagaExtra[] = []): Story[] {
     if (name) map.set(name, [...(map.get(name) ?? []), g]);
   }
   for (const x of extras) {
-    const name = x.series.trim();
+    const name = x.saga.trim();
     missing.set(name, [...(missing.get(name) ?? []), x]);
     if (!map.has(name)) map.set(name, []);
   }
@@ -78,7 +74,7 @@ export function groupByBrand(stories: Story[]): { brand: string | null; stories:
   return groups.sort((a, b) => byName(a.brand ?? a.stories[0].name, b.brand ?? b.stories[0].name));
 }
 
-type Ordered = { releaseDate?: string | null; seriesOrder?: number | null; title: string };
+type Ordered = { releaseDate?: string | null; sagaOrder?: number | null; title: string };
 const byRelease = (a: Ordered, b: Ordered) => (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999") || byName(a.title, b.title);
 const info = (s: Stop): Ordered => (s.kind === "juego" ? s.game : s.extra);
 
@@ -93,8 +89,8 @@ export function storyStops(story: Story, order: StoryOrder, withExtras = true): 
   ];
   const release = all.sort((a, b) => byRelease(info(a), info(b)));
   if (order === "lanzamiento") return release;
-  const placed = release.filter((s) => info(s).seriesOrder != null).sort((a, b) => info(a).seriesOrder! - info(b).seriesOrder!);
-  return [...placed, ...release.filter((s) => info(s).seriesOrder == null)];
+  const placed = release.filter((s) => info(s).sagaOrder != null).sort((a, b) => info(a).sagaOrder! - info(b).sagaOrder!);
+  return [...placed, ...release.filter((s) => info(s).sagaOrder == null)];
 }
 
 /** Tus juegos en la cronología de la saga (el de todas sus paradas): para el puesto y «Siguiente». */
@@ -116,7 +112,7 @@ export function placeInStory(story: Story, id: string, toIndex: number, withExtr
   moved.splice(Math.max(0, Math.min(toIndex, moved.length)), 0, stop);
   let next = 0;
   const result = withExtras ? moved : full.map((s) => (s.kind === "juego" ? moved[next++] : s));
-  return result.map((s, i) => ({ kind: s.kind, id: s.id, seriesOrder: i + 1 }));
+  return result.map((s, i) => ({ kind: s.kind, id: s.id, sagaOrder: i + 1 }));
 }
 
 /** Mueve una parada un puesto en la cronología (entre las que se ven); si no se puede, nada. */
@@ -146,7 +142,7 @@ export type Proposal = { name: string; games: Game[] };
 export function proposeStories(games: Game[], found: Record<string, string | null>, { discarded = false } = {}): Proposal[] {
   const map = new Map<string, Game[]>();
   for (const g of games) {
-    const waiting = discarded ? isNoStory(g.series) : !g.series?.trim();
+    const waiting = discarded ? isNoStory(g.saga) : !g.saga?.trim();
     const name = g.igdbId != null && waiting ? found[String(g.igdbId)]?.trim() : null;
     if (name) map.set(name, [...(map.get(name) ?? []), g]);
   }
@@ -192,7 +188,7 @@ export function absorbExtras(games: Game[], extras: SagaExtra[]): { games: Game[
     if (!matches.length) return g;
     for (const x of matches) dropped.add(x.id);
     const [x] = matches;
-    return { ...g, series: x.series, seriesOrder: x.seriesOrder ?? null, releaseDate: g.releaseDate ?? x.releaseDate ?? null };
+    return { ...g, saga: x.saga, sagaOrder: x.sagaOrder ?? null, releaseDate: g.releaseDate ?? x.releaseDate ?? null };
   });
   return { games: out, dropped: [...dropped] };
 }

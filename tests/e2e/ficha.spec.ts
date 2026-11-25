@@ -347,8 +347,8 @@ test("la nota de la crítica llega con las sugerencias y se puede traer después
 
 test("la ficha técnica llega con las sugerencias y solo rellena huecos", async ({ page }) => {
   const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null, criticRating: null };
-  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", saga: "Franquicia del mar", series: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
-  const empty = { summary: null, developer: null, saga: null, series: null, releaseDate: null, ageRating: null };
+  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", franchise: "Franquicia del mar", saga: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
+  const empty = { summary: null, developer: null, franchise: null, saga: null, releaseDate: null, ageRating: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });
   let byId: object = catalog([{ ...game, ...empty, igdbId: 2, title: "Cr sin ficha" }]);
   await page.route("**/api/catalogo?*", (route) => {
@@ -407,7 +407,7 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
 });
 
 test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un dato que no existe", async ({ page }) => {
-  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], criticRating: null, summary: null, developer: null, saga: null, releaseDate: null, ageRating: null };
+  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], criticRating: null, summary: null, developer: null, franchise: null, saga: null, releaseDate: null, ageRating: null };
   const bare = { ...game, igdbId: 3, title: "Cr para elegir", modes: [], moods: [], lengthHours: null };
   const noLength = { ...game, igdbId: 4, title: "Cr sin duración", modes: ["solo"], moods: ["accion"], lengthHours: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });

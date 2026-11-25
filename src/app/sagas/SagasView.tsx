@@ -77,9 +77,9 @@ export function SagasView() {
   // Sin elegir, la primera: el mapa siempre enseña una saga. Los enlaces de antes decían «historia».
   const asked = params.get("saga") ?? params.get("historia");
   const open = stories.find((s) => s.name === asked) ?? visible[0] ?? null;
-  const unsorted = library.games.filter((g) => g.igdbId != null && !g.series?.trim());
+  const unsorted = library.games.filter((g) => g.igdbId != null && !g.saga?.trim());
   // Los que se dejaron sin saga a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
-  const discarded = library.games.filter((g) => g.igdbId != null && isNoStory(g.series));
+  const discarded = library.games.filter((g) => g.igdbId != null && isNoStory(g.saga));
   const go = (name: string | null) => router.push(name ? `/sagas?saga=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
 
   const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
@@ -90,20 +90,20 @@ export function SagasView() {
    * tienes». Un juego solo está en una saga: si ya faltaba en otra, se mueve aquí.
    */
   function placeInSaga(name: string, list: CatalogGame[]) {
-    const games: { id: string; patch: { series: string } }[] = [];
-    const moved: { id: string; patch: { series: string; seriesOrder: null } }[] = [];
+    const games: { id: string; patch: { saga: string } }[] = [];
+    const moved: { id: string; patch: { saga: string; sagaOrder: null } }[] = [];
     const added: CatalogGame[] = [];
     for (const c of list) {
       const owned = ownedMatch(c);
       const hollow = library.extras.find((x) => x.igdbId === c.igdbId);
-      if (owned) games.push({ id: owned.id, patch: { series: name } });
+      if (owned) games.push({ id: owned.id, patch: { saga: name } });
       else if (hollow) {
-        if (hollow.series !== name) moved.push({ id: hollow.id, patch: { series: name, seriesOrder: null } });
+        if (hollow.saga !== name) moved.push({ id: hollow.id, patch: { saga: name, sagaOrder: null } });
       } else if (!added.some((a) => a.igdbId === c.igdbId)) added.push(c);
     }
     if (games.length) actions.updateGames(games);
     if (moved.length) actions.updateExtras(moved);
-    if (added.length) actions.addExtras(added.map((c) => ({ series: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, seriesOrder: null })));
+    if (added.length) actions.addExtras(added.map((c) => ({ saga: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, sagaOrder: null })));
   }
 
   function addToStory(name: string, c: CatalogGame) {
@@ -126,7 +126,7 @@ export function SagasView() {
         toast.error(body.message);
         return null;
       }
-      Object.assign(found, body.series);
+      Object.assign(found, body.sagas);
     }
     return found;
   }
@@ -161,7 +161,7 @@ export function SagasView() {
     if (!proposals) return;
     // Lo que no se añade se queda en «Sin saga»: así no se vuelve a proponer (lo ya descartado, ni se toca).
     actions.updateGames(
-      proposals.filter((p) => p.add || !again).flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { series: p.add ? p.name : NO_STORY } }))),
+      proposals.filter((p) => p.add || !again).flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { saga: p.add ? p.name : NO_STORY } }))),
     );
     const added = proposals.filter((p) => p.add).length;
     toast(added ? count(added, "saga añadida", "sagas añadidas") : "No se ha añadido ninguna saga.");
@@ -185,8 +185,8 @@ export function SagasView() {
   }
 
   function removeStory(story: Story) {
-    const before = story.games.map((g) => ({ id: g.id, patch: { series: g.series ?? null, seriesOrder: g.seriesOrder ?? null } }));
-    actions.updateGames(story.games.map((g) => ({ id: g.id, patch: { series: NO_STORY, seriesOrder: null } })));
+    const before = story.games.map((g) => ({ id: g.id, patch: { saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null } }));
+    actions.updateGames(story.games.map((g) => ({ id: g.id, patch: { saga: NO_STORY, sagaOrder: null } })));
     // Los que no tienes se van con la saga.
     const removed = actions.removeExtras(story.extras.map((x) => x.id));
     go(null);
@@ -203,14 +203,14 @@ export function SagasView() {
   }
 
   function dropGame(g: Game) {
-    const before = { series: g.series ?? null, seriesOrder: g.seriesOrder ?? null };
-    actions.updateGames([{ id: g.id, patch: { series: NO_STORY, seriesOrder: null } }]);
+    const before = { saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null };
+    actions.updateGames([{ id: g.id, patch: { saga: NO_STORY, sagaOrder: null } }]);
     toast(`«${g.title}» quitado de la saga`, { action: { label: "Deshacer", onClick: () => actions.updateGames([{ id: g.id, patch: before }]) } });
   }
 
   function savePlacements(placements: Placement[]) {
-    actions.updateGames(placements.filter((p) => p.kind === "juego").map((p) => ({ id: p.id, patch: { seriesOrder: p.seriesOrder } })));
-    actions.updateExtras(placements.filter((p) => p.kind === "falta").map((p) => ({ id: p.id, patch: { seriesOrder: p.seriesOrder } })));
+    actions.updateGames(placements.filter((p) => p.kind === "juego").map((p) => ({ id: p.id, patch: { sagaOrder: p.sagaOrder } })));
+    actions.updateExtras(placements.filter((p) => p.kind === "falta").map((p) => ({ id: p.id, patch: { sagaOrder: p.sagaOrder } })));
   }
 
   const fetchButton = (primary: boolean) => (
@@ -321,15 +321,15 @@ export function SagasView() {
               onDropExtra={(x) => actions.deleteExtra(x.id)}
               onRename={(name) => {
                 // Si ya hay una saga con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
-                const others = library.games.filter((g) => g.series?.trim() === name && !open.games.includes(g));
-                const merging = others.length > 0 || library.extras.some((x) => x.series === name);
+                const others = library.games.filter((g) => g.saga?.trim() === name && !open.games.includes(g));
+                const merging = others.length > 0 || library.extras.some((x) => x.saga === name);
                 actions.updateGames([
-                  ...open.games.map((g) => ({ id: g.id, patch: { series: name, seriesOrder: merging ? null : (g.seriesOrder ?? null) } })),
-                  ...others.map((g) => ({ id: g.id, patch: { seriesOrder: null } })),
+                  ...open.games.map((g) => ({ id: g.id, patch: { saga: name, sagaOrder: merging ? null : (g.sagaOrder ?? null) } })),
+                  ...others.map((g) => ({ id: g.id, patch: { sagaOrder: null } })),
                 ]);
                 actions.updateExtras([
-                  ...open.extras.map((x) => ({ id: x.id, patch: { series: name, seriesOrder: merging ? null : (x.seriesOrder ?? null) } })),
-                  ...library.extras.filter((x) => x.series === name).map((x) => ({ id: x.id, patch: { seriesOrder: null } })),
+                  ...open.extras.map((x) => ({ id: x.id, patch: { saga: name, sagaOrder: merging ? null : (x.sagaOrder ?? null) } })),
+                  ...library.extras.filter((x) => x.saga === name).map((x) => ({ id: x.id, patch: { sagaOrder: null } })),
                 ]);
                 go(name);
               }}

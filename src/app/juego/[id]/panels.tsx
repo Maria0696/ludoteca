@@ -6,7 +6,7 @@ import { TROPHY_URL } from "@/components/pixel/sprites";
 import { daysBetween } from "@/lib/backup-reminder";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
-import { NO_STORY, isNoStory, storyOf } from "@/lib/sagas";
+import { NO_STORY, storyOf } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import {
   type Copy,
@@ -478,11 +478,11 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
   const { library } = useLibrary();
   // Las sagas que ya existen, para elegir una al escribir.
   const stories = [...new Set(library.games.flatMap((g) => storyOf(g) ?? []))].sort((a, b) => a.localeCompare(b, "es"));
-  const bring = (what: string, field: "summary" | "developer" | "saga" | "series" | "releaseDate" | "ageRating") =>
+  const bring = (what: string, field: "summary" | "developer" | "franchise" | "saga" | "releaseDate" | "ageRating") =>
     game.igdbId != null &&
     !game[field] && <FillFromIgdb igdbId={game.igdbId} what={what} update={update} read={(found) => (found[field] ? { [field]: found[field] } : null)} />;
 
-  const text = (label: string, field: "developer" | "saga" | "series" | "ageRating", suggestions?: string[]) => (
+  const text = (label: string, field: "developer" | "franchise" | "saga" | "ageRating", suggestions?: string[]) => (
     <Row label={label}>
       <div className={styles.fieldLine}>
         <Editable
@@ -490,13 +490,12 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
           quiet
           label={label}
           value={game[field]}
-          // «Sin historia» es como se llamaba antes «Sin saga».
-          display={field === "series" && isNoStory(game.series) ? NO_STORY : (game[field] ?? null)}
+          display={game[field] ?? null}
           empty="Añadir"
           maxLength={200}
           suggestions={suggestions}
           // Quitar la saga a mano la deja en «Sin saga»: así traer de IGDB no la vuelve a poner.
-          onSave={(v) => update({ [field]: field === "series" && !v && game.series ? NO_STORY : v })}
+          onSave={(v) => update({ [field]: field === "saga" && !v && game.saga ? NO_STORY : v })}
         />
         {bring(label.toLowerCase(), field)}
       </div>
@@ -514,9 +513,9 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
       </div>
       <dl className={styles.stats}>
         {text("Desarrolladora", "developer")}
-        {text("Franquicia", "saga")}
+        {text("Franquicia", "franchise")}
         {/* La saga dentro de la franquicia, para la pantalla Sagas (Star Wars Jedi dentro de Star Wars). */}
-        {text("Saga", "series", stories)}
+        {text("Saga", "saga", stories)}
         <Row label="Lanzamiento">
           <div className={styles.fieldLine}>
             <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />

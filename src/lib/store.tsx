@@ -198,8 +198,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
      * entra en la nueva al final, sin inventar un orden (salvo que el cambio diga ya su puesto).
      */
     const patched = (game: Game, patch: Partial<Game>): Game => {
-      const movesStory = "series" in patch && !("seriesOrder" in patch) && (patch.series?.trim() ?? null) !== (game.series?.trim() ?? null);
-      return { ...game, ...patch, ...(movesStory ? { seriesOrder: null } : {}), id: game.id, updatedAt: nowIso() };
+      const movesStory = "saga" in patch && !("sagaOrder" in patch) && (patch.saga?.trim() ?? null) !== (game.saga?.trim() ?? null);
+      return { ...game, ...patch, ...(movesStory ? { sagaOrder: null } : {}), id: game.id, updatedAt: nowIso() };
     };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
     const withStatus = (previous: Game, status: GameStatus, reopen = true): Game => {
@@ -547,8 +547,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             startedAt: null,
             finishedAt: null,
             pastRuns: [],
-            series: null,
-            seriesOrder: null,
+            saga: null,
+            sagaOrder: null,
             lastPlayedAt: null,
             modes: [],
             moods: [],

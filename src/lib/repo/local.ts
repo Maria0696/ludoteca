@@ -1,4 +1,4 @@
-import { type Library, emptyLibrary } from "../model";
+import { type Game, type Library, type SagaExtra, emptyLibrary, upgradeExtraV1, upgradeGameV1 } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -10,6 +10,9 @@ import type { Changes, Repository } from "./types";
 const DB_NAME = "ludoteca";
 const STORE = "library";
 const KEY = "data";
+/** Formato de lo guardado. Sin él, es el 1: «saga» era la franquicia y «series» la saga (ver `upgradeGameV1`). */
+const FORMAT = 2;
+type Stored = Partial<Library> & { format?: number };
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -24,10 +27,10 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-function read(db: IDBDatabase): Promise<Library | undefined> {
+function read(db: IDBDatabase): Promise<Stored | undefined> {
   return new Promise((resolve, reject) => {
     const req = db.transaction(STORE, "readonly").objectStore(STORE).get(KEY);
-    req.onsuccess = () => resolve(req.result as Library | undefined);
+    req.onsuccess = () => resolve(req.result as Stored | undefined);
     req.onerror = () => reject(req.error);
   });
 }
@@ -35,7 +38,7 @@ function read(db: IDBDatabase): Promise<Library | undefined> {
 function write(db: IDBDatabase, value: Library): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(value, KEY);
+    tx.objectStore(STORE).put({ ...value, format: FORMAT } satisfies Stored, KEY);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error("No se pudo guardar en este navegador."));
   });
@@ -61,10 +64,15 @@ export class LocalRepository implements Repository {
 
   async load(): Promise<Library> {
     const stored = await read(await this.getDb());
+    // Lo guardado en el formato 1 se lee en el 2; se queda en el 2 al guardar lo siguiente.
+    const old = stored != null && stored.format !== FORMAT;
     // Solo lo que la app usa: lo que quede de versiones anteriores (como las listas) se deja atrás.
     // Los juegos guardados antes de las vueltas no las traen: sin vueltas anteriores.
-    const games = (stored?.games ?? []).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null }));
-    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras: stored?.extras ?? [] };
+    const games = (stored?.games ?? [])
+      .map((g) => (old ? upgradeGameV1(g) : g) as Game)
+      .map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null }));
+    const extras = (stored?.extras ?? []).map((x) => (old ? upgradeExtraV1(x) : x) as SagaExtra);
+    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras };
     return structuredClone(this.data);
   }
 

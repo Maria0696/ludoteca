@@ -56,9 +56,9 @@ export function useSagaCleanup() {
           if (!body.ok || !body.single) return;
           for (const g of part) {
             const single = body.single[String(g.igdbId)] ?? [];
-            if (!single.some((name) => same(name, g.series!))) continue;
-            const next = body.series[String(g.igdbId)];
-            fixes.push({ id: g.id, patch: { series: next && !same(next, g.series!) ? next : null, seriesOrder: null } });
+            if (!single.some((name) => same(name, g.saga!))) continue;
+            const next = body.sagas[String(g.igdbId)];
+            fixes.push({ id: g.id, patch: { saga: next && !same(next, g.saga!) ? next : null, sagaOrder: null } });
           }
         }
       } catch {
