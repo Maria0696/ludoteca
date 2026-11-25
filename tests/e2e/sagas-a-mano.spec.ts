@@ -271,3 +271,95 @@ test("una copia de seguridad que solo trae juegos que no tienes se puede importa
   await openApp(page, "/sagas?historia=Prueba");
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toContainText("No lo tienes");
 });
+
+test("al unir dos sagas con «Cambiar nombre», los que faltan de la otra también vuelven al orden de lanzamiento", async ({ page }) => {
+  await loadDemo(page);
+  await seed(
+    page,
+    {
+      Hades: { series: "Prueba", releaseDate: "2020-09-17" },
+      Celeste: { series: "Prueba", releaseDate: "2018-01-25" },
+      "Hollow Knight": { series: "Otra", releaseDate: "2017-02-24", seriesOrder: 2 },
+    },
+    { extras: [extra({ series: "Otra", title: "Precuela", igdbId: 555, releaseDate: "2030-01-01", seriesOrder: 1 })] },
+  );
+  await openApp(page, "/sagas?historia=Prueba");
+  await page.getByRole("button", { name: "Cambiar nombre" }).click();
+  await page.getByRole("textbox", { name: "Nombre de la historia" }).fill("Otra");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("radio", { name: "Cronología" }).click();
+  await expect(stopsOf(page)).toHaveCount(4);
+  await expect(stopsOf(page).last()).toContainText("Precuela");
+});
+
+test("un juego que no tienes solo está en una saga: añadirlo a otra lo mueve", async ({ page }) => {
+  await loadDemo(page);
+  await seed(
+    page,
+    { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Otra" }, Unpacking: { series: "Otra" } },
+    { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] },
+  );
+  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [catalogGame(555, "Hades II", "2025-09-25")] } }));
+  await openApp(page, "/sagas?historia=Otra");
+  await page.getByRole("button", { name: "Añadir a la saga" }).click();
+  await searchAndPick(page, /^Añadir a «Otra»/, "hades", "Hades II");
+  await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(1);
+  await openApp(page, "/sagas?historia=Prueba");
+  await expect(stopsOf(page)).toHaveCount(2);
+  await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
+});
+
+test("una saga no está completada si no tienes ninguno, o te faltan algunos", async ({ page }) => {
+  await loadDemo(page);
+  await seed(
+    page,
+    { Celeste: { series: "Prueba" }, Unpacking: { series: "Prueba" } },
+    { extras: [extra({ series: "Solo faltan", title: "Uno", igdbId: 1 }), extra({ series: "Solo faltan", title: "Dos", igdbId: 2 }), extra({ series: "Prueba", title: "Tres", igdbId: 3 })] },
+  );
+  await openApp(page, "/sagas?historia=Solo%20faltan");
+  await expect(page.getByText("Aún no tienes ninguno")).toBeVisible();
+  await expect(page.getByText("Saga completada")).toHaveCount(0);
+  // Los dos tuyos están superados, pero falta uno.
+  await openApp(page, "/sagas?historia=Prueba");
+  await expect(page.getByText("Superados los que tienes")).toBeVisible();
+  await expect(page.getByText("Saga completada")).toHaveCount(0);
+});
+
+test("quitar una saga avisa de que los que no tienes se van con ella", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } }, { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] });
+  await openApp(page, "/sagas?historia=Prueba");
+  await page.getByRole("button", { name: "Quitar saga" }).click();
+  const alert = page.getByRole("region", { name: "Prueba" }).getByRole("alert");
+  await expect(alert).toContainText("Sus 2 juegos se quedan en tu biblioteca");
+  await expect(alert).toContainText("El que no tienes desaparece con ella");
+});
+
+test("buscar los que faltan enseña que está buscando", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  let answer: () => void = () => {};
+  const waiting = new Promise<void>((resolve) => (answer = resolve));
+  await page.route("**/api/catalogo/serie", async (route) => {
+    await waiting;
+    await route.fulfill({ json: { ok: true, games: [] } });
+  });
+  await openApp(page, "/sagas?historia=Prueba");
+  await page.getByRole("button", { name: "Buscar los que faltan" }).click();
+  await expect(page.getByRole("button", { name: "Buscando…" })).toBeDisabled();
+  answer();
+  await expect(page.getByRole("button", { name: "Buscar los que faltan" })).toBeEnabled();
+});
+
+test("el buscador de IGDB no deja a la vista el mensaje de una búsqueda anterior", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [] } }));
+  await openApp(page, "/sagas?historia=Prueba");
+  await page.getByRole("button", { name: "Añadir a la saga" }).click();
+  const search = page.getByRole("dialog", { name: /^Añadir a «Prueba»/ }).getByRole("searchbox", { name: "Buscar en IGDB" });
+  await search.fill("zz");
+  await expect(page.getByText("Nada con «zz» en IGDB.")).toBeVisible();
+  await search.fill("z");
+  await expect(page.getByText("Nada con «zz» en IGDB.")).toHaveCount(0);
+});
