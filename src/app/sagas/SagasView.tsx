@@ -186,7 +186,8 @@ export function SagasView() {
 
   function removeStory(story: Story) {
     const before = story.games.map((g) => ({ id: g.id, patch: { saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null } }));
-    actions.updateGames(story.games.map((g) => ({ id: g.id, patch: { saga: NO_STORY, sagaOrder: null } })));
+    // Sus juegos se quedan sin saga, no descartados: Traer de IGDB la puede volver a proponer.
+    actions.updateGames(story.games.map((g) => ({ id: g.id, patch: { saga: null, sagaOrder: null } })));
     // Los que no tienes se van con la saga.
     const removed = actions.removeExtras(story.extras.map((x) => x.id));
     go(null);
@@ -779,7 +780,7 @@ function StoryMap({
                 : ` Sus ${story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una saga.`)}
             {story.extras.length > 0 &&
               (story.extras.length === 1 ? " El que no tienes desaparece con ella." : ` Los ${story.extras.length} que no tienes desaparecen con ella.`)}{" "}
-            Traer de IGDB no la vuelve a proponer.
+            Traer de IGDB te la puede volver a proponer.
           </p>
           <div className={styles.confirmActions}>
             <button type="button" className="btn btn-danger btn-sm" onClick={onRemove}>
