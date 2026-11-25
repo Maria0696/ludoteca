@@ -185,7 +185,7 @@ test("vaciar la historia de un juego deja la historia fuera si se queda con uno"
   await setStory(page, "Hades", null);
   await expect(page.getByRole("link", { name: /^Historia: / })).toHaveCount(0);
   await openApp(page, "/sagas");
-  await expect(page.getByRole("heading", { level: 2, name: "Aún no hay historias" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
 });
 
 test("cambiar el nombre de una historia lo cambia en todos sus juegos y une las que se llaman igual", async ({ page }) => {
@@ -228,7 +228,7 @@ test("una historia quitada a mano no vuelve al traer de IGDB", async ({ page }) 
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Historia: Sin historia/ })).toBeVisible();
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Mala", "102": "Mala" } } }));
   await openApp(page, "/sagas");
-  await expect(page.getByRole("heading", { level: 2, name: "Aún no hay historias" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
   // Nada que traer: Hades se dejó sin historia a propósito y Celeste ya la tiene.
   await expect(page.getByRole("button", { name: "Traer historias de IGDB" })).toBeDisabled();
 });

@@ -66,6 +66,9 @@ interface Actions {
   addExtras(items: NewExtraInput[]): SagaExtra[];
   updateExtras(patches: { id: string; patch: Partial<SagaExtra> }[]): void;
   deleteExtra(id: string): void;
+  /** Quita varios a la vez, sin aviso (lo da quien llama), y los devuelve para poder deshacer. */
+  removeExtras(ids: string[]): SagaExtra[];
+  restoreExtras(extras: SagaExtra[]): void;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
   applyChanges(changes: Changes): Promise<void>;
@@ -485,6 +488,22 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
         if (!extras.length) return;
         commit({ ...libRef.current, extras: libRef.current.extras.map((x) => extras.find((e) => e.id === x.id) ?? x) });
+        void persist((r) => r.save({ extras }));
+      },
+
+      removeExtras(ids) {
+        const removed = libRef.current.extras.filter((x) => ids.includes(x.id));
+        if (!removed.length) return [];
+        commit({ ...libRef.current, extras: libRef.current.extras.filter((x) => !ids.includes(x.id)) });
+        void persist(async (r) => {
+          for (const x of removed) await r.deleteExtra(x.id);
+        });
+        return removed;
+      },
+
+      restoreExtras(extras) {
+        if (!extras.length) return;
+        commit({ ...libRef.current, extras: [...libRef.current.extras.filter((x) => !extras.some((e) => e.id === x.id)), ...extras] });
         void persist((r) => r.save({ extras }));
       },
 
