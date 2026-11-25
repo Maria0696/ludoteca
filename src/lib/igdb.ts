@@ -136,6 +136,23 @@ export async function seriesByIgdbIds(ids: number[]): Promise<Record<string, str
   return Object.fromEntries(games.map((g) => [String(g.id), seriesForIgdbGame(g)]));
 }
 
+/**
+ * Los juegos de una serie de IGDB, por su nombre: los principales, rehechos y remasterizados (sin ediciones ni
+ * contenidos descargables), por fecha. Si IGDB no acepta el filtro de tipo, se piden todos.
+ */
+export async function gamesOfSeries(name: string): Promise<CatalogGame[]> {
+  const quoted = name.replace(/\\/g, "").replace(/"/g, '\\"');
+  const found = await igdb<{ name: string; games?: number[] }[]>("collections", `fields name,games; where name ~ "${quoted}"; limit 10;`);
+  const series = found.find((c) => c.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? found[0];
+  const ids = (series?.games ?? []).slice(0, 100);
+  if (!ids.length) return [];
+  const where = `where id = (${ids.join(",")}) & version_parent = null`;
+  const games = await fetchCatalogGames((fields) => `fields ${fields}; ${where} & game_type = (0,8,9); limit ${ids.length};`).catch(() =>
+    fetchCatalogGames((fields) => `fields ${fields}; ${where}; limit ${ids.length};`),
+  );
+  return games.sort((a, b) => (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"));
+}
+
 interface SteamLink {
   game: number;
   uid: string;

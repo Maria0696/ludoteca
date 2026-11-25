@@ -64,7 +64,7 @@ export class LocalRepository implements Repository {
     // Solo lo que la app usa: lo que quede de versiones anteriores (como las listas) se deja atrás.
     // Los juegos guardados antes de las vueltas no las traen: sin vueltas anteriores.
     const games = (stored?.games ?? []).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null }));
-    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [] };
+    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras: stored?.extras ?? [] };
     return structuredClone(this.data);
   }
 
@@ -82,6 +82,7 @@ export class LocalRepository implements Repository {
       games: upsert(d.games, changes.games),
       copies: upsert(d.copies, changes.copies),
       wishlist: upsert(d.wishlist, changes.wishlist),
+      extras: upsert(d.extras, changes.extras),
     }));
   }
 
@@ -101,8 +102,12 @@ export class LocalRepository implements Repository {
     return this.commit((d) => ({ ...d, wishlist: d.wishlist.filter((w) => w.id !== id) }));
   }
 
+  deleteExtra(id: string) {
+    return this.commit((d) => ({ ...d, extras: d.extras.filter((x) => x.id !== id) }));
+  }
+
   deleteAllGames() {
-    return this.commit((d) => ({ ...d, games: [], copies: [] }));
+    return this.commit((d) => ({ ...d, games: [], copies: [], extras: [] }));
   }
 
   deleteDemo() {
@@ -112,6 +117,7 @@ export class LocalRepository implements Repository {
         games: d.games.filter((g) => !g.demo),
         copies: d.copies.filter((c) => !c.demo && !demoGames.has(c.gameId)),
         wishlist: d.wishlist.filter((w) => !w.demo),
+        extras: d.extras.filter((x) => !x.demo),
       };
     });
   }

@@ -10,6 +10,8 @@ import {
   type Library,
   type NewCopyInput,
   type NewGameInput,
+  type NewExtraInput,
+  type SagaExtra,
   type WishItem,
   STATUS_LABEL,
   createCopy,
@@ -22,6 +24,7 @@ import {
 import { isSupabaseConfigured, localModeAllowed } from "./config";
 import { LocalRepository } from "./repo/local";
 import { archiveRun, reopenSameDayRun, runNumber } from "./runs";
+import { absorbExtras, ownedExtras } from "./sagas";
 import type { Changes, Repository, StorageMode } from "./repo/types";
 import { type SteamImportCounts, type SteamImportItem, planSteamImport } from "./steam-import";
 
@@ -60,6 +63,13 @@ interface Actions {
   addWish(wish: Partial<WishItem> & { title: string }): WishItem;
   updateWish(id: string, patch: Partial<WishItem>): void;
   deleteWish(id: string): void;
+  /** Juegos de saga que no tienes: se meten a mano (con lo que trae IGDB), se ordenan y se quitan. */
+  addExtras(items: NewExtraInput[]): SagaExtra[];
+  updateExtras(patches: { id: string; patch: Partial<SagaExtra> }[]): void;
+  deleteExtra(id: string): void;
+  /** Quita varios a la vez, sin aviso (lo da quien llama), y los devuelve para poder deshacer. */
+  removeExtras(ids: string[]): SagaExtra[];
+  restoreExtras(extras: SagaExtra[]): void;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
   applyChanges(changes: Changes): Promise<void>;
@@ -233,6 +243,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ wishlist: [wish] }));
     };
     const findGame = (id: string) => libRef.current.games.find((g) => g.id === id);
+    /** Un juego que llega toma la historia y el puesto de su parada hueca, que desaparece (ver `absorbExtras`). */
+    const absorb = (game: Game): { game: Game; dropped: string[] } => {
+      const { games, dropped } = absorbExtras([game], libRef.current.extras);
+      return { game: games[0], dropped };
+    };
 
     const a: Actions = {
       reload,
@@ -245,13 +260,18 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         }
         if (game.status === "completado") game.finishedAt ??= todayIso();
         const copy = copyInput ? createCopy(game.id, copyInput) : null;
+        const { game: added, dropped } = absorb(game);
         commit({
           ...libRef.current,
-          games: [...libRef.current.games, game],
+          games: [...libRef.current.games, added],
           copies: copy ? [...libRef.current.copies, copy] : libRef.current.copies,
+          extras: libRef.current.extras.filter((x) => !dropped.includes(x.id)),
         });
-        void persist((r) => r.save({ games: [game], copies: copy ? [copy] : [] }));
-        return game;
+        void persist(async (r) => {
+          await r.save({ games: [added], copies: copy ? [copy] : [] });
+          for (const id of dropped) await r.deleteExtra(id);
+        });
+        return added;
       },
 
       updateGame(id, patch) {
@@ -447,6 +467,58 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       },
 
+      addExtras(items) {
+        const stamp = nowIso();
+        const extras = items.map((item) => ({ ...item, id: newId(), createdAt: stamp, updatedAt: stamp }));
+        if (!extras.length) return [];
+        commit({ ...libRef.current, extras: [...libRef.current.extras, ...extras] });
+        void persist((r) => r.save({ extras }));
+        return extras;
+      },
+
+      updateExtras(patches) {
+        const stamp = nowIso();
+        const extras = patches.flatMap(({ id, patch }) => {
+          const extra = libRef.current.extras.find((x) => x.id === id);
+          return extra ? [{ ...extra, ...patch, id, updatedAt: stamp }] : [];
+        });
+        if (!extras.length) return;
+        commit({ ...libRef.current, extras: libRef.current.extras.map((x) => extras.find((e) => e.id === x.id) ?? x) });
+        void persist((r) => r.save({ extras }));
+      },
+
+      removeExtras(ids) {
+        const removed = libRef.current.extras.filter((x) => ids.includes(x.id));
+        if (!removed.length) return [];
+        commit({ ...libRef.current, extras: libRef.current.extras.filter((x) => !ids.includes(x.id)) });
+        void persist(async (r) => {
+          for (const x of removed) await r.deleteExtra(x.id);
+        });
+        return removed;
+      },
+
+      restoreExtras(extras) {
+        if (!extras.length) return;
+        commit({ ...libRef.current, extras: [...libRef.current.extras.filter((x) => !extras.some((e) => e.id === x.id)), ...extras] });
+        void persist((r) => r.save({ extras }));
+      },
+
+      deleteExtra(id) {
+        const extra = libRef.current.extras.find((x) => x.id === id);
+        if (!extra) return;
+        commit({ ...libRef.current, extras: libRef.current.extras.filter((x) => x.id !== id) });
+        void persist((r) => r.deleteExtra(id));
+        toast(`«${extra.title}» quitado de la saga`, {
+          action: {
+            label: "Deshacer",
+            onClick: () => {
+              commit({ ...libRef.current, extras: [...libRef.current.extras, extra] });
+              void persist((r) => r.save({ extras: [extra] }));
+            },
+          },
+        });
+      },
+
       convertWish(id, copyInput, existingGameId) {
         const before = libRef.current;
         const wish = before.wishlist.find((w) => w.id === id);
@@ -496,15 +568,19 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           demo: wish.demo,
         });
         const isNewGame = !before.games.some((g) => g.id === game!.id);
+        const absorbed = isNewGame ? absorb(game) : { game, dropped: [] as string[] };
+        game = absorbed.game;
         commit({
           ...before,
           games: isNewGame ? [...before.games, game] : before.games,
           copies: [...before.copies, copy],
           wishlist: before.wishlist.filter((w) => w.id !== id),
+          extras: before.extras.filter((x) => !absorbed.dropped.includes(x.id)),
         });
         void persist(async (r) => {
           await r.save({ games: isNewGame ? [game!] : [], copies: [copy] });
           await r.deleteWish(id);
+          for (const x of absorbed.dropped) await r.deleteExtra(x);
         });
         return game;
       },
@@ -512,7 +588,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       async applyChanges(changes) {
         const repo = repoRef.current;
         if (!repo) return;
-        await repo.save(changes);
+        // Los juegos nuevos ocupan su parada hueca; y no entran paradas de juegos que ya tienes.
+        const before = libRef.current;
+        const known = new Set(before.games.map((g) => g.id));
+        const pool = [...before.extras, ...(changes.extras ?? [])];
+        const absorbed = absorbExtras((changes.games ?? []).filter((g) => !known.has(g.id)), pool);
+        const byId = new Map(absorbed.games.map((g) => [g.id, g]));
+        const games = changes.games?.map((g) => byId.get(g.id) ?? g);
+        const gone = new Set([...absorbed.dropped, ...ownedExtras(pool, [...before.games, ...(games ?? [])])]);
+        await repo.save({ ...changes, games, extras: changes.extras?.filter((x) => !gone.has(x.id)) });
+        for (const x of before.extras) if (gone.has(x.id)) await repo.deleteExtra(x.id);
         commit(await repo.load());
       },
 
@@ -520,14 +605,22 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const repo = repoRef.current;
         if (!repo) throw new Error("La biblioteca aún no está lista.");
         const plan = planSteamImport(libRef.current, items);
-        await repo.save({ games: plan.games, copies: plan.copies });
         const before = libRef.current;
-        const changed = new Map(plan.games.map((g) => [g.id, g]));
         const known = new Set(before.games.map((g) => g.id));
+        // Los juegos nuevos ocupan su parada hueca; las paradas de juegos que ya tienes sobran.
+        const absorbed = absorbExtras(plan.games.filter((g) => !known.has(g.id)), before.extras);
+        const fresh = new Map(absorbed.games.map((g) => [g.id, g]));
+        const games = plan.games.map((g) => fresh.get(g.id) ?? g);
+        const changed = new Map(games.map((g) => [g.id, g]));
+        const all = [...before.games.map((g) => changed.get(g.id) ?? g), ...games.filter((g) => !known.has(g.id))];
+        const gone = new Set([...absorbed.dropped, ...ownedExtras(before.extras, all)]);
+        await repo.save({ games, copies: plan.copies });
+        for (const x of before.extras) if (gone.has(x.id)) await repo.deleteExtra(x.id);
         commit({
           ...before,
-          games: [...before.games.map((g) => changed.get(g.id) ?? g), ...plan.games.filter((g) => !known.has(g.id))],
+          games: all,
           copies: [...before.copies, ...plan.copies],
+          extras: before.extras.filter((x) => !gone.has(x.id)),
         });
         return plan.counts;
       },

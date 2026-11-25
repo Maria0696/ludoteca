@@ -43,8 +43,8 @@ test("orden de lanzamiento y orden de la historia", () => {
 test("mover un juego guarda el orden de todos; uno nuevo va al final", () => {
   const [story] = buildStories([fallen, survivor]);
   expect(moveInStory(story, survivor.id, -1)).toEqual([
-    { id: survivor.id, seriesOrder: 1 },
-    { id: fallen.id, seriesOrder: 2 },
+    { kind: "juego", id: survivor.id, seriesOrder: 1 },
+    { kind: "juego", id: fallen.id, seriesOrder: 2 },
   ]);
   expect(moveInStory(story, fallen.id, -1)).toEqual([]);
   // Uno que entra sin puesto va al final de la historia, aunque saliera antes.
@@ -185,7 +185,7 @@ test("vaciar la historia de un juego deja la historia fuera si se queda con uno"
   await setStory(page, "Hades", null);
   await expect(page.getByRole("link", { name: /^Historia: / })).toHaveCount(0);
   await openApp(page, "/sagas");
-  await expect(page.getByRole("heading", { level: 2, name: "Aún no hay historias" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
 });
 
 test("cambiar el nombre de una historia lo cambia en todos sus juegos y une las que se llaman igual", async ({ page }) => {
@@ -228,7 +228,7 @@ test("una historia quitada a mano no vuelve al traer de IGDB", async ({ page }) 
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Historia: Sin historia/ })).toBeVisible();
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Mala", "102": "Mala" } } }));
   await openApp(page, "/sagas");
-  await expect(page.getByRole("heading", { level: 2, name: "Aún no hay historias" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
   // Nada que traer: Hades se dejó sin historia a propósito y Celeste ya la tiene.
   await expect(page.getByRole("button", { name: "Traer historias de IGDB" })).toBeDisabled();
 });
@@ -268,9 +268,9 @@ test("colocar un juego en la cronología pone el puesto de todos", () => {
   const [story] = buildStories([fallen, survivor, prequel]);
   // La precuela salió antes, pero aquí se coloca la última.
   expect(placeInStory(story, prequel.id, 2)).toEqual([
-    { id: fallen.id, seriesOrder: 1 },
-    { id: survivor.id, seriesOrder: 2 },
-    { id: prequel.id, seriesOrder: 3 },
+    { kind: "juego", id: fallen.id, seriesOrder: 1 },
+    { kind: "juego", id: survivor.id, seriesOrder: 2 },
+    { kind: "juego", id: prequel.id, seriesOrder: 3 },
   ]);
   expect(placeInStory(story, "no-existe", 0)).toEqual([]);
 });

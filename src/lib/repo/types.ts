@@ -1,4 +1,4 @@
-import type { Copy, Game, Library, WishItem } from "../model";
+import type { Copy, Game, Library, SagaExtra, WishItem } from "../model";
 
 export type StorageMode = "local" | "supabase";
 
@@ -6,6 +6,7 @@ export interface Changes {
   games?: Game[];
   copies?: Copy[];
   wishlist?: WishItem[];
+  extras?: SagaExtra[];
 }
 
 /**
@@ -19,7 +20,8 @@ export interface Repository {
   deleteGame(id: string): Promise<void>;
   deleteCopy(id: string): Promise<void>;
   deleteWish(id: string): Promise<void>;
-  /** Borra todos los juegos y sus copias; los deseos no se tocan. */
+  deleteExtra(id: string): Promise<void>;
+  /** Borra todos los juegos, sus copias y los juegos de saga que no tienes; los deseos no se tocan. */
   deleteAllGames(): Promise<void>;
   /** Elimina todos los registros marcados como demostración. */
   deleteDemo(): Promise<void>;

@@ -36,3 +36,8 @@ export type CatalogResponse =
 export type SeriesResponse =
   | { ok: true; series: Record<string, string | null> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
+
+/** Respuesta de /api/catalogo/serie: los juegos de una serie de IGDB. */
+export type SeriesGamesResponse =
+  | { ok: true; games: CatalogGame[] }
+  | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };

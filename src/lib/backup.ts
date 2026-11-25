@@ -3,9 +3,11 @@ import {
   type Copy,
   type Game,
   type Library,
+  type SagaExtra,
   type WishItem,
   copySchema,
   gameSchema,
+  sagaExtraSchema,
   newId,
   normalizeTitle,
   nowIso,
@@ -34,6 +36,8 @@ const backupSchema = z.object({
     games: z.array(gameSchema),
     copies: z.array(copySchema),
     wishlist: z.array(wishSchema),
+    /** Juegos de saga que no tienes; las copias de antes no los traen. */
+    extras: z.array(sagaExtraSchema).default([]),
     /** Las copias de cuando había «Mis listas» las traen: se aceptan y no se importan. */
     lists: z.array(z.unknown()).optional(),
   }),
@@ -52,6 +56,7 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
       games: keep(library.games),
       copies: keep(library.copies),
       wishlist: keep(library.wishlist),
+      extras: keep(library.extras),
     },
   };
 }
@@ -118,6 +123,8 @@ export interface ImportPlan {
   /** Elementos del archivo idénticos a los tuyos: no hace falta importarlos. */
   identical: number;
   newCounts: { games: number; copies: number; wishlist: number };
+  /** Juegos de saga que no tienes y que aún no están: entran sin preguntar. */
+  newExtras: SagaExtra[];
 }
 
 export function planImport(current: Library, backup: Backup): ImportPlan {
@@ -156,7 +163,10 @@ export function planImport(current: Library, backup: Backup): ImportPlan {
     else newCounts.wishlist++;
   }
 
-  return { backup, conflicts, identical, newCounts };
+  const extraIds = new Set(current.extras.map((x) => x.id));
+  const newExtras = backup.data.extras.filter((x) => !extraIds.has(x.id));
+
+  return { backup, conflicts, identical, newCounts, newExtras };
 }
 
 function conflict(
@@ -174,11 +184,12 @@ export interface ImportChanges {
   games: Game[];
   copies: Copy[];
   wishlist: WishItem[];
+  extras: SagaExtra[];
 }
 
 /** Calcula qué hay que guardar según las decisiones tomadas. Sin decisión, se mantiene lo tuyo. */
 export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolution>): ImportChanges {
-  const out: ImportChanges = { games: [], copies: [], wishlist: [] };
+  const out: ImportChanges = { games: [], copies: [], wishlist: [], extras: plan.newExtras };
   const byKey = new Map(plan.conflicts.map((c) => [c.key, c]));
   const decide = (kind: Conflict["kind"], id: string) => {
     const c = byKey.get(`${kind}:${id}`);
