@@ -88,3 +88,13 @@ Migración `0011_sagas.sql`; las copias de seguridad antiguas siguen sirviendo (
 - La dirección de la página de una historia (p. ej. `/sagas?historia=…`).
 - Recordar en el navegador qué orden se eligió la última vez (Lanzamiento / Historia).
 - Cómo saber cuántos juegos tiene cada serie en IGDB para elegir la más concreta (p. ej. `collections.games`).
+
+## Segunda vuelta (25/11/2026, tras usarla)
+
+Aprobado por ella tras ver la demo de tres variantes:
+
+- **Aspecto: «Mapa de la saga» (variante B).** A la izquierda, las sagas (en el móvil, en una fila que se desliza); a la derecha, la historia abierta como el mapa de niveles de la ficha: un camino de juego en juego, con el puesto en cada parada, lo superado encendido (✓) y el siguiente marcado con «▶ Siguiente».
+- **«Historia» pasa a «Cronología»** en el selector de orden (el campo de la ficha sigue llamándose «Historia»).
+- **Ordenar la cronología arrastrando en el ordenador.** Con ratón, cada parada se arrastra a su sitio; las flechas ↑ ↓ se quedan para el teclado y el móvil. *(Sustituye a «Arrastrar y soltar: fuera del alcance».)*
+- **Quitar una saga.** Con confirmación y «Deshacer». Sus juegos se quedan en la biblioteca; solo dejan de estar en esa historia (quedan en «Sin historia», así Traer de IGDB no la vuelve a proponer).
+- **Traer de IGDB, eligiendo.** IGDB propone las historias de los juegos que no tienen; en cada una, «Añadir» o «No» (con «Marcar todas» / «Ninguna»). Lo que no se añade queda en «Sin historia» y no se vuelve a proponer. Cancelar no cambia nada.
