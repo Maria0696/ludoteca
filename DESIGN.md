@@ -194,7 +194,7 @@ Margen lateral de 48 px en el ordenador y 16 px en el móvil (por debajo de 900 
 
 Cada pantalla es un título y una o varias ventanas apiladas o en rejilla de dos columnas, que en el móvil pasan a una. Dentro de una ventana, 20 px de relleno y filas separadas por líneas de 2 px en marco suave. Lo frecuente queda al alcance del pulgar: en el móvil, la respuesta va antes que las preguntas (propuestas antes que la sesión) y las acciones de la partida se pegan encima de la barra inferior.
 
-La barra superior se compacta por tramos en vez de desbordar: el chip de modo pasa a iconos y, entre 900 y 1100 px, «Añadir juego» pasa a ser «+».
+La barra superior se compacta por tramos en vez de desbordar: el chip de modo pasa a iconos, el buscador se estrecha y, entre 900 y 1260 px, «Añadir juego» pasa a ser «+». Tiene seis destinos (con «Sagas»); la barra inferior del móvil se queda con cinco y a «Sagas» se llega desde la cabecera de la Biblioteca.
 
 ## Elevation & Depth
 

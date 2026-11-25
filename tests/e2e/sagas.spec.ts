@@ -1,7 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import { type Game, createGame, gameSchema } from "../../src/lib/model";
 import { pickSeries } from "../../src/lib/igdb-maps";
 import { buildStories, groupByBrand, moveInStory, nextInStory, orderStory } from "../../src/lib/sagas";
+import { loadDemo, openApp } from "./helpers";
 
 /* Sagas: los juegos de cada historia, en orden de lanzamiento o en el de la historia (puesto a mano). */
 
@@ -77,4 +78,72 @@ test("de varias series de IGDB, la más concreta", () => {
   // Entre varias que no se llaman como la marca, la de menos juegos.
   expect(pickSeries([{ name: "LEGO Star Wars", games: [1, 2, 3] }, { name: "Star Wars: Squadrons", games: [1] }], "Star Wars")).toBe("Star Wars: Squadrons");
   expect(pickSeries(undefined, "Star Wars")).toBeNull();
+});
+
+/** Cambia juegos de la demostración guardados en el navegador (por título) y recarga. */
+async function seed(page: Page, patches: Record<string, Record<string, unknown>>) {
+  await page.evaluate(
+    (patches) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const cursor = store.openCursor();
+          cursor.onsuccess = () => {
+            const c = cursor.result;
+            if (!c) return resolve();
+            const value = c.value as { games?: Record<string, unknown>[] };
+            for (const g of value.games ?? []) Object.assign(g, patches[g.title as string] ?? {});
+            c.update(value);
+            c.continue();
+          };
+        };
+      }),
+    patches,
+  );
+}
+
+const storyGames = (page: Page) => page.getByRole("list", { name: "Juegos de la historia" }).getByRole("link");
+
+test("la pantalla Sagas enseña cada historia con el siguiente que toca", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await openApp(page, "/");
+  await page.getByRole("navigation", { name: "Principal" }).first().getByRole("link", { name: "Sagas" }).click();
+  await expect(page).toHaveURL(/\/sagas$/);
+  const sagas = page.getByRole("region", { name: "Sagas" });
+  const row = sagas.getByRole("link", { name: /^Prueba/ });
+  await expect(row).toContainText("2 juegos");
+  // Celeste (2018) está superado: el siguiente es Hades (2020).
+  await expect(row).toContainText("Siguiente: Hades");
+});
+
+test("cambiar el orden de la historia no toca el de lanzamiento", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await openApp(page, "/sagas?historia=Prueba");
+  const order = page.getByRole("radiogroup", { name: "Orden" });
+  await order.getByRole("radio", { name: "Historia" }).click();
+  await expect(storyGames(page)).toHaveText([/Celeste/, /Hades/]);
+  await page.getByRole("button", { name: "Bajar «Celeste»" }).click();
+  await expect(storyGames(page)).toHaveText([/Hades/, /Celeste/]);
+  await page.reload();
+  await expect(order.getByRole("radio", { name: "Historia" })).toHaveAttribute("aria-checked", "true");
+  await expect(storyGames(page)).toHaveText([/Hades/, /Celeste/]);
+  await order.getByRole("radio", { name: "Lanzamiento" }).click();
+  await expect(storyGames(page)).toHaveText([/Celeste/, /Hades/]);
+});
+
+test("traer de IGDB rellena las historias vacías y no pisa las corregidas", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { igdbId: 101 }, Celeste: { igdbId: 102, series: "Mi historia" }, "Hollow Knight": { igdbId: 103 } });
+  await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Supergiant", "102": "Celeste", "103": "Supergiant" } } }));
+  await openApp(page, "/sagas");
+  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
+  await expect(page.getByText("2 historias rellenadas")).toBeVisible();
+  const sagas = page.getByRole("region", { name: "Sagas" });
+  await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toContainText("2 juegos");
+  // Celeste conserva la historia que se le puso a mano.
+  await expect(sagas.getByRole("link", { name: /^Celeste/ })).toHaveCount(0);
 });
