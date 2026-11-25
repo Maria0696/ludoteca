@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, List, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { LayoutGrid, List, ListOrdered, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -245,6 +245,11 @@ export function LibraryView() {
         <div className={styles.headActions}>
           <Link href="/importar" className={styles.chip}>
             Importar…
+          </Link>
+          {/* Solo en el móvil: en el ordenador, Sagas está en la barra de arriba. */}
+          <Link href="/sagas" className={`${styles.chip} ${styles.sagasChip}`}>
+            <ListOrdered aria-hidden />
+            Sagas
           </Link>
           <div className={styles.viewToggle} role="group" aria-label="Vista">
             <button type="button" className={styles.chip} aria-pressed={view === "caratulas"} onClick={() => setParams({ vista: null })}>

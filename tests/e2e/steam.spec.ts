@@ -26,6 +26,7 @@ const sheet = (igdbId: number, title: string): CatalogGame => ({
   summary: "Una historia.",
   developer: "Estudio",
   saga: null,
+  series: null,
   releaseDate: "2020-05-01",
   ageRating: "PEGI 12",
 });

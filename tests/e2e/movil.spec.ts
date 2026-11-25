@@ -378,6 +378,16 @@ test("en el móvil, la barra del cambio en grupo queda encima de la barra inferi
   await expectCarcasaText(bar);
 });
 
+test("en el móvil, Sagas se abre desde la Biblioteca y la barra de abajo sigue con cinco", async ({ page }) => {
+  await loadDemo(page);
+  const bottom = page.getByRole("navigation", { name: "Principal" }).last();
+  await expect(bottom.getByRole("link")).toHaveCount(5);
+  await page.getByRole("link", { name: "Sagas" }).click();
+  await expect(page).toHaveURL(/\/sagas$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Sagas" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+});
+
 test("¿A qué juego? en el móvil: el aviso de datos que faltan va después de las propuestas", async ({ page }) => {
   await loadDemo(page);
   // Un juego sin modos de juego: la sesión es «Sola» y no se sabe si se juega así.

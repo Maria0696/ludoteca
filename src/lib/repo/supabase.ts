@@ -12,7 +12,7 @@ type Row = Record<string, unknown>;
 const gameCols: [keyof Game, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["backdropUrl", "backdrop_url"], ["igdbId", "igdb_id"], ["steamAppId", "steam_app_id"], ["genres", "genres"],
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["endless", "endless"], ["favorite", "favorite"],
-  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["saga", "saga"],
+  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["saga", "saga"], ["series", "series"], ["seriesOrder", "series_order"],
   ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
   ["finishedAt", "finished_at"], ["pastRuns", "past_runs"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
@@ -68,7 +68,7 @@ export class SupabaseRepository implements Repository {
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     return {
       // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
-      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [] })),
+      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
     };

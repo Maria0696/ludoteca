@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { DateInput } from "@/components/ui/DateInput";
 import { isoToDmy, parseDecimal, parseDmy } from "@/lib/format";
 import styles from "./adventure.module.css";
@@ -20,7 +20,16 @@ type Props = Common &
   (
     | { kind: "number"; value: number | null | undefined; onSave: (v: number | null) => void; min?: number; max?: number; step?: number; integer?: boolean }
     | { kind: "date"; value: string | null | undefined; onSave: (v: string | null) => void }
-    | { kind: "text" | "multiline"; value: string | null | undefined; onSave: (v: string | null) => void; maxLength?: number; validate?: (text: string) => string | null; rows?: number }
+    | {
+        kind: "text" | "multiline";
+        value: string | null | undefined;
+        onSave: (v: string | null) => void;
+        maxLength?: number;
+        validate?: (text: string) => string | null;
+        rows?: number;
+        /** Valores ya usados, para elegirlos al escribir (solo en texto de una línea). */
+        suggestions?: string[];
+      }
   );
 
 /** Un dato que se ve como texto y se edita al pulsarlo. */
@@ -35,6 +44,7 @@ export function Editable(props: Props) {
   const returnFocus = useRef(false);
   // «Guardado», un momento, tras cada cambio: el dato se guarda solo y así se sabe.
   const [justSaved, setJustSaved] = useState(0);
+  const listId = useId();
   useEffect(() => {
     if (!justSaved) return;
     const t = window.setTimeout(() => setJustSaved(0), 1600);
@@ -162,9 +172,17 @@ export function Editable(props: Props) {
           type="text"
           inputMode={props.kind === "number" ? "decimal" : undefined}
           maxLength={props.kind === "text" ? props.maxLength : undefined}
+          list={props.kind === "text" && props.suggestions?.length ? listId : undefined}
           defaultValue={initial}
         />
       )}
+      {props.kind === "text" && props.suggestions?.length ? (
+        <datalist id={listId}>
+          {props.suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+      ) : null}
       {error && (
         <span className={styles.editError} role="alert">
           {error}

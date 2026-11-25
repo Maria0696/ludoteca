@@ -90,6 +90,10 @@
 }
 
 /* Botones de la recreativa: marco de neón, letra de terminal. */
+/* En el ordenador, Sagas está en la barra de arriba. */
+.headActions > .sagasChip {
+  display: none;
+}
 .chip {
   display: inline-flex;
   align-items: center;
@@ -844,16 +848,30 @@
     padding-bottom: 14px;
   }
   .credits {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 2;
+    align-self: center;
     font-size: var(--size-body);
   }
+  /* Las vistas, junto al título; «Sagas», junto al recuento: así el título se lee entero. */
   .headActions {
-    margin-left: 0;
+    display: contents;
+  }
+  .viewToggle {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
   }
   /* Importar de Steam sigue en Ajustes: en el móvil no ocupa una fila de la cabecera. */
   .headActions > .chip {
     display: none;
+  }
+  /* Sagas, sí: en el móvil no está en la barra de abajo. */
+  .headActions > .sagasChip {
+    display: inline-flex;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
   }
   .viewToggle span {
     position: absolute;

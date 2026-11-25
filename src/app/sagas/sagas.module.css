@@ -1,0 +1,245 @@
+/* Sagas en la carcasa: la lista de historias en una ventana y, al lado, la historia abierta. */
+.page {
+  padding: 36px var(--gutter) 0;
+  display: grid;
+  gap: 20px;
+  font-family: var(--font-term);
+}
+.head {
+  display: grid;
+  gap: 6px;
+}
+.lead {
+  color: var(--muted);
+  font-size: var(--size-body);
+}
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  max-width: 62ch;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+.page:not([data-abierta]) .layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* La lista: buscador, y las historias bajo su marca. */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.search {
+  position: relative;
+  flex: 1 1 220px;
+}
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.search :global(.input) {
+  width: 100%;
+  padding-left: 36px;
+}
+.none {
+  color: var(--muted);
+}
+.group + .group {
+  margin-top: 16px;
+}
+.brand {
+  margin: 0 0 6px;
+  color: var(--faint);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.stories {
+  display: grid;
+}
+.stories li + li {
+  border-top: 2px solid var(--line);
+}
+.row {
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+.row strong {
+  font-size: var(--size-lead);
+  font-weight: 400;
+  color: var(--white);
+}
+.meta {
+  color: var(--muted);
+  font-size: var(--size-meta);
+}
+.next {
+  color: var(--faint);
+  font-size: var(--size-meta);
+}
+.row[aria-current="true"] {
+  background: var(--raised);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--hover);
+  }
+}
+
+/* La historia abierta. */
+.story {
+  display: grid;
+  gap: 10px;
+  position: sticky;
+  top: 92px;
+}
+.titleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.titleLine h2 {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gold);
+}
+.rename {
+  display: flex;
+  gap: 8px;
+}
+.rename :global(.input) {
+  flex: 1;
+  min-width: 0;
+}
+.back {
+  display: none;
+  justify-self: start;
+}
+.storyBrand {
+  margin-top: -6px;
+  color: var(--faint);
+  font-size: var(--size-meta);
+}
+.orders {
+  display: flex;
+  gap: 6px;
+}
+.orders [aria-checked="true"],
+.orders [aria-checked="true"]:hover {
+  background: var(--paper);
+  color: var(--window);
+  box-shadow: none;
+}
+.hint {
+  color: var(--muted);
+  font-size: var(--size-note);
+}
+.games {
+  display: grid;
+}
+.game {
+  display: grid;
+  grid-template-columns: 2ch 40px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 2px solid var(--line);
+}
+.game[data-siguiente] {
+  background: var(--raised);
+  box-shadow: inset 3px 0 0 var(--gold);
+  padding-left: 8px;
+}
+.pos {
+  color: var(--faint);
+  font-size: var(--size-label);
+}
+.thumb {
+  width: 40px;
+}
+/* En la miniatura no cabe el título: basta con el cartón. */
+.thumb :global(.cover-fallback strong),
+.thumb :global(.cover-fallback span) {
+  display: none;
+}
+.gameText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.gameText a {
+  color: var(--white);
+  font-size: var(--size-body);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.gameText a:hover {
+  text-decoration: underline;
+}
+.gameMeta {
+  color: var(--muted);
+  font-size: var(--size-meta);
+}
+.arrows {
+  display: flex;
+  gap: 2px;
+}
+.verdict {
+  margin-top: 4px;
+  color: var(--white);
+  font-size: var(--size-label);
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding-top: 18px;
+  }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* En el móvil, la historia abierta va primero y sola; «Todas las sagas» vuelve a la lista. */
+  .page[data-abierta] .list {
+    display: none;
+  }
+  .story {
+    position: static;
+  }
+  .back {
+    display: inline-flex;
+  }
+  /* Las flechas, una encima de otra: el título tiene más sitio. */
+  .arrows {
+    flex-direction: column;
+  }
+  .arrows :global(.btn) {
+    width: 44px;
+    height: 44px;
+  }
+  /* En el móvil, el estado en una línea: el rombo de color y su nombre (sin el rótulo arcade). */
+  .gameMeta :global(.state b) {
+    display: none;
+  }
+}

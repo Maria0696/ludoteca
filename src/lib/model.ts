@@ -100,6 +100,10 @@ export const gameSchema = z.object({
   summary: optionalText,
   developer: optionalText,
   saga: optionalText,
+  /** La historia dentro de la saga (la serie de IGDB o puesta a mano): Star Wars Jedi dentro de Star Wars. */
+  series: optionalText,
+  /** Su puesto en el orden de la historia, puesto a mano; sin él, cuenta el de lanzamiento. */
+  seriesOrder: z.number().int().min(1).max(10000).nullish(),
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
@@ -217,6 +221,8 @@ export function createGame(input: NewGameInput): Game {
     startedAt: null,
     finishedAt: null,
     pastRuns: [],
+    series: null,
+    seriesOrder: null,
     lastPlayedAt: null,
     modes: [],
     moods: [],

@@ -37,7 +37,11 @@ interface Actions {
   reload(): Promise<void>;
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
+  /** Varios cambios a la vez, guardados de una sola vez (p. ej. el orden de una historia). */
+  updateGames(patches: { id: string; patch: Partial<Game> }[]): void;
   setStatus(id: string, status: GameStatus): void;
+  /** Rellena la historia de los juegos que no la tienen con la que trae IGDB; lo puesto a mano no se toca. Devuelve cuántos. */
+  fillSeries(found: Record<string, string | null>): number;
   /** Empieza otra vuelta de un juego ya superado: lo terminado se guarda y no se pierde. */
   replay(id: string): void;
   /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
@@ -181,6 +185,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       commit({ ...libRef.current, games: games.reduce((all, g) => replaceById(all, g), libRef.current.games) });
       return persist((r) => r.save({ games }));
     };
+    /**
+     * Un cambio a mano. Cambiar de historia saca al juego de su puesto en el orden de la anterior:
+     * entra en la nueva al final, sin inventar un orden (salvo que el cambio diga ya su puesto).
+     */
+    const patched = (game: Game, patch: Partial<Game>): Game => {
+      const movesStory = "series" in patch && !("seriesOrder" in patch) && (patch.series?.trim() ?? null) !== (game.series?.trim() ?? null);
+      return { ...game, ...patch, ...(movesStory ? { seriesOrder: null } : {}), id: game.id, updatedAt: nowIso() };
+    };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
     const withStatus = (previous: Game, status: GameStatus, reopen = true): Game => {
       const today = todayIso();
@@ -247,7 +259,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       updateGame(id, patch) {
         const game = findGame(id);
         if (!game) return;
-        void saveGame({ ...game, ...patch, id, updatedAt: nowIso() });
+        void saveGame(patched(game, patch));
+      },
+
+      updateGames(patches) {
+        const games = patches.flatMap(({ id, patch }) => {
+          const game = findGame(id);
+          return game ? [patched(game, patch)] : [];
+        });
+        if (games.length) void saveGames(games);
       },
 
       setStatus(id, status) {
@@ -257,6 +277,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
           action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
         });
+      },
+
+      fillSeries(found) {
+        const filled = libRef.current.games.flatMap((g) => {
+          const series = g.igdbId != null ? found[String(g.igdbId)] : null;
+          return series && !g.series?.trim() ? [{ ...g, series, seriesOrder: null, updatedAt: nowIso() }] : [];
+        });
+        if (filled.length) void saveGames(filled);
+        return filled.length;
       },
 
       replay(id) {
@@ -457,6 +486,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             startedAt: null,
             finishedAt: null,
             pastRuns: [],
+            series: null,
+            seriesOrder: null,
             lastPlayedAt: null,
             modes: [],
             moods: [],
