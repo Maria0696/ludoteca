@@ -108,7 +108,7 @@ export function GameDetail({ id }: { id: string }) {
   }
 
   const reached = reachedStages(game, copies);
-  // Su puesto en la historia de su saga, si la historia tiene dos o más juegos.
+  // Su puesto en su saga, si la saga tiene dos o más juegos.
   const story = storyPosition(game, library.games, library.extras);
   const update = (patch: Parameters<typeof actions.updateGame>[1]) => actions.updateGame(game.id, patch);
 
@@ -182,8 +182,8 @@ export function GameDetail({ id }: { id: string }) {
                 </button>
               )}
               {story && (
-                <Link href={`/sagas?historia=${encodeURIComponent(story.name)}`} className={styles.storyLink}>
-                  Historia: {story.name} · <span className={styles.nowrap}>{story.position} de {story.total}</span>
+                <Link href={`/sagas?saga=${encodeURIComponent(story.name)}`} className={styles.storyLink}>
+                  Saga: {story.name} · <span className={styles.nowrap}>{story.position} de {story.total}</span>
                 </Link>
               )}
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}

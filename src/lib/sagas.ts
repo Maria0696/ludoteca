@@ -2,21 +2,30 @@ import { type Game, type SagaExtra, normalizeTitle } from "./model";
 import { timesFinished } from "./runs";
 
 /*
- * Sagas: los juegos de cada historia (Star Wars Jedi, Half-Life…), agrupadas bajo su marca (Star Wars).
- * El orden de la historia lo pone la propietaria; sin ponerlo, es el de lanzamiento. La app no inventa cronologías.
+ * Sagas: los juegos de cada saga (Star Wars Jedi, Half-Life…), agrupadas bajo su franquicia (Star Wars). En el código,
+ * una saga es una «story» y su franquicia, su «brand»; en los datos, la saga es `series` y la franquicia, `saga`.
+ * La cronología lo pone la propietaria; sin ponerlo, es el de lanzamiento. La app no inventa cronologías.
  */
 
 export type StoryOrder = "lanzamiento" | "historia";
 
-/** Lo que guarda la ficha al quitar una historia a mano: así traer de IGDB no la vuelve a poner. */
-export const NO_STORY = "Sin historia";
+/** Lo que guarda la ficha al quitar una saga a mano: así traer de IGDB no la vuelve a poner. */
+export const NO_STORY = "Sin saga";
+/** Como se llamaba antes «Sin saga»: los juegos que ya lo tienen siguen descartados. */
+const OLD_NO_STORY = "Sin historia";
 
-/** La historia del juego; «Sin historia» y vacío no son historia. */
+/** Si la saga se quitó a propósito («Sin saga», o «Sin historia» de antes). */
+export function isNoStory(series: string | null | undefined): boolean {
+  const name = series?.trim().toLowerCase();
+  return name === NO_STORY.toLowerCase() || name === OLD_NO_STORY.toLowerCase();
+}
+
+/** La saga del juego; «Sin saga» y vacío no son saga. */
 export function storyOf(game: Game): string | null {
   const name = game.series?.trim();
-  return name && name.toLowerCase() !== NO_STORY.toLowerCase() ? name : null;
+  return name && !isNoStory(name) ? name : null;
 }
-/** Una historia: sus juegos (los tuyos) y los de la saga que no tienes. */
+/** Una saga: sus juegos (los tuyos) y los de la saga que no tienes. */
 export type Story = { name: string; brand: string | null; games: Game[]; extras: SagaExtra[] };
 
 /** Una parada del mapa: un juego tuyo o uno de la saga que no tienes. */
@@ -25,13 +34,13 @@ export type Placement = { kind: Stop["kind"]; id: string; seriesOrder: number };
 
 const byName = (a: string, b: string) => a.localeCompare(b, "es");
 
-/** La marca del juego; «Sin saga» (herencia de una importación) y vacío no son marca. */
+/** La franquicia del juego; «Sin saga» (herencia de una importación) y vacío no son franquicia. */
 export function brandOf(game: Game): string | null {
   const saga = game.saga?.trim();
   return saga && saga.toLowerCase() !== "sin saga" ? saga : null;
 }
 
-/** Las historias con dos o más paradas (tuyas o que faltan), por nombre; su marca, la más repetida entre tus juegos. */
+/** Las sagas con dos o más paradas (tuyas o que faltan), por nombre; su franquicia, la más repetida entre tus juegos. */
 export function buildStories(games: Game[], extras: SagaExtra[] = []): Story[] {
   const map = new Map<string, Game[]>();
   const missing = new Map<string, SagaExtra[]>();
@@ -58,7 +67,7 @@ export function buildStories(games: Game[], extras: SagaExtra[] = []): Story[] {
     .sort((a, b) => byName(a.name, b.name));
 }
 
-/** Las historias bajo su marca, por nombre; una historia sin marca va sola. */
+/** Las sagas bajo su franquicia, por nombre; una saga sin franquicia va sola. */
 export function groupByBrand(stories: Story[]): { brand: string | null; stories: Story[] }[] {
   const groups: { brand: string | null; stories: Story[] }[] = [];
   for (const story of stories) {
@@ -74,7 +83,7 @@ const byRelease = (a: Ordered, b: Ordered) => (a.releaseDate ?? "9999").localeCo
 const info = (s: Stop): Ordered => (s.kind === "juego" ? s.game : s.extra);
 
 /**
- * Las paradas de la historia. «lanzamiento»: por fecha (sin fecha, al final). «historia» (la cronología): las que
+ * Las paradas de la saga. «lanzamiento»: por fecha (sin fecha, al final). «historia» (la cronología): las que
  * tienen puesto, por él; las demás, después, por fecha. Sin `withExtras`, solo tus juegos.
  */
 export function storyStops(story: Story, order: StoryOrder, withExtras = true): Stop[] {
@@ -88,7 +97,7 @@ export function storyStops(story: Story, order: StoryOrder, withExtras = true): 
   return [...placed, ...release.filter((s) => info(s).seriesOrder == null)];
 }
 
-/** Tus juegos en el orden de la historia (el de todas sus paradas): para el puesto y «Siguiente». */
+/** Tus juegos en la cronología de la saga (el de todas sus paradas): para el puesto y «Siguiente». */
 export function orderStory(story: Story, order: StoryOrder): Game[] {
   return storyStops(story, order).flatMap((s) => (s.kind === "juego" ? [s.game] : []));
 }
@@ -121,7 +130,7 @@ export function moveInStory(story: Story, id: string, dir: -1 | 1, withExtras = 
 
 type CatalogEntry = { igdbId: number; title: string; coverUrl: string | null; releaseDate: string | null };
 
-/** Lo que IGDB conoce de la serie y falta en la historia: ni lo tienes (en ninguna historia) ni está ya como «no lo tienes». */
+/** Lo que IGDB conoce de la serie y falta en la saga: ni lo tienes (en ninguna saga) ni está ya como «no lo tienes». */
 export function missingFrom<T extends CatalogEntry>(story: Story, catalog: T[], games: Game[]): T[] {
   const owned = new Set(games.flatMap((g) => (g.igdbId != null ? [g.igdbId] : [])));
   const there = new Set(story.extras.flatMap((x) => (x.igdbId != null ? [x.igdbId] : [])));
@@ -131,13 +140,13 @@ export function missingFrom<T extends CatalogEntry>(story: Story, catalog: T[], 
 export type Proposal = { name: string; games: Game[] };
 
 /**
- * Lo que propone IGDB: por historia, los juegos que no tienen ninguna (los que se quedaron en «Sin historia»
+ * Lo que propone IGDB: por saga, los juegos que no tienen ninguna (los que se quedaron en «Sin saga»
  * a propósito no cuentan). Ella elige cuáles añadir.
  */
 export function proposeStories(games: Game[], found: Record<string, string | null>, { discarded = false } = {}): Proposal[] {
   const map = new Map<string, Game[]>();
   for (const g of games) {
-    const waiting = discarded ? g.series === NO_STORY : !g.series?.trim();
+    const waiting = discarded ? isNoStory(g.series) : !g.series?.trim();
     const name = g.igdbId != null && waiting ? found[String(g.igdbId)]?.trim() : null;
     if (name) map.set(name, [...(map.get(name) ?? []), g]);
   }
@@ -149,7 +158,7 @@ export function nextInStory(ordered: Game[]): Game | null {
   return ordered.find((g) => timesFinished(g) === 0 && g.status !== "abandonado" && g.status !== "completado") ?? null;
 }
 
-/** El puesto del juego entre tus juegos de su historia (los que faltan no cuentan), si la historia se ve. */
+/** El puesto del juego entre tus juegos de su saga (los que faltan no cuentan), si la saga se ve. */
 export function storyPosition(game: Game, games: Game[], extras: SagaExtra[] = []): { name: string; position: number; total: number } | null {
   const story = buildStories(games, extras).find((s) => s.name === storyOf(game));
   if (!story) return null;
@@ -174,7 +183,7 @@ export function isWished(wishlist: Titled[], x: Titled): boolean {
 
 /**
  * Juegos que llegan a la biblioteca y estaban en una saga como «no lo tienes» (mismo número de IGDB): toman la
- * historia y el puesto de esa parada, aunque IGDB les dé otra. Devuelve también las paradas que sobran.
+ * saga y el puesto de esa parada, aunque IGDB les dé otra. Devuelve también las paradas que sobran.
  */
 export function absorbExtras(games: Game[], extras: SagaExtra[]): { games: Game[]; dropped: string[] } {
   const dropped = new Set<string>();

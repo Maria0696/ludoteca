@@ -99,10 +99,11 @@ export const gameSchema = z.object({
   // Ficha técnica: la trae el catálogo y se puede corregir a mano.
   summary: optionalText,
   developer: optionalText,
+  /** La franquicia (Star Wars). Se llama «saga» por herencia: la saga es `series`. */
   saga: optionalText,
-  /** La historia dentro de la saga (la serie de IGDB o puesta a mano): Star Wars Jedi dentro de Star Wars. */
+  /** La saga dentro de la franquicia (la serie de IGDB o puesta a mano): Star Wars Jedi dentro de Star Wars. */
   series: optionalText,
-  /** Su puesto en el orden de la historia, puesto a mano; sin él, cuenta el de lanzamiento. */
+  /** Su puesto en la cronología de la saga, puesto a mano; sin él, cuenta el de lanzamiento. */
   seriesOrder: z.number().int().min(1).max(10000).nullish(),
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,

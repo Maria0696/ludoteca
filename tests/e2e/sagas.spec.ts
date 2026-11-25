@@ -1,6 +1,6 @@
 import { type Page, expect, test } from "@playwright/test";
 import { type Game, createGame, gameSchema } from "../../src/lib/model";
-import { pickSeries, seriesForIgdbGame } from "../../src/lib/igdb-maps";
+import { pickSeries, seriesForIgdbGame, singleGameSeries } from "../../src/lib/igdb-maps";
 import { buildStories, groupByBrand, moveInStory, nextInStory, orderStory, placeInStory, proposeStories } from "../../src/lib/sagas";
 import { loadDemo, openApp } from "./helpers";
 
@@ -80,6 +80,26 @@ test("de varias series de IGDB, la más concreta", () => {
   expect(pickSeries(undefined, "Star Wars")).toBeNull();
 });
 
+test("una serie de IGDB que es un solo juego (con sus remakes y versiones) no es una saga", () => {
+  const ocarina = { name: "The Legend of Zelda: Ocarina of Time", games: [{ id: 1, remakes: [2] }, { id: 2 }, { id: 3, version_parent: 1 }] };
+  const zelda = { name: "The Legend of Zelda", games: [1, 2, 3, 4, 5].map((id) => ({ id })) };
+  // Con marca: la serie de la marca.
+  expect(pickSeries([zelda, ocarina], "The Legend of Zelda")).toBe("The Legend of Zelda");
+  expect(seriesForIgdbGame({ franchise: { name: "The Legend of Zelda" }, collections: [ocarina] })).toBe("The Legend of Zelda");
+  // Sin marca ni otra serie: ninguna.
+  expect(seriesForIgdbGame({ collections: [ocarina] })).toBeNull();
+  // Una secuela sí hace saga, aunque la serie se llame como el primero.
+  expect(pickSeries([{ name: "Hades", games: [{ id: 1 }, { id: 2 }] }], null)).toBe("Hades");
+  expect(pickSeries([{ name: "Dark Souls", games: [{ id: 1, remasters: [4] }, { id: 2 }, { id: 3 }, { id: 4 }] }], null)).toBe("Dark Souls");
+  // Un juego con su contenido descargable y sus versiones, tampoco.
+  const witcher = { name: "The Witcher 3", games: [{ id: 7 }, { id: 8, parent_game: 7 }, { id: 9, ports: [7] }] };
+  expect(pickSeries([witcher, { name: "The Witcher", games: [{ id: 6 }, { id: 7 }] }], null)).toBe("The Witcher");
+  // Las series de un solo juego, para limpiar las que ya se pusieron.
+  expect(singleGameSeries({ collections: [zelda, ocarina] })).toEqual(["The Legend of Zelda: Ocarina of Time"]);
+  expect(singleGameSeries({ version_parent: { collections: [ocarina] } })).toEqual(["The Legend of Zelda: Ocarina of Time"]);
+  expect(singleGameSeries({ collections: [{ name: "Hades", games: [1, 2] }] })).toEqual([]);
+});
+
 /** Cambia juegos de la demostración guardados en el navegador (por título) y recarga. */
 async function seed(page: Page, patches: Record<string, Record<string, unknown>>) {
   await page.evaluate(
@@ -104,7 +124,7 @@ async function seed(page: Page, patches: Record<string, Record<string, unknown>>
   );
 }
 
-const storyGames = (page: Page) => page.getByRole("list", { name: "Juegos de la historia" }).getByRole("link");
+const storyGames = (page: Page) => page.getByRole("list", { name: "Juegos de la saga" }).getByRole("link");
 
 test("la pantalla Sagas enseña cada historia con el siguiente que toca", async ({ page }) => {
   await loadDemo(page);
@@ -116,14 +136,14 @@ test("la pantalla Sagas enseña cada historia con el siguiente que toca", async 
   const row = sagas.getByRole("link", { name: /^Prueba/ });
   await expect(row).toContainText("2 juegos · 1 superados");
   // Sin elegir, se abre la primera. En el mapa, Celeste (2018) está superado y el siguiente es Hades (2020).
-  const next = page.getByRole("list", { name: "Juegos de la historia" }).getByRole("listitem").filter({ hasText: "Siguiente" });
+  const next = page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem").filter({ hasText: "Siguiente" });
   await expect(next).toContainText("Hades");
 });
 
 test("cambiar el orden de la historia no toca el de lanzamiento", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
-  await openApp(page, "/sagas?historia=Prueba");
+  await openApp(page, "/sagas?saga=Prueba");
   const order = page.getByRole("radiogroup", { name: "Orden" });
   await order.getByRole("radio", { name: "Cronología" }).click();
   await expect(storyGames(page)).toHaveText([/Celeste/, /Hades/]);
@@ -141,11 +161,11 @@ test("traer de IGDB rellena las historias vacías y no pisa las corregidas", asy
   await seed(page, { Hades: { igdbId: 101 }, Celeste: { igdbId: 102, series: "Mi historia" }, "Hollow Knight": { igdbId: 103 } });
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Supergiant", "102": "Celeste", "103": "Supergiant" } } }));
   await openApp(page, "/sagas");
-  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
   // IGDB propone y ella elige: aquí, todas.
   const review = page.getByRole("dialog", { name: /IGDB propone/ });
   await expect(review.getByRole("radiogroup", { name: "Supergiant" })).toBeVisible();
-  await review.getByRole("button", { name: "Añadir 1 historia" }).click();
+  await review.getByRole("button", { name: "Añadir 1 saga" }).click();
   await expect(review).toBeHidden();
   const sagas = page.getByRole("region", { name: "Sagas" });
   await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toContainText("2 juegos");
@@ -162,9 +182,9 @@ async function openGame(page: Page, title: string) {
 async function setStory(page: Page, title: string, story: string | null) {
   await openGame(page, title);
   const sheet = page.getByRole("region", { name: "Ficha técnica" });
-  await sheet.getByRole("button", { name: /^Historia: / }).click();
+  await sheet.getByRole("button", { name: /^Saga: / }).click();
   // Con historias ya puestas, el campo ofrece sugerencias (y se anuncia como combobox).
-  const field = sheet.getByLabel("Historia", { exact: true });
+  const field = sheet.getByLabel("Saga", { exact: true });
   await field.fill(story ?? "");
   await field.press("Enter");
 }
@@ -174,8 +194,8 @@ test("la ficha lleva a su historia con su puesto", async ({ page }) => {
   await setStory(page, "Hades", "Prueba");
   await setStory(page, "Celeste", "Prueba");
   // Celeste (2018) va antes que Hades (2020).
-  await page.getByRole("link", { name: "Historia: Prueba · 1 de 2" }).click();
-  await expect(page).toHaveURL(/\/sagas\?historia=Prueba$/);
+  await page.getByRole("link", { name: "Saga: Prueba · 1 de 2" }).click();
+  await expect(page).toHaveURL(/\/sagas\?saga=Prueba$/);
   await expect(page.getByRole("heading", { level: 2, name: "Prueba" })).toBeVisible();
 });
 
@@ -183,7 +203,7 @@ test("vaciar la historia de un juego deja la historia fuera si se queda con uno"
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
   await setStory(page, "Hades", null);
-  await expect(page.getByRole("link", { name: /^Historia: / })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Saga: / })).toHaveCount(0);
   await openApp(page, "/sagas");
   await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
 });
@@ -191,11 +211,11 @@ test("vaciar la historia de un juego deja la historia fuera si se queda con uno"
 test("cambiar el nombre de una historia lo cambia en todos sus juegos y une las que se llaman igual", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Otra" }, Spiritfarer: { series: "Otra" } });
-  await openApp(page, "/sagas?historia=Prueba");
+  await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Cambiar nombre" }).click();
-  await page.getByRole("textbox", { name: "Nombre de la historia" }).fill("Otra");
-  await page.getByRole("textbox", { name: "Nombre de la historia" }).press("Enter");
-  await expect(page).toHaveURL(/historia=Otra$/);
+  await page.getByRole("textbox", { name: "Nombre de la saga" }).fill("Otra");
+  await page.getByRole("textbox", { name: "Nombre de la saga" }).press("Enter");
+  await expect(page).toHaveURL(/saga=Otra$/);
   await expect(storyGames(page)).toHaveCount(4);
   await expect(page.getByRole("region", { name: "Sagas" }).getByRole("link", { name: /^Prueba/ })).toHaveCount(0);
 });
@@ -220,7 +240,7 @@ test("cambiar un juego de historia lo saca de su puesto: entra al final, sin inv
     Spiritfarer: { series: "B" },
   });
   await setStory(page, "Hades", "B");
-  await openApp(page, "/sagas?historia=B");
+  await openApp(page, "/sagas?saga=B");
   await page.getByRole("radiogroup", { name: "Orden" }).getByRole("radio", { name: "Cronología" }).click();
   // B no tiene orden puesto: su historia es el lanzamiento (Hollow Knight 2017, Spiritfarer y Hades 2020).
   await expect(storyGames(page)).toHaveText([/Hollow Knight/, /Spiritfarer/, /Hades/]);
@@ -230,30 +250,30 @@ test("una historia quitada a mano no vuelve al traer de IGDB", async ({ page }) 
   await loadDemo(page);
   await seed(page, { Hades: { igdbId: 101, series: "Mala" }, Celeste: { igdbId: 102, series: "Mala" } });
   await setStory(page, "Hades", null);
-  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Historia: Sin historia/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Sin saga/ })).toBeVisible();
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Mala", "102": "Mala" } } }));
   await openApp(page, "/sagas");
   await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
   // Nada nuevo: Hades se dejó sin historia a propósito y Celeste ya la tiene. Se ofrece lo descartado, sin marcar.
-  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
-  const review = page.getByRole("dialog", { name: "Historias que descartaste" });
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  const review = page.getByRole("dialog", { name: "Sagas que descartaste" });
   await expect(review.getByRole("radiogroup", { name: "Mala" }).getByRole("radio", { name: "No" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("«Cambiar nombre» no se pasa a otra historia al cambiar de historia", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "A" }, Celeste: { series: "A" }, "Hollow Knight": { series: "B" }, Spiritfarer: { series: "B" } });
-  await openApp(page, "/sagas?historia=A");
+  await openApp(page, "/sagas?saga=A");
   await page.getByRole("button", { name: "Cambiar nombre" }).click();
   await page.getByRole("region", { name: "Sagas" }).getByRole("link", { name: /^B/ }).click();
   await expect(page.getByRole("heading", { level: 2, name: "B" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Nombre de la historia" })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Nombre de la saga" })).toHaveCount(0);
 });
 
 test("mover un juego guarda la biblioteca una sola vez", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Prueba" } });
-  await openApp(page, "/sagas?historia=Prueba");
+  await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("radiogroup", { name: "Orden" }).getByRole("radio", { name: "Cronología" }).click();
   await page.evaluate(() => {
     const w = window as unknown as { __puts: number };
@@ -286,6 +306,7 @@ test("IGDB propone por historia los juegos que no tienen", () => {
   const hades = game("Hades", { igdbId: 1 });
   const hades2 = game("Hades II", { igdbId: 2 });
   const celeste = game("Celeste", { igdbId: 3, series: "Mía" });
+  // «Sin historia» es como se llamaba antes «Sin saga»: los dos valen.
   const quitada = game("Quitada", { igdbId: 4, series: "Sin historia" });
   const proposals = proposeStories([hades, hades2, celeste, quitada], { "1": "Hades", "2": "Hades", "3": "Celeste", "4": "Otra" });
   // Solo los que no tienen historia (ni la tienen quitada a propósito).
@@ -297,10 +318,10 @@ test("IGDB propone por historia los juegos que no tienen", () => {
 test("en el ordenador, la cronología se ordena arrastrando", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Prueba" } });
-  await openApp(page, "/sagas?historia=Prueba");
+  await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("radiogroup", { name: "Orden" }).getByRole("radio", { name: "Cronología" }).click();
   await expect(storyGames(page)).toHaveText([/Hollow Knight/, /Celeste/, /Hades/]);
-  const items = page.getByRole("list", { name: "Juegos de la historia" }).getByRole("listitem");
+  const items = page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem");
   await items.filter({ hasText: "Hades" }).dragTo(items.filter({ hasText: "Hollow Knight" }));
   await expect(storyGames(page)).toHaveText([/Hades/, /Hollow Knight/, /Celeste/]);
   await page.reload();
@@ -310,7 +331,7 @@ test("en el ordenador, la cronología se ordena arrastrando", async ({ page }) =
 test("quitar una saga deja sus juegos y se puede deshacer", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Otra" }, Spiritfarer: { series: "Otra" } });
-  await openApp(page, "/sagas?historia=Prueba");
+  await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar saga" }).click();
   await expect(page.getByRole("region", { name: "Prueba" }).getByRole("alert")).toContainText("Sus 2 juegos se quedan en tu biblioteca");
   await page.getByRole("region", { name: "Prueba" }).getByRole("alert").getByRole("button", { name: "Quitar saga" }).click();
@@ -322,7 +343,7 @@ test("quitar una saga deja sus juegos y se puede deshacer", async ({ page }) => 
   await page.getByRole("button", { name: "Quitar saga" }).click();
   await page.getByRole("region", { name: "Prueba" }).getByRole("alert").getByRole("button", { name: "Quitar saga" }).click();
   await openGame(page, "Hades");
-  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Historia: Sin historia/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Sin saga/ })).toBeVisible();
 });
 
 test("lo que no se añade al traer de IGDB no se vuelve a proponer", async ({ page }) => {
@@ -330,20 +351,70 @@ test("lo que no se añade al traer de IGDB no se vuelve a proponer", async ({ pa
   await seed(page, { Hades: { igdbId: 101 }, Spiritfarer: { igdbId: 104 }, Celeste: { igdbId: 102 }, "Hollow Knight": { igdbId: 103 } });
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Supergiant", "104": "Supergiant", "102": "Montaña", "103": "Montaña" } } }));
   await openApp(page, "/sagas");
-  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
-  const review = page.getByRole("dialog", { name: "IGDB propone 2 historias" });
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  const review = page.getByRole("dialog", { name: "IGDB propone 2 sagas" });
   await review.getByRole("radiogroup", { name: "Montaña" }).getByRole("radio", { name: "No" }).click();
-  await review.getByRole("button", { name: "Añadir 1 historia" }).click();
+  await review.getByRole("button", { name: "Añadir 1 saga" }).click();
   const sagas = page.getByRole("region", { name: "Sagas" });
   await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toBeVisible();
   await expect(sagas.getByRole("link", { name: /^Montaña/ })).toHaveCount(0);
   // Ya no hay nada nuevo: Traer ofrece lo descartado, sin marcar, por si cambias de idea.
-  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
-  const again = page.getByRole("dialog", { name: "Historias que descartaste" });
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  const again = page.getByRole("dialog", { name: "Sagas que descartaste" });
   await expect(again.getByRole("radiogroup", { name: "Supergiant" })).toHaveCount(0);
   await expect(again.getByRole("button", { name: /^Añadir/ })).toBeDisabled();
   await again.getByRole("radiogroup", { name: "Montaña" }).getByRole("radio", { name: "Añadir" }).click();
-  await again.getByRole("button", { name: "Añadir 1 historia" }).click();
+  await again.getByRole("button", { name: "Añadir 1 saga" }).click();
   await expect(sagas.getByRole("link", { name: /^Montaña/ })).toContainText("2 juegos");
   await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toContainText("2 juegos");
+});
+
+test("una saga descartada con el nombre de antes, «Sin historia», se ve como «Sin saga» y Traer la ofrece", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { igdbId: 101, series: "Sin historia" }, Celeste: { igdbId: 102, series: "Sin historia" } });
+  await openGame(page, "Hades");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Sin saga/ })).toBeVisible();
+  await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Mala", "102": "Mala" } } }));
+  await openApp(page, "/sagas");
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  await expect(page.getByRole("dialog", { name: "Sagas que descartaste" }).getByRole("radiogroup", { name: "Mala" })).toBeVisible();
+});
+
+test("los enlaces de antes, con ?historia=, siguen abriendo su saga", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "A" }, Celeste: { series: "A" }, "Hollow Knight": { series: "B" }, Spiritfarer: { series: "B" } });
+  await openApp(page, "/sagas?historia=B");
+  await expect(page.getByRole("heading", { level: 2, name: "B" })).toBeVisible();
+});
+
+test("la limpieza saca de las sagas que en IGDB son un solo juego, una sola vez", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, {
+    Hades: { igdbId: 101, series: "Hades" },
+    Celeste: { igdbId: 102, series: "Celeste", seriesOrder: 3 },
+    "Hollow Knight": { igdbId: 103, series: "Mi saga" },
+    Spiritfarer: { igdbId: 104, series: "Mi saga" },
+  });
+  let calls = 0;
+  await page.route("**/api/catalogo/series", (route) => {
+    calls++;
+    return route.fulfill({
+      json: { ok: true, series: { "101": "Hades", "102": "Montaña", "103": null, "104": null }, single: { "102": ["Celeste"], "103": [] } },
+    });
+  });
+  await openApp(page, "/sagas");
+  await expect(page.getByText("1 juego cambia de saga: la que tenía era solo ese juego y sus versiones.")).toBeVisible();
+  // Hades sigue en la suya; «Mi saga» la puso ella y no se toca.
+  await openGame(page, "Celeste");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Montaña/ })).toBeVisible();
+  await openGame(page, "Hades");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Hades/ })).toBeVisible();
+  await openGame(page, "Hollow Knight");
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Mi saga/ })).toBeVisible();
+  // Una vez hecha, no se repite.
+  const before = calls;
+  await openApp(page, "/sagas");
+  await expect(page.getByRole("region", { name: "Sagas" })).toBeVisible();
+  await page.waitForTimeout(300);
+  expect(calls).toBe(before);
 });

@@ -19,8 +19,9 @@ export interface CatalogGame {
   /** Sinopsis tal como la da IGDB, normalmente en inglés. */
   summary: string | null;
   developer: string | null;
+  /** La franquicia (Star Wars). Se guarda como «saga» por herencia. */
   saga: string | null;
-  /** La historia dentro de la saga: la serie más concreta de IGDB (Star Wars Jedi dentro de Star Wars). */
+  /** La saga dentro de la franquicia: la serie más concreta de IGDB (Star Wars Jedi dentro de Star Wars). */
   series: string | null;
   /** Primer lanzamiento, en formato AAAA-MM-DD. */
   releaseDate: string | null;
@@ -32,9 +33,12 @@ export type CatalogResponse =
   | { ok: true; results: CatalogGame[] }
   | { ok: false; reason: "no-configurado" | "no-autorizado" | "error"; message: string };
 
-/** Respuesta de /api/catalogo/series: la historia de cada juego, por su número de IGDB. */
+/**
+ * Respuesta de /api/catalogo/series: la saga de cada juego, por su número de IGDB, y sus series que son un solo juego
+ * (que no son saga).
+ */
 export type SeriesResponse =
-  | { ok: true; series: Record<string, string | null> }
+  | { ok: true; series: Record<string, string | null>; single?: Record<string, string[]> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
 
 /** Respuesta de /api/catalogo/serie: los juegos de una serie de IGDB. */

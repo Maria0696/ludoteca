@@ -1,6 +1,17 @@
 import "server-only";
 import type { CatalogGame } from "./catalog";
-import { GENRES_ES, OWN_SERIES_FIELDS, PLATFORM_NAMES, SERIES_FIELDS, guessMoods, mapModes, seriesForIgdbGame } from "./igdb-maps";
+import {
+  GENRES_ES,
+  type IgdbCollection,
+  OWN_SERIES_FIELDS,
+  PLATFORM_NAMES,
+  SERIES_FIELDS,
+  SIMPLE_SERIES_FIELDS,
+  guessMoods,
+  mapModes,
+  seriesForIgdbGame,
+  singleGameSeries,
+} from "./igdb-maps";
 
 /*
  * Consultas al catálogo de IGDB (gratuito para uso no comercial con una
@@ -60,7 +71,7 @@ interface IgdbGame {
   summary?: string;
   franchise?: { name: string };
   franchises?: { name: string }[];
-  collections?: { name: string; games?: number[] }[];
+  collections?: IgdbCollection[];
   version_parent?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
   parent_game?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
   involved_companies?: { developer?: boolean; company?: { name: string } }[];
@@ -128,12 +139,18 @@ export async function fetchCatalogGames(query: (fields: string) => string, optio
 
 const sagaOf = (g: IgdbGame) => g.franchise?.name ?? g.franchises?.[0]?.name ?? g.collections?.[0]?.name ?? null;
 
-/** La historia de cada juego de IGDB, por su número: solo lo necesario para elegirla. */
-export async function seriesByIgdbIds(ids: number[]): Promise<Record<string, string | null>> {
+/**
+ * La saga de cada juego de IGDB, por su número, y las series suyas que son un solo juego (para limpiar las que ya se
+ * pusieron): solo lo necesario para elegirla.
+ */
+export async function seriesByIgdbIds(ids: number[]): Promise<{ series: Record<string, string | null>; single?: Record<string, string[]> }> {
   const query = (fields: string) => `fields ${fields}; where id = (${ids.join(",")}); limit ${ids.length};`;
-  // Si IGDB no acepta los campos del juego original, al menos los del propio juego.
-  const games = await igdb<IgdbGame[]>("games", query(SERIES_FIELDS)).catch(() => igdb<IgdbGame[]>("games", query(OWN_SERIES_FIELDS)));
-  return Object.fromEntries(games.map((g) => [String(g.id), seriesForIgdbGame(g)]));
+  const full = await igdb<IgdbGame[]>("games", query(SERIES_FIELDS)).catch(() => null);
+  const series = (games: IgdbGame[]) => Object.fromEntries(games.map((g) => [String(g.id), seriesForIgdbGame(g)]));
+  if (full) return { series: series(full), single: Object.fromEntries(full.map((g) => [String(g.id), singleGameSeries(g)])) };
+  // Si IGDB no acepta tanto detalle, con menos (sin el juego original, si hace falta) y sin saber qué series son un solo juego.
+  const games = await igdb<IgdbGame[]>("games", query(SIMPLE_SERIES_FIELDS)).catch(() => igdb<IgdbGame[]>("games", query(OWN_SERIES_FIELDS)));
+  return { series: series(games) };
 }
 
 /**
