@@ -304,7 +304,9 @@ test("un juego que no tienes solo está en una saga: añadirlo a otra lo mueve",
   await page.getByRole("button", { name: "Añadir a la saga" }).click();
   await searchAndPick(page, /^Añadir a «Otra»/, "hades", "Hades II");
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(1);
-  await openApp(page, "/sagas?saga=Prueba");
+  // Sin recargar: recargar justo después podría adelantarse a lo que se guarda.
+  await page.getByRole("region", { name: "Sagas" }).getByRole("link", { name: /^Prueba/ }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Prueba" })).toBeVisible();
   await expect(stopsOf(page)).toHaveCount(2);
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
 });
