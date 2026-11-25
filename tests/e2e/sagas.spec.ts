@@ -204,6 +204,11 @@ test("sin marca en IGDB, la historia sigue siendo la serie más concreta", () =>
   // Sin «franchise», la serie amplia no se toma por marca para descartarla.
   expect(seriesForIgdbGame({ collections: [{ name: "Star Wars Jedi", games: [1, 2] }, { name: "Star Wars", games: Array.from({ length: 40 }, (_, i) => i) }] })).toBe("Star Wars Jedi");
   expect(seriesForIgdbGame({ franchise: { name: "Star Wars" }, collections: [{ name: "Star Wars", games: [1] }] })).toBe("Star Wars");
+  // Una edición sin serie propia toma la de su juego original.
+  expect(seriesForIgdbGame({ version_parent: { collections: [{ name: "Tomb Raider", games: [1, 2] }] } })).toBe("Tomb Raider");
+  expect(seriesForIgdbGame({ parent_game: { collections: [{ name: "Alan Wake", games: [1, 2] }] } })).toBe("Alan Wake");
+  expect(seriesForIgdbGame({ collections: [{ name: "Propia", games: [1] }], version_parent: { collections: [{ name: "Original", games: [1] }] } })).toBe("Propia");
+  expect(seriesForIgdbGame({ version_parent: {} })).toBeNull();
 });
 
 test("cambiar un juego de historia lo saca de su puesto: entra al final, sin inventar un orden", async ({ page }) => {
@@ -229,8 +234,10 @@ test("una historia quitada a mano no vuelve al traer de IGDB", async ({ page }) 
   await page.route("**/api/catalogo/series", (route) => route.fulfill({ json: { ok: true, series: { "101": "Mala", "102": "Mala" } } }));
   await openApp(page, "/sagas");
   await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
-  // Nada que traer: Hades se dejó sin historia a propósito y Celeste ya la tiene.
-  await expect(page.getByRole("button", { name: "Traer historias de IGDB" })).toBeDisabled();
+  // Nada nuevo: Hades se dejó sin historia a propósito y Celeste ya la tiene. Se ofrece lo descartado, sin marcar.
+  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
+  const review = page.getByRole("dialog", { name: "Historias que descartaste" });
+  await expect(review.getByRole("radiogroup", { name: "Mala" }).getByRole("radio", { name: "No" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("«Cambiar nombre» no se pasa a otra historia al cambiar de historia", async ({ page }) => {
@@ -283,6 +290,8 @@ test("IGDB propone por historia los juegos que no tienen", () => {
   const proposals = proposeStories([hades, hades2, celeste, quitada], { "1": "Hades", "2": "Hades", "3": "Celeste", "4": "Otra" });
   // Solo los que no tienen historia (ni la tienen quitada a propósito).
   expect(proposals.map((p) => [p.name, p.games.map((g) => g.title)])).toEqual([["Hades", ["Hades", "Hades II"]]]);
+  // Y, si se piden, solo los descartados.
+  expect(proposeStories([hades, hades2, celeste, quitada], { "1": "Hades", "4": "Otra" }, { discarded: true }).map((p) => p.name)).toEqual(["Otra"]);
 });
 
 test("en el ordenador, la cronología se ordena arrastrando", async ({ page }) => {
@@ -328,6 +337,13 @@ test("lo que no se añade al traer de IGDB no se vuelve a proponer", async ({ pa
   const sagas = page.getByRole("region", { name: "Sagas" });
   await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toBeVisible();
   await expect(sagas.getByRole("link", { name: /^Montaña/ })).toHaveCount(0);
-  // Ya no queda nada por proponer: los de «Montaña» se quedaron sin historia a propósito.
-  await expect(page.getByRole("button", { name: "Traer historias de IGDB" })).toBeDisabled();
+  // Ya no hay nada nuevo: Traer ofrece lo descartado, sin marcar, por si cambias de idea.
+  await page.getByRole("button", { name: "Traer historias de IGDB" }).click();
+  const again = page.getByRole("dialog", { name: "Historias que descartaste" });
+  await expect(again.getByRole("radiogroup", { name: "Supergiant" })).toHaveCount(0);
+  await expect(again.getByRole("button", { name: /^Añadir/ })).toBeDisabled();
+  await again.getByRole("radiogroup", { name: "Montaña" }).getByRole("radio", { name: "Añadir" }).click();
+  await again.getByRole("button", { name: "Añadir 1 historia" }).click();
+  await expect(sagas.getByRole("link", { name: /^Montaña/ })).toContainText("2 juegos");
+  await expect(sagas.getByRole("link", { name: /^Supergiant/ })).toContainText("2 juegos");
 });

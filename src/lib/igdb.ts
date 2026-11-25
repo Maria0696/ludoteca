@@ -1,6 +1,6 @@
 import "server-only";
 import type { CatalogGame } from "./catalog";
-import { GENRES_ES, PLATFORM_NAMES, guessMoods, mapModes, seriesForIgdbGame } from "./igdb-maps";
+import { GENRES_ES, OWN_SERIES_FIELDS, PLATFORM_NAMES, SERIES_FIELDS, guessMoods, mapModes, seriesForIgdbGame } from "./igdb-maps";
 
 /*
  * Consultas al catálogo de IGDB (gratuito para uso no comercial con una
@@ -61,14 +61,15 @@ interface IgdbGame {
   franchise?: { name: string };
   franchises?: { name: string }[];
   collections?: { name: string; games?: number[] }[];
+  version_parent?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
+  parent_game?: Pick<IgdbGame, "franchise" | "franchises" | "collections">;
   involved_companies?: { developer?: boolean; company?: { name: string } }[];
   age_ratings?: { organization?: { name: string }; rating_category?: { rating: string } }[];
 }
 
 const BASE_FIELDS =
   "name,first_release_date,cover.image_id,artworks.image_id,screenshots.image_id,genres.name,themes.name,platforms.abbreviation,platforms.name,game_modes.name,aggregated_rating";
-const DETAIL_FIELDS =
-  "summary,franchise.name,franchises.name,collections.name,collections.games,involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating";
+const DETAIL_FIELDS = `summary,${SERIES_FIELDS},involved_companies.developer,involved_companies.company.name,age_ratings.organization.name,age_ratings.rating_category.rating`;
 
 const PEGI_AGES: Record<string, string> = { Three: "3", Seven: "7", Twelve: "12", Sixteen: "16", Eighteen: "18" };
 
@@ -129,10 +130,9 @@ const sagaOf = (g: IgdbGame) => g.franchise?.name ?? g.franchises?.[0]?.name ?? 
 
 /** La historia de cada juego de IGDB, por su número: solo lo necesario para elegirla. */
 export async function seriesByIgdbIds(ids: number[]): Promise<Record<string, string | null>> {
-  const games = await igdb<IgdbGame[]>(
-    "games",
-    `fields franchise.name,franchises.name,collections.name,collections.games; where id = (${ids.join(",")}); limit ${ids.length};`,
-  );
+  const query = (fields: string) => `fields ${fields}; where id = (${ids.join(",")}); limit ${ids.length};`;
+  // Si IGDB no acepta los campos del juego original, al menos los del propio juego.
+  const games = await igdb<IgdbGame[]>("games", query(SERIES_FIELDS)).catch(() => igdb<IgdbGame[]>("games", query(OWN_SERIES_FIELDS)));
   return Object.fromEntries(games.map((g) => [String(g.id), seriesForIgdbGame(g)]));
 }
 

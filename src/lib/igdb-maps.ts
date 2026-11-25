@@ -134,6 +134,14 @@ export function pickSeries(collections: { name: string; games?: number[] }[] | u
  * La historia de un juego de IGDB. La marca que se descarta es solo la «franchise»: si IGDB no la tiene,
  * la serie amplia no se toma por marca (si no, «Star Wars» saldría como historia y «Star Wars Jedi» como marca).
  */
-export function seriesForIgdbGame(g: { franchise?: { name: string }; franchises?: { name: string }[]; collections?: { name: string; games?: number[] }[] }): string | null {
-  return pickSeries(g.collections, g.franchise?.name ?? g.franchises?.[0]?.name ?? null);
+type IgdbSeriesInfo = { franchise?: { name: string }; franchises?: { name: string }[]; collections?: { name: string; games?: number[] }[] };
+export function seriesForIgdbGame(g: IgdbSeriesInfo & { version_parent?: IgdbSeriesInfo; parent_game?: IgdbSeriesInfo }): string | null {
+  const own = (x: IgdbSeriesInfo | undefined) => (x ? pickSeries(x.collections, x.franchise?.name ?? x.franchises?.[0]?.name ?? null) : null);
+  // Las ediciones y versiones no suelen tener serie en IGDB: la tiene su juego original.
+  return own(g) ?? own(g.version_parent) ?? own(g.parent_game);
 }
+
+const SERIES = ["franchise.name", "franchises.name", "collections.name", "collections.games"];
+/** Los campos de IGDB para elegir la historia: los del juego y, por si no tiene, los de su original. */
+export const SERIES_FIELDS = [...SERIES, ...SERIES.map((f) => `version_parent.${f}`), ...SERIES.map((f) => `parent_game.${f}`)].join(",");
+export const OWN_SERIES_FIELDS = SERIES.join(",");
