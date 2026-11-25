@@ -457,6 +457,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             startedAt: null,
             finishedAt: null,
             pastRuns: [],
+            series: null,
+            seriesOrder: null,
             lastPlayedAt: null,
             modes: [],
             moods: [],

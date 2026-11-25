@@ -63,7 +63,7 @@ export class LocalRepository implements Repository {
     const stored = await read(await this.getDb());
     // Solo lo que la app usa: lo que quede de versiones anteriores (como las listas) se deja atrás.
     // Los juegos guardados antes de las vueltas no las traen: sin vueltas anteriores.
-    const games = (stored?.games ?? []).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [] }));
+    const games = (stored?.games ?? []).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null }));
     this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [] };
     return structuredClone(this.data);
   }
