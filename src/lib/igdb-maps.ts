@@ -120,28 +120,68 @@ export function guessMoods(list: string[]): Mood[] {
 }
 
 /**
- * La historia de un juego entre sus series de IGDB: la que no se llama como su marca y, de esas, la de menos juegos
- * (Star Wars Jedi mejor que Star Wars). Si todas se llaman como la marca, esa; sin series, ninguna.
+ * Un juego de una serie de IGDB: su número o, si IGDB lo despliega, también los juegos que son él mismo
+ * (remakes, remasters, ports, versiones y contenido descargable).
  */
-export function pickSeries(collections: { name: string; games?: number[] }[] | undefined, brand: string | null): string | null {
-  if (!collections?.length) return null;
-  const same = (name: string) => brand != null && name.trim().toLowerCase() === brand.trim().toLowerCase();
-  const own = collections.filter((c) => !same(c.name)).sort((a, b) => (a.games?.length ?? Infinity) - (b.games?.length ?? Infinity));
-  return (own[0] ?? collections[0]).name;
+export type IgdbSeriesGame =
+  | number
+  | { id: number; remakes?: number[]; remasters?: number[]; ports?: number[]; version_parent?: number; parent_game?: number };
+export type IgdbCollection = { name: string; games?: IgdbSeriesGame[] };
+
+/**
+ * Si la serie es un solo juego: el original con sus remakes, remasters, ports, versiones y contenido (Ocarina of Time
+ * y su remake). Una secuela no lo es, aunque la serie se llame como el primero (Hades y Hades II).
+ */
+export function isSingleGame(c: IgdbCollection): boolean {
+  const games = c.games ?? [];
+  if (games.length < 2 || games.some((g) => typeof g === "number")) return false;
+  const root = new Map<number, number>();
+  for (const g of games) if (typeof g !== "number") root.set(g.id, g.id);
+  const find = (id: number): number => (root.get(id) === id ? id : find(root.get(id)!));
+  for (const g of games) {
+    if (typeof g === "number") continue;
+    const same = [...(g.remakes ?? []), ...(g.remasters ?? []), ...(g.ports ?? []), g.version_parent, g.parent_game];
+    for (const other of same) if (other != null && root.has(other)) root.set(find(other), find(g.id));
+  }
+  return new Set([...root.keys()].map(find)).size === 1;
 }
 
 /**
- * La historia de un juego de IGDB. La marca que se descarta es solo la «franchise»: si IGDB no la tiene,
- * la serie amplia no se toma por marca (si no, «Star Wars» saldría como historia y «Star Wars Jedi» como marca).
+ * La saga de un juego entre sus series de IGDB: la que no se llama como su franquicia y, de esas, la de menos juegos
+ * (Star Wars Jedi mejor que Star Wars). Las que son un solo juego no cuentan. Si todas se llaman como la franquicia,
+ * esa; si solo hay de un solo juego, la franquicia; sin series, ninguna.
  */
-type IgdbSeriesInfo = { franchise?: { name: string }; franchises?: { name: string }[]; collections?: { name: string; games?: number[] }[] };
-export function seriesForIgdbGame(g: IgdbSeriesInfo & { version_parent?: IgdbSeriesInfo; parent_game?: IgdbSeriesInfo }): string | null {
+export function pickSeries(collections: IgdbCollection[] | undefined, brand: string | null): string | null {
+  if (!collections?.length) return null;
+  const real = collections.filter((c) => !isSingleGame(c));
+  const same = (name: string) => brand != null && name.trim().toLowerCase() === brand.trim().toLowerCase();
+  const own = real.filter((c) => !same(c.name)).sort((a, b) => (a.games?.length ?? Infinity) - (b.games?.length ?? Infinity));
+  return (own[0] ?? real[0])?.name ?? brand;
+}
+
+/**
+ * La saga de un juego de IGDB. La franquicia que se descarta es solo la «franchise»: si IGDB no la tiene,
+ * la serie amplia no se toma por franquicia (si no, «Star Wars» saldría como saga y «Star Wars Jedi» como franquicia).
+ */
+type IgdbSeriesInfo = { franchise?: { name: string }; franchises?: { name: string }[]; collections?: IgdbCollection[] };
+type IgdbSeriesGameInfo = IgdbSeriesInfo & { version_parent?: IgdbSeriesInfo; parent_game?: IgdbSeriesInfo };
+export function seriesForIgdbGame(g: IgdbSeriesGameInfo): string | null {
   const own = (x: IgdbSeriesInfo | undefined) => (x ? pickSeries(x.collections, x.franchise?.name ?? x.franchises?.[0]?.name ?? null) : null);
   // Las ediciones y versiones no suelen tener serie en IGDB: la tiene su juego original.
   return own(g) ?? own(g.version_parent) ?? own(g.parent_game);
 }
 
-const SERIES = ["franchise.name", "franchises.name", "collections.name", "collections.games"];
-/** Los campos de IGDB para elegir la historia: los del juego y, por si no tiene, los de su original. */
-export const SERIES_FIELDS = [...SERIES, ...SERIES.map((f) => `version_parent.${f}`), ...SERIES.map((f) => `parent_game.${f}`)].join(",");
-export const OWN_SERIES_FIELDS = SERIES.join(",");
+/** Las series del juego (y de su original) que son un solo juego: si alguna se puso como saga, sobra. */
+export function singleGameSeries(g: IgdbSeriesGameInfo): string[] {
+  const all = [g, g.version_parent, g.parent_game].flatMap((x) => x?.collections ?? []);
+  return [...new Set(all.filter(isSingleGame).map((c) => c.name))];
+}
+
+const SAME_GAME = ["remakes", "remasters", "ports", "version_parent", "parent_game"].map((f) => `collections.games.${f}`);
+const SERIES = ["franchise.name", "franchises.name", "collections.name", ...SAME_GAME];
+const parents = (fields: string[]) => [...fields, ...fields.map((f) => `version_parent.${f}`), ...fields.map((f) => `parent_game.${f}`)];
+/** Los campos de IGDB para elegir la saga: los del juego y, por si no tiene, los de su original. */
+export const SERIES_FIELDS = parents(SERIES).join(",");
+/** Por si IGDB no acepta tanto: sin saber qué juegos de la serie son el mismo. */
+export const SIMPLE_SERIES_FIELDS = parents(["franchise.name", "franchises.name", "collections.name", "collections.games"]).join(",");
+export const OWN_SERIES_FIELDS = "franchise.name,franchises.name,collections.name,collections.games";

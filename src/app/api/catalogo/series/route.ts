@@ -4,7 +4,7 @@ import type { SeriesResponse } from "@/lib/catalog";
 import { igdbConfigured, seriesByIgdbIds } from "@/lib/igdb";
 import { authorizeRequest } from "@/lib/supabase/server";
 
-/* La historia (serie de IGDB) de un grupo de juegos, para rellenar las sagas. */
+/* La saga (serie de IGDB) de un grupo de juegos, para rellenar y limpiar las sagas. */
 
 const bodySchema = z.object({ igdbIds: z.array(z.number().int().positive().max(2_147_483_647)).min(1).max(50) });
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!body.success) return reply({ ok: false, reason: "error", message: "Petición no válida." }, 400);
 
   try {
-    return reply({ ok: true, series: await seriesByIgdbIds(body.data.igdbIds) });
+    return reply({ ok: true, ...(await seriesByIgdbIds(body.data.igdbIds)) });
   } catch {
     return reply({ ok: false, reason: "error", message: "No se pudo consultar el catálogo." }, 502);
   }

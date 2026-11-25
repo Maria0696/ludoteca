@@ -347,7 +347,7 @@ test("la nota de la crítica llega con las sugerencias y se puede traer después
 
 test("la ficha técnica llega con las sugerencias y solo rellena huecos", async ({ page }) => {
   const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null, criticRating: null };
-  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", saga: "Saga del mar", series: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
+  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", saga: "Franquicia del mar", series: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
   const empty = { summary: null, developer: null, saga: null, series: null, releaseDate: null, ageRating: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });
   let byId: object = catalog([{ ...game, ...empty, igdbId: 2, title: "Cr sin ficha" }]);
@@ -367,6 +367,7 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
   await addFromCatalog(page, "Cr con ficha");
   await expect(sheet.getByRole("button", { name: /^Sinopsis: Una historia de ejemplo/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Desarrolladora: Estudio Ola/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: /^Franquicia: Franquicia del mar/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Saga: Saga del mar/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Lanzamiento: .*2020/ })).toBeVisible();
   await expect(sheet.getByRole("button", { name: /^Edad: PEGI 16/ })).toBeVisible();

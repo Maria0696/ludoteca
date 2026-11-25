@@ -40,7 +40,7 @@ interface Actions {
   reload(): Promise<void>;
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
-  /** Varios cambios a la vez, guardados de una sola vez (p. ej. el orden de una historia). */
+  /** Varios cambios a la vez, guardados de una sola vez (p. ej. la cronología de una saga). */
   updateGames(patches: { id: string; patch: Partial<Game> }[]): void;
   setStatus(id: string, status: GameStatus): void;
   /** Empieza otra vuelta de un juego ya superado: lo terminado se guarda y no se pierde. */
@@ -194,7 +194,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ games }));
     };
     /**
-     * Un cambio a mano. Cambiar de historia saca al juego de su puesto en el orden de la anterior:
+     * Un cambio a mano. Cambiar de saga saca al juego de su puesto en la cronología de la anterior:
      * entra en la nueva al final, sin inventar un orden (salvo que el cambio diga ya su puesto).
      */
     const patched = (game: Game, patch: Partial<Game>): Game => {
@@ -243,7 +243,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ wishlist: [wish] }));
     };
     const findGame = (id: string) => libRef.current.games.find((g) => g.id === id);
-    /** Un juego que llega toma la historia y el puesto de su parada hueca, que desaparece (ver `absorbExtras`). */
+    /** Un juego que llega toma la saga y el puesto de su parada hueca, que desaparece (ver `absorbExtras`). */
     const absorb = (game: Game): { game: Game; dropped: string[] } => {
       const { games, dropped } = absorbExtras([game], libRef.current.extras);
       return { game: games[0], dropped };

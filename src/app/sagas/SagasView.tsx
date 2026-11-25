@@ -14,6 +14,7 @@ import type { Game, SagaExtra } from "@/lib/model";
 import { timesFinished } from "@/lib/runs";
 import {
   NO_STORY,
+  isNoStory,
   type Placement,
   type Proposal,
   type Story,
@@ -32,6 +33,7 @@ import {
 } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import { IgdbSearch } from "./IgdbSearch";
+import { useSagaCleanup } from "./useSagaCleanup";
 import styles from "./sagas.module.css";
 
 const ORDERS: { value: StoryOrder; label: string }[] = [
@@ -45,12 +47,13 @@ const yearOf = (date: string | null | undefined) => date?.slice(0, 4) ?? "—";
 const superado = (g: Game) => timesFinished(g) > 0 || g.status === "completado";
 
 /**
- * Sagas, como el mapa de niveles de la ficha: a un lado las historias; al otro, la abierta como un camino de
+ * Sagas, como el mapa de niveles de la ficha: a un lado las sagas; al otro, la abierta como un camino de
  * juego en juego, con los que no tienes en su sitio (parada hueca). La cronología la pone la propietaria
  * (arrastrando en el ordenador, con flechas en el móvil); la app no la inventa.
  */
 export function SagasView() {
   const { library, actions } = useLibrary();
+  useSagaCleanup();
   const params = useSearchParams();
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -71,19 +74,20 @@ export function SagasView() {
     ? stories.filter((s) => s.name.toLowerCase().includes(needle) || s.games.some((g) => g.title.toLowerCase().includes(needle)) || s.extras.some((x) => x.title.toLowerCase().includes(needle)))
     : stories;
   const groups = groupByBrand(visible);
-  // Sin elegir, la primera: el mapa siempre enseña una historia.
-  const open = stories.find((s) => s.name === params.get("historia")) ?? visible[0] ?? null;
+  // Sin elegir, la primera: el mapa siempre enseña una saga. Los enlaces de antes decían «historia».
+  const asked = params.get("saga") ?? params.get("historia");
+  const open = stories.find((s) => s.name === asked) ?? visible[0] ?? null;
   const unsorted = library.games.filter((g) => g.igdbId != null && !g.series?.trim());
-  // Los que se dejaron sin historia a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
-  const discarded = library.games.filter((g) => g.igdbId != null && g.series === NO_STORY);
-  const go = (name: string | null) => router.push(name ? `/sagas?historia=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
+  // Los que se dejaron sin saga a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
+  const discarded = library.games.filter((g) => g.igdbId != null && isNoStory(g.series));
+  const go = (name: string | null) => router.push(name ? `/sagas?saga=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
 
   const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
   const wished = (x: SagaExtra) => isWished(library.wishlist, x);
 
   /**
-   * Mete juegos en una historia: si lo tienes, entra como tuyo (y deja su historia anterior); si no, como «no lo
-   * tienes». Un juego solo está en una historia: si ya faltaba en otra, se mueve aquí.
+   * Mete juegos en una saga: si lo tienes, entra como tuyo (y deja su saga anterior); si no, como «no lo
+   * tienes». Un juego solo está en una saga: si ya faltaba en otra, se mueve aquí.
    */
   function placeInSaga(name: string, list: CatalogGame[]) {
     const games: { id: string; patch: { series: string } }[] = [];
@@ -107,7 +111,7 @@ export function SagasView() {
     toast(`«${c.title}» añadido a «${name}»`);
   }
 
-  /** La historia de IGDB de cada juego, por tandas. Si IGDB falla, lo dice y devuelve null. */
+  /** La saga de IGDB de cada juego, por tandas. Si IGDB falla, lo dice y devuelve null. */
   async function seriesOf(list: Game[]): Promise<Record<string, string | null> | null> {
     const found: Record<string, string | null> = {};
     const ids = list.map((g) => g.igdbId!);
@@ -145,7 +149,7 @@ export function SagasView() {
       if (old.length) {
         setProposals(old.map((p) => ({ ...p, add: false })));
         setAgain(true);
-      } else toast("IGDB no tiene historias nuevas para tus juegos.");
+      } else toast("IGDB no tiene sagas nuevas para tus juegos.");
     } catch {
       toast.error("No se pudo consultar el catálogo.");
     } finally {
@@ -155,12 +159,12 @@ export function SagasView() {
 
   function applyProposals() {
     if (!proposals) return;
-    // Lo que no se añade se queda en «Sin historia»: así no se vuelve a proponer (lo ya descartado, ni se toca).
+    // Lo que no se añade se queda en «Sin saga»: así no se vuelve a proponer (lo ya descartado, ni se toca).
     actions.updateGames(
       proposals.filter((p) => p.add || !again).flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { series: p.add ? p.name : NO_STORY } }))),
     );
     const added = proposals.filter((p) => p.add).length;
-    toast(added ? count(added, "historia añadida", "historias añadidas") : "No se ha añadido ninguna historia.");
+    toast(added ? count(added, "saga añadida", "sagas añadidas") : "No se ha añadido ninguna saga.");
     setProposals(null);
   }
 
@@ -212,7 +216,7 @@ export function SagasView() {
   const fetchButton = (primary: boolean) => (
     <button type="button" className={`btn ${primary ? "btn-ink" : ""}`} disabled={fetching || unsorted.length + discarded.length === 0} onClick={() => void fetchSeries()}>
       <DownloadCloud aria-hidden />
-      {fetching ? "Trayendo…" : "Traer historias de IGDB"}
+      {fetching ? "Trayendo…" : "Traer sagas de IGDB"}
     </button>
   );
   const newSagaButton = (
@@ -226,7 +230,7 @@ export function SagasView() {
     <div className={styles.page}>
       <header className={styles.head}>
         <h1 className="screen-title">Sagas</h1>
-        <p className={styles.lead}>Tus juegos por historia, en orden de lanzamiento o en su cronología.</p>
+        <p className={styles.lead}>Tus juegos por saga, en orden de lanzamiento o en su cronología.</p>
       </header>
 
       {stories.length === 0 ? (
@@ -245,15 +249,15 @@ export function SagasView() {
           </div>
           <div className={styles.blankText}>
             <h2>Tu primer mapa está por dibujar</h2>
-            <p>Junta en una historia los juegos de una misma saga (Resident Evil, Half-Life…) y decide en qué orden jugarlos: por lanzamiento o por su cronología.</p>
+            <p>Junta los juegos de una misma saga (Resident Evil, Half-Life…) y decide en qué orden jugarlos: por lanzamiento o por su cronología.</p>
             <div className={styles.blankActions}>
               {fetchButton(true)}
               {newSagaButton}
             </div>
             <p className={styles.hint}>
-              {unsorted.length ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué historias añadir.` : discarded.length
-                  ? `${count(discarded.length, "juego lo dejaste", "juegos los dejaste")} sin historia: Traer te ofrece recuperarlos.`
-                  : "Ninguno de tus juegos espera historia de IGDB."}
+              {unsorted.length ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué sagas añadir.` : discarded.length
+                  ? `${count(discarded.length, "juego lo dejaste", "juegos los dejaste")} sin saga: Traer te ofrece recuperarlos.`
+                  : "Ninguno de tus juegos espera saga de IGDB."}
             </p>
           </div>
         </section>
@@ -263,8 +267,8 @@ export function SagasView() {
             <div className={styles.tools}>
               <label className={styles.search}>
                 <Search aria-hidden />
-                <span className="sr-only">Buscar historia o juego</span>
-                <input className="input" type="search" placeholder="Buscar historia o juego" value={q} onChange={(e) => setQ(e.target.value)} />
+                <span className="sr-only">Buscar saga o juego</span>
+                <input className="input" type="search" placeholder="Buscar saga o juego" value={q} onChange={(e) => setQ(e.target.value)} />
               </label>
               <div className={styles.toolButtons}>
                 {fetchButton(false)}
@@ -279,7 +283,7 @@ export function SagasView() {
                   <ul className={styles.stories}>
                     {group.stories.map((story) => (
                       <li key={story.name}>
-                        <Link href={`/sagas?historia=${encodeURIComponent(story.name)}`} scroll={false} className={styles.row} aria-current={open?.name === story.name ? "true" : undefined}>
+                        <Link href={`/sagas?saga=${encodeURIComponent(story.name)}`} scroll={false} className={styles.row} aria-current={open?.name === story.name ? "true" : undefined}>
                           <strong>{story.name}</strong>
                           <span className={styles.meta}>
                             {count(story.games.length, "juego", "juegos")} · {story.games.filter(superado).length} superados
@@ -316,7 +320,7 @@ export function SagasView() {
               onDropGame={dropGame}
               onDropExtra={(x) => actions.deleteExtra(x.id)}
               onRename={(name) => {
-                // Si ya hay una historia con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
+                // Si ya hay una saga con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
                 const others = library.games.filter((g) => g.series?.trim() === name && !open.games.includes(g));
                 const merging = others.length > 0 || library.extras.some((x) => x.series === name);
                 actions.updateGames([
@@ -337,7 +341,7 @@ export function SagasView() {
       <Dialog
         open={proposals !== null}
         onClose={() => setProposals(null)}
-        title={again ? "Historias que descartaste" : `IGDB propone ${count(proposals?.length ?? 0, "historia", "historias")}`}
+        title={again ? "Sagas que descartaste" : `IGDB propone ${count(proposals?.length ?? 0, "saga", "sagas")}`}
         footer={
           proposals && (
             <>
@@ -345,7 +349,7 @@ export function SagasView() {
                 Cancelar
               </button>
               <button type="button" className="btn btn-ink" disabled={!proposals.some((p) => p.add)} onClick={applyProposals}>
-                Añadir {count(proposals.filter((p) => p.add).length, "historia", "historias")}
+                Añadir {count(proposals.filter((p) => p.add).length, "saga", "sagas")}
               </button>
             </>
           )
@@ -355,7 +359,7 @@ export function SagasView() {
           <div className={styles.review}>
             <p className={styles.hint}>
               {again
-                ? "IGDB no tiene historias nuevas para tus juegos. Estas las descartaste: marca las que quieras recuperar."
+                ? "IGDB no tiene sagas nuevas para tus juegos. Estas las descartaste: marca las que quieras recuperar."
                 : "Marca las que quieras añadir. Las demás no se añaden y no te las vuelve a proponer; siempre puedes ponerlas a mano en la ficha."}
             </p>
             <AllOrNone onAll={(add) => setProposals(proposals.map((p) => ({ ...p, add })))} />
@@ -548,7 +552,7 @@ function ProposalRow({
   );
 }
 
-/** La historia abierta como un camino: una parada por juego (los que no tienes, huecas), lo superado encendido y el siguiente marcado. */
+/** La saga abierta como un camino: una parada por juego (los que no tienes, huecas), lo superado encendido y el siguiente marcado. */
 function StoryMap({
   story,
   order,
@@ -594,9 +598,9 @@ function StoryMap({
   let ownPosition = 0;
 
   return (
-    <section className={`window ${styles.story}`} aria-labelledby="historia-abierta">
+    <section className={`window ${styles.story}`} aria-labelledby="saga-abierta">
       <div className={styles.titleLine}>
-        <h2 id="historia-abierta">{story.name}</h2>
+        <h2 id="saga-abierta">{story.name}</h2>
         {!renaming && (
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setRenaming(true)}>
             <Pencil aria-hidden />
@@ -614,7 +618,7 @@ function StoryMap({
             if (name && name !== story.name) onRename(name);
           }}
         >
-          <input className="input" name="nombre" aria-label="Nombre de la historia" defaultValue={story.name} maxLength={200} autoFocus onKeyDown={(e) => e.key === "Escape" && setRenaming(false)} />
+          <input className="input" name="nombre" aria-label="Nombre de la saga" defaultValue={story.name} maxLength={200} autoFocus onKeyDown={(e) => e.key === "Escape" && setRenaming(false)} />
           <button type="submit" className="btn btn-sm">
             Guardar
           </button>
@@ -645,7 +649,7 @@ function StoryMap({
         )}
       </p>
 
-      <ol className={styles.map} aria-label="Juegos de la historia">
+      <ol className={styles.map} aria-label="Juegos de la saga">
         {stops.map((stop, i) => {
           const isGame = stop.kind === "juego";
           const title = isGame ? stop.game.title : stop.extra.title;
@@ -771,8 +775,8 @@ function StoryMap({
             ¿Quitar la saga «{story.name}»?
             {story.games.length > 0 &&
               (story.games.length === 1
-                ? " Su juego se queda en tu biblioteca; solo deja de estar en una historia."
-                : ` Sus ${story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una historia.`)}
+                ? " Su juego se queda en tu biblioteca; solo deja de estar en una saga."
+                : ` Sus ${story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una saga.`)}
             {story.extras.length > 0 &&
               (story.extras.length === 1 ? " El que no tienes desaparece con ella." : ` Los ${story.extras.length} que no tienes desaparecen con ella.`)}{" "}
             Traer de IGDB no la vuelve a proponer.

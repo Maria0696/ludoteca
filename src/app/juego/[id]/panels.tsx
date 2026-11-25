@@ -6,7 +6,7 @@ import { TROPHY_URL } from "@/components/pixel/sprites";
 import { daysBetween } from "@/lib/backup-reminder";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
-import { NO_STORY, storyOf } from "@/lib/sagas";
+import { NO_STORY, isNoStory, storyOf } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import {
   type Copy,
@@ -476,7 +476,7 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
 /** Lo que el catálogo sabe del juego. Cada hueco tiene su botón: lo que hayas corregido se queda. */
 export function TechSheet({ game, update }: { game: Game; update: Update }) {
   const { library } = useLibrary();
-  // Las historias que ya existen, para elegir una al escribir.
+  // Las sagas que ya existen, para elegir una al escribir.
   const stories = [...new Set(library.games.flatMap((g) => storyOf(g) ?? []))].sort((a, b) => a.localeCompare(b, "es"));
   const bring = (what: string, field: "summary" | "developer" | "saga" | "series" | "releaseDate" | "ageRating") =>
     game.igdbId != null &&
@@ -490,11 +490,12 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
           quiet
           label={label}
           value={game[field]}
-          display={game[field] ?? null}
+          // «Sin historia» es como se llamaba antes «Sin saga».
+          display={field === "series" && isNoStory(game.series) ? NO_STORY : (game[field] ?? null)}
           empty="Añadir"
           maxLength={200}
           suggestions={suggestions}
-          // Quitar la historia a mano la deja en «Sin historia»: así traer de IGDB no la vuelve a poner.
+          // Quitar la saga a mano la deja en «Sin saga»: así traer de IGDB no la vuelve a poner.
           onSave={(v) => update({ [field]: field === "series" && !v && game.series ? NO_STORY : v })}
         />
         {bring(label.toLowerCase(), field)}
@@ -513,9 +514,9 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
       </div>
       <dl className={styles.stats}>
         {text("Desarrolladora", "developer")}
-        {text("Saga", "saga")}
-        {/* La historia dentro de la saga, para la pantalla Sagas (Star Wars Jedi dentro de Star Wars). */}
-        {text("Historia", "series", stories)}
+        {text("Franquicia", "saga")}
+        {/* La saga dentro de la franquicia, para la pantalla Sagas (Star Wars Jedi dentro de Star Wars). */}
+        {text("Saga", "series", stories)}
         <Row label="Lanzamiento">
           <div className={styles.fieldLine}>
             <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />
