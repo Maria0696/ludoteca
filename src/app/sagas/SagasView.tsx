@@ -10,7 +10,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { StatusMark } from "@/components/ui/StatusMark";
 import type { CatalogGame, SeriesGamesResponse, SeriesResponse } from "@/lib/catalog";
 import { useLocalChoice } from "@/lib/local-choice";
-import { type Game, type SagaExtra, normalizeTitle } from "@/lib/model";
+import type { Game, SagaExtra } from "@/lib/model";
 import { timesFinished } from "@/lib/runs";
 import {
   NO_STORY,
@@ -19,7 +19,9 @@ import {
   type Story,
   type StoryOrder,
   buildStories,
+  findOwned,
   groupByBrand,
+  isWished,
   missingFrom,
   moveInStory,
   nextInStory,
@@ -72,9 +74,8 @@ export function SagasView() {
   const unsorted = library.games.filter((g) => g.igdbId != null && !g.series?.trim());
   const go = (name: string | null) => router.push(name ? `/sagas?historia=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
 
-  const ownedMatch = (c: { igdbId?: number | null; title: string }) =>
-    library.games.find((g) => c.igdbId != null && g.igdbId === c.igdbId) ?? library.games.find((g) => normalizeTitle(g.title) === normalizeTitle(c.title));
-  const wished = (x: SagaExtra) => library.wishlist.some((w) => (x.igdbId != null && w.igdbId === x.igdbId) || normalizeTitle(w.title) === normalizeTitle(x.title));
+  const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
+  const wished = (x: SagaExtra) => isWished(library.wishlist, x);
 
   /** Mete un juego en una historia: si lo tienes, entra como tuyo (y deja su historia anterior); si no, como «no lo tienes». */
   function addToStory(name: string, c: CatalogGame) {

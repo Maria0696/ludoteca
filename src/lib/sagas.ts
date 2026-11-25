@@ -1,4 +1,4 @@
-import type { Game, SagaExtra } from "./model";
+import { type Game, type SagaExtra, normalizeTitle } from "./model";
 import { timesFinished } from "./runs";
 
 /*
@@ -154,4 +154,41 @@ export function storyPosition(game: Game, games: Game[], extras: SagaExtra[] = [
   if (!story) return null;
   const ordered = orderStory(story, "historia");
   return { name: story.name, position: ordered.findIndex((g) => g.id === game.id) + 1, total: ordered.length };
+}
+
+type Titled = { igdbId?: number | null; title: string };
+/** Mismo juego: por número de IGDB; por título solo si a uno de los dos le falta el número (así un remake no pasa por el original). */
+const sameGame = (a: Titled, b: Titled) =>
+  a.igdbId != null && b.igdbId != null ? a.igdbId === b.igdbId : normalizeTitle(a.title) === normalizeTitle(b.title);
+
+/** El juego tuyo que es este, si lo tienes. */
+export function findOwned(games: Game[], c: Titled): Game | undefined {
+  return games.find((g) => sameGame(g, c));
+}
+
+/** Si este juego ya está en tus deseos. */
+export function isWished(wishlist: Titled[], x: Titled): boolean {
+  return wishlist.some((w) => sameGame(w, x));
+}
+
+/**
+ * Juegos que llegan a la biblioteca y estaban en una saga como «no lo tienes» (mismo número de IGDB): toman la
+ * historia y el puesto de esa parada, aunque IGDB les dé otra. Devuelve también las paradas que sobran.
+ */
+export function absorbExtras(games: Game[], extras: SagaExtra[]): { games: Game[]; dropped: string[] } {
+  const dropped = new Set<string>();
+  const out = games.map((g) => {
+    const matches = g.igdbId == null ? [] : extras.filter((x) => x.igdbId === g.igdbId);
+    if (!matches.length) return g;
+    for (const x of matches) dropped.add(x.id);
+    const [x] = matches;
+    return { ...g, series: x.series, seriesOrder: x.seriesOrder ?? null, releaseDate: g.releaseDate ?? x.releaseDate ?? null };
+  });
+  return { games: out, dropped: [...dropped] };
+}
+
+/** Paradas huecas de juegos que ya tienes: sobran. */
+export function ownedExtras(extras: SagaExtra[], games: Game[]): string[] {
+  const owned = new Set(games.flatMap((g) => (g.igdbId != null ? [g.igdbId] : [])));
+  return extras.filter((x) => x.igdbId != null && owned.has(x.igdbId)).map((x) => x.id);
 }

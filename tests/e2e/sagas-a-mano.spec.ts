@@ -1,7 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Game, type SagaExtra, createGame, emptyLibrary } from "../../src/lib/model";
-import { buildStories, missingFrom, orderStory, placeInStory, storyStops } from "../../src/lib/sagas";
+import { absorbExtras, buildStories, findOwned, isWished, missingFrom, orderStory, ownedExtras, placeInStory, storyStops } from "../../src/lib/sagas";
 import { loadDemo, openApp } from "./helpers";
 
 /* Sagas a mano: juegos de una saga que no tienes (guardados aparte), buscados en IGDB, con «Añadir a deseos». */
@@ -215,4 +215,59 @@ test("nueva saga: nombre y sus primeros juegos, buscándolos", async ({ page }) 
   await expect(page).toHaveURL(/historia=Mi%20saga/);
   await expect(stopsOf(page)).toHaveCount(2);
   await expect(stopsOf(page).filter({ hasText: "Juego nuevo" })).toContainText("No lo tienes");
+  // La ficha de Hades lleva a su saga, aunque el otro juego no lo tengas.
+  await stopsOf(page).getByRole("link", { name: "Hades" }).click();
+  await expect(page.getByRole("link", { name: "Historia: Mi saga · 1 de 1" })).toBeVisible();
+});
+
+test("un juego que llega toma la historia y el puesto de su parada hueca, aunque IGDB le dé otra", () => {
+  const hollow = extra({ series: "Prueba", title: "Hades II", igdbId: 555, seriesOrder: 2 });
+  const twin = extra({ series: "Otra", title: "Hades II", igdbId: 555 });
+  const arriving = game("Hades II", { igdbId: 555, series: "Supergiant" });
+  const { games, dropped } = absorbExtras([arriving], [hollow, twin]);
+  expect(games[0].series).toBe("Prueba");
+  expect(games[0].seriesOrder).toBe(2);
+  expect(dropped.sort()).toEqual([hollow.id, twin.id].sort());
+  // Al revés: una parada hueca de algo que ya tienes sobra.
+  expect(ownedExtras([hollow], [arriving])).toEqual([hollow.id]);
+});
+
+test("«Ya lo tienes» y «En deseos» no confunden un remake con el original", () => {
+  const original = game("Resident Evil 4", { igdbId: 100 });
+  const manual = game("Okami", { igdbId: null });
+  expect(findOwned([original], { igdbId: 200, title: "Resident Evil 4" })).toBeUndefined();
+  expect(findOwned([original], { igdbId: 100, title: "RE4" })?.id).toBe(original.id);
+  // Sin número de IGDB, cuenta el título.
+  expect(findOwned([manual], { igdbId: 300, title: "Ōkami" })?.id).toBe(manual.id);
+  const wish = { igdbId: 100, title: "Resident Evil 4" };
+  expect(isWished([wish], { igdbId: 200, title: "Resident Evil 4" })).toBe(false);
+  expect(isWished([{ igdbId: null, title: "Resident Evil 4" }], { igdbId: 200, title: "Resident Evil 4" })).toBe(true);
+});
+
+test("añadir desde el catálogo un juego que estaba como parada hueca lo pone en su sitio", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } }, { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
+  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), series: "Supergiant" }] } }));
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  await dialog.getByLabel("Título").fill("ha");
+  await dialog.getByRole("option", { name: /Hades II/ }).click();
+  await dialog.getByRole("button", { name: "Añadir a la biblioteca" }).click();
+  await expect(dialog.getByRole("button", { name: "Ver ficha" })).toBeVisible();
+  await openApp(page, "/sagas?historia=Prueba");
+  await expect(stopsOf(page)).toHaveCount(3);
+  await expect(stopsOf(page).filter({ hasText: "No lo tienes" })).toHaveCount(0);
+});
+
+test("una copia de seguridad que solo trae juegos que no tienes se puede importar", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  const backup = { app: "ludoteca", version: 1, exportedAt: stamp, data: { games: [], copies: [], wishlist: [], extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] } };
+  await openApp(page, "/importar?origen=copia");
+  await page.getByTestId("importar-archivo").setInputFiles({ name: "copia.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
+  await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
+  await expect(page.getByRole("heading", { name: "Copia terminada" })).toBeVisible();
+  await openApp(page, "/sagas?historia=Prueba");
+  await expect(stopsOf(page).filter({ hasText: "Hades II" })).toContainText("No lo tienes");
 });

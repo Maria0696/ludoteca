@@ -109,7 +109,7 @@ export function GameDetail({ id }: { id: string }) {
 
   const reached = reachedStages(game, copies);
   // Su puesto en la historia de su saga, si la historia tiene dos o más juegos.
-  const story = storyPosition(game, library.games);
+  const story = storyPosition(game, library.games, library.extras);
   const update = (patch: Parameters<typeof actions.updateGame>[1]) => actions.updateGame(game.id, patch);
 
   const toggle100 = () => {

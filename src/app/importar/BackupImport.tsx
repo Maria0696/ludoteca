@@ -49,8 +49,9 @@ export function BackupImport() {
     games: changes.games.filter((g) => library.games.find((x) => x.id === g.id)?.updatedAt !== g.updatedAt),
     copies: changes.copies.filter((c) => !library.copies.some((x) => x.id === c.id)),
     wishlist: changes.wishlist.filter((w) => library.wishlist.find((x) => x.id === w.id)?.updatedAt !== w.updatedAt),
+    extras: changes.extras,
   };
-  const incoming = fresh ? fresh.games.length + fresh.copies.length + fresh.wishlist.length : 0;
+  const incoming = fresh ? fresh.games.length + fresh.copies.length + fresh.wishlist.length + fresh.extras.length : 0;
 
   async function readFile(file: File | undefined) {
     if (!file) return;
@@ -75,7 +76,7 @@ export function BackupImport() {
     try {
       await actions.applyChanges(changes);
       // El resumen cuenta lo que de verdad ha entrado o cambiado, no lo que ya era igual.
-      toast(`Importado: ${summary({ games: fresh.games.length, copies: fresh.copies.length, wishlist: fresh.wishlist.length })}`);
+      toast(`Importado: ${summary({ games: fresh.games.length, copies: fresh.copies.length, wishlist: fresh.wishlist.length, extras: fresh.extras.length })}`);
       setResult({ ...changes, ...fresh });
       setPhase("hecho");
     } catch (e) {
@@ -170,7 +171,7 @@ export function BackupImport() {
                 </div>
                 <div className={styles.list}>
                   <p className={backupStyles.summary}>
-                    Archivo del {new Date(plan.backup.exportedAt).toLocaleString("es-ES")}. Nuevo: {summary(n!)}.
+                    Archivo del {new Date(plan.backup.exportedAt).toLocaleString("es-ES")}. Nuevo: {summary({ ...n!, extras: plan.newExtras.length })}.
                     {plan.identical > 0 && ` ${plan.identical} elementos ya los tienes iguales y se dejan como están.`}
                   </p>
                   {plan.conflicts.length > 0 && (
@@ -262,7 +263,7 @@ export function BackupImport() {
       {phase === "hecho" && result && (
         <section className={styles.done} role="status">
           <h2>Copia terminada</h2>
-          <p>Copiados {summary({ games: result.games.length, copies: result.copies.length, wishlist: result.wishlist.length })}.</p>
+          <p>Copiados {summary({ games: result.games.length, copies: result.copies.length, wishlist: result.wishlist.length, extras: result.extras.length })}.</p>
           <div className={styles.doneActions}>
             <Link href="/biblioteca" className={styles.go}>
               Ver la biblioteca
