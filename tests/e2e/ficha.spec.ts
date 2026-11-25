@@ -347,8 +347,8 @@ test("la nota de la crítica llega con las sugerencias y se puede traer después
 
 test("la ficha técnica llega con las sugerencias y solo rellena huecos", async ({ page }) => {
   const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], modes: [], moods: [], lengthHours: null, criticRating: null };
-  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", franchise: "Franquicia del mar", saga: "Saga del mar", releaseDate: "2020-09-17", ageRating: "PEGI 16" };
-  const empty = { summary: null, developer: null, franchise: null, saga: null, releaseDate: null, ageRating: null };
+  const details = { summary: "Una historia de ejemplo.", developer: "Estudio Ola", franchise: "Franquicia del mar", saga: "Saga del mar", gameType: "main", baseGame: null, releaseDate: "2020-09-17", ageRating: "PEGI 16" };
+  const empty = { summary: null, developer: null, franchise: null, saga: null, gameType: null, baseGame: null, releaseDate: null, ageRating: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });
   let byId: object = catalog([{ ...game, ...empty, igdbId: 2, title: "Cr sin ficha" }]);
   await page.route("**/api/catalogo?*", (route) => {
@@ -407,7 +407,7 @@ test("la ficha técnica llega con las sugerencias y solo rellena huecos", async 
 });
 
 test("«Para elegir» trae de IGDB solo lo que falta y distingue un fallo de un dato que no existe", async ({ page }) => {
-  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], criticRating: null, summary: null, developer: null, franchise: null, saga: null, releaseDate: null, ageRating: null };
+  const game = { year: 2020, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"], criticRating: null, summary: null, developer: null, franchise: null, saga: null, gameType: null, baseGame: null, releaseDate: null, ageRating: null };
   const bare = { ...game, igdbId: 3, title: "Cr para elegir", modes: [], moods: [], lengthHours: null };
   const noLength = { ...game, igdbId: 4, title: "Cr sin duración", modes: ["solo"], moods: ["accion"], lengthHours: null };
   const catalog = (results: object[]) => ({ json: { ok: true, results } });
@@ -648,4 +648,40 @@ test("en el ordenador, «Ficha técnica» y «Más datos» se ven abiertos, sin 
   await cards(page).getByRole("link", { name: /Stardew/ }).first().click();
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByText("Desarrolladora")).toBeVisible();
   await expect(page.getByRole("button", { name: /^(Mostrar|Ocultar) (Ficha técnica|Más datos)$/ })).toHaveCount(0);
+});
+
+
+test("el tipo de juego se ve al buscar, llega a la ficha y se trae de IGDB si falta", async ({ page }) => {
+  const game = { year: 2023, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PS5"], modes: [], moods: [], lengthHours: null, criticRating: null };
+  const details = { summary: null, developer: null, franchise: null, saga: null, releaseDate: null, ageRating: null };
+  const catalog = (results: object[]) => ({ json: { ok: true, results } });
+  await page.route("**/api/catalogo?*", (route) => {
+    if (new URL(route.request().url()).searchParams.has("id")) return route.fulfill(catalog([{ ...game, ...details, igdbId: 2, title: "Cr base", gameType: "main", baseGame: null }]));
+    return route.fulfill(
+      catalog([
+        { ...game, ...details, igdbId: 1, title: "Cr Valhalla", gameType: "dlc", baseGame: "Cr Ragnarök" },
+        { ...game, ...details, igdbId: 2, title: "Cr base", gameType: null, baseGame: null },
+      ]),
+    );
+  });
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Añadir juego" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Añadir juego" });
+  await dialog.getByLabel("Título").fill("cr");
+  await expect(dialog.getByRole("option", { name: /Cr Valhalla/ })).toContainText("DLC");
+  await page.keyboard.press("Escape");
+
+  await addFromCatalog(page, "Cr Valhalla");
+  const sheet = page.getByRole("region", { name: "Ficha técnica" });
+  await expect(sheet.getByRole("combobox", { name: "Tipo" })).toHaveValue("dlc");
+  await expect(sheet).toContainText("de Cr Ragnarök");
+
+  // Sin tipo, se trae de IGDB; y también se puede poner a mano.
+  await page.goto("/biblioteca");
+  await addFromCatalog(page, "Cr base");
+  await sheet.getByRole("button", { name: "Traer de IGDB: tipo" }).click();
+  await expect(sheet.getByRole("combobox", { name: "Tipo" })).toHaveValue("main");
+  await sheet.getByRole("combobox", { name: "Tipo" }).selectOption("remaster");
+  await page.reload();
+  await expect(sheet.getByRole("combobox", { name: "Tipo" })).toHaveValue("remaster");
 });

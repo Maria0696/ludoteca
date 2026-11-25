@@ -75,6 +75,27 @@ export const DEFAULT_PLATFORMS = PLATFORM_FAMILIES.flatMap((family) => family.pl
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha con formato AAAA-MM-DD");
 const optionalText = z.string().trim().max(2000).nullish();
 
+/** Qué es el juego, con los tipos de IGDB (y «edición» para las versiones de otro juego: Definitive, GOTY…). */
+export const GAME_TYPES = [
+  "main",
+  "dlc",
+  "expansion",
+  "standalone_expansion",
+  "bundle",
+  "remake",
+  "remaster",
+  "expanded",
+  "port",
+  "edition",
+  "episode",
+  "season",
+  "pack",
+  "update",
+  "mod",
+  "fork",
+] as const;
+export type GameType = (typeof GAME_TYPES)[number];
+
 export const gameSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1, "El título es obligatorio").max(200),
@@ -107,6 +128,10 @@ export const gameSchema = z.object({
   sagaOrder: z.number().int().min(1).max(10000).nullish(),
   /** Quitado del apartado Sagas (él o su saga entera): la ficha conserva su saga; Traer lo vuelve a proponer. */
   sagaHidden: z.boolean().optional(),
+  /** Qué es: juego base, DLC, remake, remaster… */
+  gameType: z.enum(GAME_TYPES).nullish(),
+  /** De qué juego es, si es DLC, expansión, edición…: «God of War Ragnarök». */
+  baseGame: optionalText,
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
@@ -186,6 +211,7 @@ export const sagaExtraSchema = z.object({
   sagaOrder: z.number().int().min(1).max(10000).nullish(),
   /** Su saga se quitó del apartado Sagas: se guarda para cuando vuelva. */
   hidden: z.boolean().optional(),
+  gameType: z.enum(GAME_TYPES).nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),

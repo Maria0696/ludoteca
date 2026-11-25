@@ -10,7 +10,8 @@ import { Dialog } from "@/components/ui/Dialog";
 import { StatusMark } from "@/components/ui/StatusMark";
 import type { CatalogGame, SeriesGamesResponse, SeriesResponse } from "@/lib/catalog";
 import { useLocalChoice } from "@/lib/local-choice";
-import type { Game, SagaExtra } from "@/lib/model";
+import { gameTypeLabel } from "@/lib/game-type";
+import type { Game, GameType, SagaExtra } from "@/lib/model";
 import { timesFinished } from "@/lib/runs";
 import {
   NO_STORY,
@@ -45,6 +46,8 @@ const BATCH = 50;
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const yearOf = (date: string | null | undefined) => date?.slice(0, 4) ?? "—";
+/** En el mapa, el tipo solo si no es juego base (casi todos lo son). */
+const kindOf = (type: GameType | null | undefined) => (type && type !== "main" ? `${gameTypeLabel(type)} · ` : "");
 const superado = (g: Game) => timesFinished(g) > 0 || g.status === "completado";
 
 /**
@@ -109,7 +112,8 @@ export function SagasView() {
     }
     if (games.length) actions.updateGames(games);
     if (moved.length) actions.updateExtras(moved);
-    if (added.length) actions.addExtras(added.map((c) => ({ saga: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, sagaOrder: null })));
+    if (added.length)
+      actions.addExtras(added.map((c) => ({ saga: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, gameType: c.gameType ?? null, sagaOrder: null })));
   }
 
   function addToStory(name: string, c: CatalogGame) {
@@ -759,10 +763,13 @@ function StoryMap({
                 <span className={styles.stopMeta}>
                   {isGame ? (
                     <>
-                      {yearOf(stop.game.releaseDate)} · <StatusMark status={stop.game.status} />
+                      {yearOf(stop.game.releaseDate)} · {kindOf(stop.game.gameType)}
+                      <StatusMark status={stop.game.status} />
                     </>
                   ) : (
-                    <span className={styles.missingTag}>{yearOf(stop.extra.releaseDate)} · No lo tienes</span>
+                    <span className={styles.missingTag}>
+                      {yearOf(stop.extra.releaseDate)} · {kindOf(stop.extra.gameType)}No lo tienes
+                    </span>
                   )}
                 </span>
                 {isNext && <span className={styles.nextTag}>▶ Siguiente</span>}

@@ -119,7 +119,7 @@ test("lo que falta en IGDB descarta lo que ya tienes o ya está", () => {
 /** Un juego del catálogo, como lo devuelve /api/catalogo. */
 const catalogGame = (igdbId: number, title: string, releaseDate: string | null = null) => ({
   igdbId, title, year: releaseDate ? Number(releaseDate.slice(0, 4)) : null, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"],
-  modes: [], moods: [], lengthHours: null, criticRating: null, summary: null, developer: null, franchise: null, saga: null, releaseDate, ageRating: null,
+  modes: [], moods: [], lengthHours: null, criticRating: null, summary: null, developer: null, franchise: null, saga: null, gameType: null, baseGame: null, releaseDate, ageRating: null,
 });
 const stopsOf = (page: Page) => page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem");
 
@@ -412,4 +412,36 @@ test("las copias de seguridad van en el formato 2, con franquicia y saga; las de
   expect([a.franchise, a.saga, a.sagaOrder]).toEqual(["Star Wars", "Star Wars Jedi", 2]);
   expect([b.franchise, b.saga]).toEqual([null, "Sin saga"]);
   expect(parsed.backup.data.extras.map((x) => [x.saga, x.sagaOrder])).toEqual([["Star Wars Jedi", 1]]);
+});
+
+
+test("en el mapa, los que no son juego base dicen qué son, también al buscarlos para añadir", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { saga: "Prueba", gameType: "main" }, Celeste: { saga: "Prueba", gameType: "remake" } });
+  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), gameType: "dlc" }] } }));
+  await openApp(page, "/sagas?saga=Prueba");
+  await expect(stopsOf(page).filter({ hasText: "Celeste" })).toContainText("Remake");
+  await expect(stopsOf(page).filter({ hasText: "Hades" })).not.toContainText("Juego base");
+  await page.getByRole("button", { name: "Añadir a la saga" }).click();
+  const dialog = page.getByRole("dialog", { name: /^Añadir a «Prueba»/ });
+  await dialog.getByRole("searchbox", { name: "Buscar en IGDB" }).fill("hades");
+  await expect(dialog.getByRole("button", { name: /^Hades II/ })).toContainText("DLC");
+  await dialog.getByRole("button", { name: /^Hades II/ }).click();
+  await expect(stopsOf(page).filter({ hasText: "Hades II" })).toContainText("DLC");
+});
+
+test("Ajustes completa desde IGDB el tipo de los juegos que no lo tienen", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { igdbId: 101 }, Celeste: { igdbId: 102 }, "Hollow Knight": { igdbId: 103, gameType: "remaster" } });
+  let asked: number[] = [];
+  await page.route("**/api/catalogo/tipos", async (route) => {
+    asked = (route.request().postDataJSON() as { igdbIds: number[] }).igdbIds;
+    await route.fulfill({ json: { ok: true, types: { "101": { gameType: "dlc", baseGame: "Algo" }, "102": { gameType: "main", baseGame: null } } } });
+  });
+  await openApp(page, "/ajustes?apartado=traer");
+  await page.getByRole("button", { name: "Completar el tipo desde IGDB (2 juegos)" }).click();
+  await expect(page.getByText("Tipo completado en 2 juegos")).toBeVisible();
+  // Solo se piden los que no tienen tipo.
+  expect(asked.sort()).toEqual([101, 102]);
+  await expect(page.getByRole("button", { name: /^Completar el tipo desde IGDB/ })).toHaveCount(0);
 });

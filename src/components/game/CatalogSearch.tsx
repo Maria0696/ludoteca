@@ -2,6 +2,7 @@
 
 import { Info } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { gameTypeLabel } from "@/lib/game-type";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { Cover } from "../ui/Cover";
 import styles from "./game.module.css";
@@ -138,7 +139,7 @@ export function TitleWithCatalog({
               <Cover src={g.coverUrl} title={g.title} caption="" className={styles.catalogCover} />
               <span>
                 <strong>{g.title}</strong>
-                <small>{[g.year, g.platforms.slice(0, 4).join(", ")].filter(Boolean).join(" · ")}</small>
+                <small>{[g.year, gameTypeLabel(g.gameType), g.platforms.slice(0, 4).join(", ")].filter(Boolean).join(" · ")}</small>
               </span>
             </li>
           ))}

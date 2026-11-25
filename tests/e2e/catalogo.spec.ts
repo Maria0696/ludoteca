@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { CatalogGame } from "../../src/lib/catalog";
 import { catalogNameQuery, catalogSearchQuery, rankCatalogResults, searchCatalog } from "../../src/lib/catalog-search";
+import { baseGameOf, gameTypeOf } from "../../src/lib/igdb-maps";
 
 function game(igdbId: number, title: string): CatalogGame {
   return {
@@ -19,6 +20,8 @@ function game(igdbId: number, title: string): CatalogGame {
     developer: null,
     franchise: null,
     saga: null,
+    gameType: null,
+    baseGame: null,
     releaseDate: null,
     ageRating: null,
   };
@@ -80,3 +83,19 @@ test.describe("búsqueda por nombre cuando IGDB no trae el título exacto", () =
   });
 });
 
+
+
+test("el tipo de juego de IGDB: base, DLC, remake, remaster, colección… y de qué juego es", () => {
+  expect(gameTypeOf({ game_type: 0 })).toBe("main");
+  expect(gameTypeOf({ game_type: 1, parent_game: { name: "God of War Ragnarök" } })).toBe("dlc");
+  expect(gameTypeOf({ game_type: 3 })).toBe("bundle");
+  expect(gameTypeOf({ game_type: 8 })).toBe("remake");
+  expect(gameTypeOf({ game_type: 9 })).toBe("remaster");
+  // Una edición (Definitive, GOTY…) es una versión de otro juego.
+  expect(gameTypeOf({ game_type: 0, version_parent: { name: "The Witcher 3" } })).toBe("edition");
+  expect(gameTypeOf({})).toBeNull();
+  expect(gameTypeOf({ game_type: 99 })).toBeNull();
+  expect(baseGameOf({ game_type: 1, parent_game: { name: "God of War Ragnarök" } })).toBe("God of War Ragnarök");
+  expect(baseGameOf({ version_parent: { name: "The Witcher 3" } })).toBe("The Witcher 3");
+  expect(baseGameOf({ game_type: 0 })).toBeNull();
+});

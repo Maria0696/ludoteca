@@ -15,6 +15,7 @@ import { useLocalChoice } from "@/lib/local-choice";
 import { PISTAS_MODES, PISTAS_MODE_KEY, type PistasMode } from "@/lib/pistas";
 import { useLibrary } from "@/lib/store";
 import { TITLE_MODES, TITLE_MODE_KEY, type TitleMode } from "@/lib/title-screen";
+import { CompleteTypes } from "./CompleteTypes";
 import { DeleteAllGames } from "./DeleteAllGames";
 import { SETTINGS_ICON_URL, type SettingsIcon } from "./icons";
 import styles from "./settings.module.css";
@@ -173,20 +174,23 @@ export function SettingsView() {
           )}
 
           {current === "traer" && (
-            <ul className={styles.sources}>
-              <li>
-                <Link href="/importar?origen=copia">
-                  <b>Copia de seguridad</b>
-                  <span>Recuperar tu partida guardada</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/importar?origen=steam">
-                  <b>Steam</b>
-                  <span>Tus juegos y tus horas</span>
-                </Link>
-              </li>
-            </ul>
+            <>
+              <ul className={styles.sources}>
+                <li>
+                  <Link href="/importar?origen=copia">
+                    <b>Copia de seguridad</b>
+                    <span>Recuperar tu partida guardada</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/importar?origen=steam">
+                    <b>Steam</b>
+                    <span>Tus juegos y tus horas</span>
+                  </Link>
+                </li>
+              </ul>
+              <CompleteTypes />
+            </>
           )}
 
           {current === "pantalla" && (

@@ -11,11 +11,14 @@ import { useLibrary } from "@/lib/store";
 import {
   type Copy,
   type Game,
+  type GameType,
   FORMAT_LABEL,
+  GAME_TYPES,
   MODE_LABEL,
   MOOD_LABEL,
   todayIso,
 } from "@/lib/model";
+import { GAME_TYPE_LABEL } from "@/lib/game-type";
 import styles from "./adventure.module.css";
 import { Editable } from "./Editable";
 import { Row } from "./Inventory";
@@ -516,6 +519,32 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
         {text("Franquicia", "franchise")}
         {/* La saga dentro de la franquicia, para la pantalla Sagas (Star Wars Jedi dentro de Star Wars). */}
         {text("Saga", "saga", stories)}
+        <Row label="Tipo">
+          <div className={styles.fieldLine}>
+            <select
+              className={styles.statSelect}
+              aria-label="Tipo"
+              value={game.gameType ?? ""}
+              onChange={(e) => update({ gameType: (e.target.value || null) as GameType | null })}
+            >
+              <option value="">Sin indicar</option>
+              {GAME_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {GAME_TYPE_LABEL[type]}
+                </option>
+              ))}
+            </select>
+            {game.baseGame && <span className={styles.statNote}>de {game.baseGame}</span>}
+            {game.igdbId != null && !game.gameType && (
+              <FillFromIgdb
+                igdbId={game.igdbId}
+                what="tipo"
+                update={update}
+                read={(found) => (found.gameType ? { gameType: found.gameType, baseGame: game.baseGame ?? found.baseGame } : null)}
+              />
+            )}
+          </div>
+        </Row>
         <Row label="Lanzamiento">
           <div className={styles.fieldLine}>
             <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />
