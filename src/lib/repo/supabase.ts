@@ -67,7 +67,7 @@ export class SupabaseRepository implements Repository {
     ]);
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     return {
-      // Sin la columna de las vueltas (o vacía), sin vueltas anteriores.
+      // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
       games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [] })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),

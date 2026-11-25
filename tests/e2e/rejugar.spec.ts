@@ -182,3 +182,34 @@ test("la ficha enseña las vueltas con inicio, fin y días", async ({ page }) =>
   await expect(laps.nth(0)).toContainText(/^1\..+→.+\d+ días$/);
   await expect(laps.nth(1)).toContainText(/^2\..+→ en curso$/);
 });
+
+test("recuperar el mismo día una vuelta desde «Termina la historia» conserva su inicio", async ({ page }) => {
+  await loadDemo(page);
+  // Hades se empezó hace semanas: terminarlo hoy deja una vuelta con inicio antiguo y fin de hoy.
+  await openGame(page, "Hades");
+  const quests = page.getByRole("region", { name: "Misiones" });
+  const started = quests.getByRole("button", { name: /^Empezado: / });
+  const startedName = await started.getAttribute("aria-label") ?? (await started.textContent());
+  const finished = quests.getByRole("checkbox", { name: "Termina la historia" });
+  await finished.click();
+  await page.getByRole("button", { name: "Rejugar" }).click();
+  // Sin «Deshacer» a mano: se vuelve a marcar «Termina la historia» el mismo día.
+  await finished.click();
+  await expect(lap(page)).toHaveCount(0);
+  await expect(quests.getByRole("button", { name: /^Empezado: / })).toHaveAccessibleName(startedName!);
+});
+
+test("un superado pausado que vuelve a Jugando es otra vuelta, también con «Inserta moneda»", async ({ page }) => {
+  await loadDemo(page);
+  await openGame(page, ZELDA);
+  await status(page, "Pausado").click();
+  await status(page, "Jugando").click();
+  await expect(lap(page)).toHaveText("Vuelta 2");
+  await expect(page.getByRole("button", { name: "Rejugar" })).toHaveCount(0);
+
+  await openGame(page, "Inside");
+  await status(page, "Pausado").click();
+  await page.getByRole("button", { name: /Inserta moneda/ }).click();
+  await expect(status(page, "Jugando")).toHaveAttribute("aria-checked", "true");
+  await expect(lap(page)).toHaveText("Vuelta 2");
+});

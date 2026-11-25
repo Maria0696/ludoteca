@@ -182,12 +182,13 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ games }));
     };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
-    const withStatus = (previous: Game, status: GameStatus): Game => {
+    const withStatus = (previous: Game, status: GameStatus, reopen = true): Game => {
       const today = todayIso();
-      // Dejar «Completado» para volver a jugarlo (o tenerlo pendiente) es otra vuelta: la terminada se guarda.
+      // Volver a jugar (o a tener pendiente) un juego ya terminado es otra vuelta: la terminada se guarda,
+      // venga de «Completado», «Pausado» o «Abandonado».
       // Volver a «Completado» el mismo día que se guardó es deshacer ese error, no otra vuelta.
-      const leaving = previous.status === "completado" && (status === "jugando" || status === "pendiente");
-      const base = leaving ? archiveRun(previous) : status === "completado" ? (reopenSameDayRun(previous, today) ?? previous) : previous;
+      const leaving = Boolean(previous.finishedAt) && (status === "jugando" || status === "pendiente");
+      const base = leaving ? archiveRun(previous) : status === "completado" && reopen ? (reopenSameDayRun(previous, today) ?? previous) : previous;
       const next: Game = { ...base, status, updatedAt: nowIso() };
       if (status === "jugando") {
         next.startedAt ??= today;
@@ -293,12 +294,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const finishing = Boolean(date) && previous.status !== "completado";
         const unfinishing = !date && previous.status === "completado" && !previous.completed100;
         const backTo: GameStatus = previous.startedAt ? "jugando" : "pendiente";
+        // Terminar hoy una vuelta recién guardada hoy la recupera tal cual, con su inicio; con otra fecha, no.
         const next = finishing
-          ? withStatus(previous, "completado")
+          ? withStatus(previous, "completado", date === todayIso())
           : unfinishing
             ? { ...previous, status: backTo, updatedAt: nowIso() }
             : { ...previous, updatedAt: nowIso() };
-        void saveGame({ ...next, finishedAt: date, startedAt: date ? (previous.startedAt ?? date) : next.startedAt });
+        const reopened = next.pastRuns !== previous.pastRuns;
+        void saveGame(reopened ? next : { ...next, finishedAt: date, startedAt: date ? (previous.startedAt ?? date) : next.startedAt });
         if (finishing || unfinishing) {
           const message = finishing ? `«${previous.title}» pasa a ${STATUS_LABEL.completado}` : `«${previous.title}» vuelve a ${STATUS_LABEL[backTo]}`;
           toast(message, { action: { label: "Deshacer", onClick: () => undoStatus([previous]) } });
@@ -334,12 +337,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       markPlayedToday(id) {
         const game = findGame(id);
         if (!game) return;
-        const patch: Partial<Game> = { lastPlayedAt: todayIso() };
-        if (game.status === "pendiente" || game.status === "pausado") {
-          patch.status = "jugando";
-          patch.startedAt = game.startedAt ?? todayIso();
-        }
-        void saveGame({ ...game, ...patch, updatedAt: nowIso() });
+        // Ponerse a jugar uno pendiente o en pausa: las mismas reglas del estado (si ya estaba terminado, otra vuelta).
+        const resumes = game.status === "pendiente" || game.status === "pausado";
+        const next = resumes ? withStatus(game, "jugando") : { ...game, lastPlayedAt: todayIso(), updatedAt: nowIso() };
+        void saveGame(next);
         toast(`Anotado: has jugado a «${game.title}» hoy`, {
           action: { label: "Deshacer", onClick: () => void saveGame({ ...game, updatedAt: nowIso() }) },
         });
