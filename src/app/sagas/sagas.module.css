@@ -61,8 +61,11 @@
   color: var(--white);
   text-wrap: balance;
 }
+/* El texto llena la columna hasta el borde, justificado. */
 .blankText p {
-  max-width: 52ch;
+  justify-self: stretch;
+  text-align: justify;
+  hyphens: auto;
   color: var(--muted);
   font-size: var(--size-body);
 }
