@@ -445,17 +445,37 @@
   font-size: var(--size-label);
 }
 /* El enlace a su historia en la pantalla Sagas, como la etiqueta de la vuelta. */
+/* La saga: un botón como Favorito, con las paradas del mapa en pequeño. */
 .storyLink {
-  color: var(--muted);
-  font-size: var(--size-label);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  max-width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding-block: 6px;
+  text-align: left;
+  text-decoration: none;
 }
-.storyLink:hover {
-  color: var(--white);
+.storyPins {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
 }
-.nowrap {
-  white-space: nowrap;
+.storyPins span {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--faint);
+}
+.storyPins span[data-pin="aqui"] {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+.storyCount {
+  color: var(--gold);
+  flex: none;
+}
+/* Un nombre largo baja de línea: no se corta. */
+.storyName {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 /* La vuelta en curso de un juego que se rejuega: VT323, sin «ª» (en Press Start 2P se confunde). */
 .lap {

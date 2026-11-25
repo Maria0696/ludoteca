@@ -194,7 +194,12 @@ test("la ficha lleva a su historia con su puesto", async ({ page }) => {
   await setStory(page, "Hades", "Prueba");
   await setStory(page, "Celeste", "Prueba");
   // Celeste (2018) va antes que Hades (2020).
-  await page.getByRole("link", { name: "Saga: Prueba · 1 de 2" }).click();
+  // Un botón con el mini mapa: una casilla por juego y la suya encendida.
+  const link = page.getByRole("link", { name: "Saga Prueba: juego 1 de 2" });
+  await expect(link).toContainText("Prueba");
+  await expect(link.locator("[data-pin]")).toHaveCount(2);
+  await expect(link.locator("[data-pin='aqui']")).toHaveCount(1);
+  await link.click();
   await expect(page).toHaveURL(/\/sagas\?saga=Prueba$/);
   await expect(page.getByRole("heading", { level: 2, name: "Prueba" })).toBeVisible();
 });
@@ -203,7 +208,7 @@ test("vaciar la historia de un juego deja la historia fuera si se queda con uno"
   await loadDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   await setStory(page, "Hades", null);
-  await expect(page.getByRole("link", { name: /^Saga: / })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Saga .*: juego/ })).toHaveCount(0);
   await openApp(page, "/sagas");
   await expect(page.getByRole("heading", { level: 2, name: "Tu primer mapa está por dibujar" })).toBeVisible();
 });
@@ -346,7 +351,7 @@ test("quitar una saga solo la quita de este apartado: la ficha la conserva, se p
   // La ficha sigue diciendo su saga; solo deja de enlazar al apartado.
   await openGame(page, "Hades");
   await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Prueba/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^Saga: Prueba ·/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Saga Prueba: juego/ })).toHaveCount(0);
   // Traer la vuelve a proponer, marcada, sin preguntar a IGDB.
   await openApp(page, "/sagas");
   await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();

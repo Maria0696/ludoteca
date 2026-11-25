@@ -181,9 +181,25 @@ export function GameDetail({ id }: { id: string }) {
                   Rejugar
                 </button>
               )}
+              {/* Su saga como un mini mapa: una casilla por juego y la suya encendida (con muchas, «2/30»). */}
               {story && (
-                <Link href={`/sagas?saga=${encodeURIComponent(story.name)}`} className={styles.storyLink}>
-                  Saga: {story.name} · <span className={styles.nowrap}>{story.position} de {story.total}</span>
+                <Link
+                  href={`/sagas?saga=${encodeURIComponent(story.name)}`}
+                  className={`${styles.action} ${styles.storyLink}`}
+                  aria-label={`Saga ${story.name}: juego ${story.position} de ${story.total}`}
+                >
+                  {story.total <= 10 ? (
+                    <span className={styles.storyPins} aria-hidden>
+                      {Array.from({ length: story.total }, (_, i) => (
+                        <span key={i} data-pin={i + 1 === story.position ? "aqui" : ""} />
+                      ))}
+                    </span>
+                  ) : (
+                    <span className={styles.storyCount} aria-hidden>
+                      {story.position}/{story.total}
+                    </span>
+                  )}
+                  <span className={styles.storyName}>{story.name}</span>
                 </Link>
               )}
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}
