@@ -68,14 +68,37 @@ export function orderStory(story: Story, order: StoryOrder): Game[] {
   return [...placed, ...release.filter((g) => g.seriesOrder == null)];
 }
 
+/** Coloca un juego en un puesto (desde 0) del orden de la historia y devuelve el puesto de todos (1…n); si no está, nada. */
+export function placeInStory(story: Story, gameId: string, toIndex: number): { id: string; seriesOrder: number }[] {
+  const ordered = orderStory(story, "historia");
+  const from = ordered.findIndex((g) => g.id === gameId);
+  if (from < 0) return [];
+  const [moved] = ordered.splice(from, 1);
+  ordered.splice(Math.max(0, Math.min(toIndex, ordered.length)), 0, moved);
+  return ordered.map((g, i) => ({ id: g.id, seriesOrder: i + 1 }));
+}
+
 /** Mueve un juego un puesto en el orden de la historia y devuelve el puesto de todos (1…n); si no se puede, nada. */
 export function moveInStory(story: Story, gameId: string, dir: -1 | 1): { id: string; seriesOrder: number }[] {
   const ordered = orderStory(story, "historia");
-  const from = ordered.findIndex((g) => g.id === gameId);
-  const to = from + dir;
-  if (from < 0 || to < 0 || to >= ordered.length) return [];
-  [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
-  return ordered.map((g, i) => ({ id: g.id, seriesOrder: i + 1 }));
+  const to = ordered.findIndex((g) => g.id === gameId) + dir;
+  if (to < 0 || to >= ordered.length || to - dir < 0) return [];
+  return placeInStory(story, gameId, to);
+}
+
+export type Proposal = { name: string; games: Game[] };
+
+/**
+ * Lo que propone IGDB: por historia, los juegos que no tienen ninguna (los que se quedaron en «Sin historia»
+ * a propósito no cuentan). Ella elige cuáles añadir.
+ */
+export function proposeStories(games: Game[], found: Record<string, string | null>): Proposal[] {
+  const map = new Map<string, Game[]>();
+  for (const g of games) {
+    const name = g.igdbId != null && !g.series?.trim() ? found[String(g.igdbId)]?.trim() : null;
+    if (name) map.set(name, [...(map.get(name) ?? []), g]);
+  }
+  return [...map.entries()].map(([name, list]) => ({ name, games: list })).sort((a, b) => byName(a.name, b.name));
 }
 
 /** El siguiente que toca: el primero sin superar ni abandonar. */

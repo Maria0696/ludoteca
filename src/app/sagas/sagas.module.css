@@ -1,4 +1,4 @@
-/* Sagas en la carcasa: la lista de historias en una ventana y, al lado, la historia abierta. */
+/* Sagas como el mapa de niveles de la ficha: las historias en una ventana y, al lado, la abierta como un camino. */
 .page {
   padding: 36px var(--gutter) 0;
   display: grid;
@@ -21,24 +21,23 @@
 }
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.4fr);
   gap: 24px;
   align-items: start;
 }
-.page:not([data-abierta]) .layout {
-  grid-template-columns: minmax(0, 1fr);
-}
 
-/* La lista: buscador, y las historias bajo su marca. */
+/* Las historias: buscador y, bajo cada marca, sus historias. */
+.list {
+  position: sticky;
+  top: 92px;
+}
 .tools {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
   margin-bottom: 14px;
 }
 .search {
   position: relative;
-  flex: 1 1 220px;
 }
 .search svg {
   position: absolute;
@@ -54,14 +53,22 @@
   width: 100%;
   padding-left: 36px;
 }
+.tools :global(.btn) {
+  justify-self: start;
+}
 .none {
   color: var(--muted);
 }
-.group + .group {
-  margin-top: 16px;
+.groups {
+  display: grid;
+  gap: 14px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
 }
 .brand {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: var(--faint);
   font-family: var(--font-pixel);
   font-size: 11px;
@@ -77,7 +84,7 @@
 .row {
   display: grid;
   gap: 2px;
-  padding: 10px 8px;
+  padding: 9px 10px;
   color: var(--text);
   text-decoration: none;
 }
@@ -87,10 +94,6 @@
   color: var(--white);
 }
 .meta {
-  color: var(--muted);
-  font-size: var(--size-meta);
-}
-.next {
   color: var(--faint);
   font-size: var(--size-meta);
 }
@@ -107,9 +110,7 @@
 /* La historia abierta. */
 .story {
   display: grid;
-  gap: 10px;
-  position: sticky;
-  top: 92px;
+  gap: 12px;
 }
 .titleLine {
   display: flex;
@@ -134,10 +135,6 @@
   flex: 1;
   min-width: 0;
 }
-.back {
-  display: none;
-  justify-self: start;
-}
 .storyBrand {
   margin-top: -6px;
   color: var(--faint);
@@ -157,60 +154,199 @@
   color: var(--muted);
   font-size: var(--size-note);
 }
-.games {
-  display: grid;
+.touchOnly {
+  display: none;
 }
-.game {
+
+/* El mapa: hierba en píxeles y un camino punteado que une las paradas, como el de la ficha. */
+.map {
   display: grid;
-  grid-template-columns: 2ch 40px minmax(0, 1fr) auto;
-  gap: 12px;
+  padding: 6px 0;
+  background: repeating-linear-gradient(45deg, #142a1f 0 14px, #12271c 14px 28px);
+  box-shadow: inset 0 0 0 2px #2a5a3e;
+}
+.stop {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 54px minmax(0, 1fr) auto;
   align-items: center;
-  padding: 8px 0;
-  border-top: 2px solid var(--line);
+  gap: 12px;
+  padding: 10px 14px;
 }
-.game[data-siguiente] {
-  background: var(--raised);
-  box-shadow: inset 3px 0 0 var(--gold);
-  padding-left: 8px;
+.stop::before {
+  content: "";
+  position: absolute;
+  left: 38px;
+  top: 0;
+  bottom: 0;
+  border-left: 4px dotted #8fe3a8;
+  opacity: 0.5;
 }
-.pos {
-  color: var(--faint);
-  font-size: var(--size-label);
+.stop:first-child::before {
+  top: 50%;
+}
+.stop:last-child::before {
+  bottom: 50%;
+}
+.stop[draggable="true"] {
+  cursor: grab;
+}
+.stop[data-arrastrando] {
+  opacity: 0.45;
+}
+.stop[data-encima] {
+  box-shadow: inset 0 3px 0 var(--gold);
+}
+.pin {
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  background: #4a4a7a;
+  color: var(--paper);
+  box-shadow: 0 4px 0 #00000077;
+}
+.stop[data-superado] .pin {
+  background: var(--st-completado);
+  color: var(--window);
+}
+.stop[data-siguiente] .pin {
+  background: var(--gold);
+  color: var(--gold-ink);
+  animation: hop 1.2s steps(2) infinite;
+}
+@keyframes hop {
+  50% {
+    transform: translateY(-4px);
+  }
 }
 .thumb {
-  width: 40px;
+  width: 54px;
+}
+.stop[data-superado] .thumb {
+  filter: saturate(0.4) brightness(0.75);
 }
 /* En la miniatura no cabe el título: basta con el cartón. */
 .thumb :global(.cover-fallback strong),
 .thumb :global(.cover-fallback span) {
   display: none;
 }
-.gameText {
+.stopText {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
-.gameText a {
+.stopText a {
   color: var(--white);
   font-size: var(--size-body);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
-.gameText a:hover {
+.stopText a:hover {
   text-decoration: underline;
 }
-.gameMeta {
-  color: var(--muted);
+.stopMeta {
+  color: var(--faint);
   font-size: var(--size-meta);
+}
+.nextTag {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 4px 6px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  background: var(--gold);
+  color: var(--gold-ink);
 }
 .arrows {
   display: flex;
+  align-items: center;
   gap: 2px;
 }
+.grip {
+  width: 18px;
+  height: 18px;
+  color: var(--faint);
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .verdict {
-  margin-top: 4px;
   color: var(--white);
   font-size: var(--size-label);
+}
+.confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: #2a141b;
+  box-shadow: inset 0 0 0 2px #6b2b36;
+}
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Revisar lo que trae IGDB. */
+.review {
+  display: grid;
+  gap: 10px;
+}
+.reviewAll {
+  display: flex;
+  gap: 6px;
+}
+.proposals {
+  display: grid;
+}
+.proposal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 2px solid var(--line);
+}
+.proposal[data-fuera] .proposalCovers,
+.proposal[data-fuera] .proposalText {
+  opacity: 0.45;
+}
+.proposalCovers {
+  display: flex;
+}
+.miniCover {
+  width: 36px;
+}
+.miniCover + .miniCover {
+  margin-left: -12px;
+}
+.miniCover :global(.cover-fallback strong),
+.miniCover :global(.cover-fallback span) {
+  display: none;
+}
+.proposalText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.proposalText strong {
+  font-weight: 400;
+  color: var(--white);
+  font-size: var(--size-body);
+}
+.proposalText span {
+  color: var(--faint);
+  font-size: var(--size-meta);
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 899px) {
@@ -220,17 +356,62 @@
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* En el móvil, la historia abierta va primero y sola; «Todas las sagas» vuelve a la lista. */
-  .page[data-abierta] .list {
-    display: none;
-  }
-  .story {
+  .list {
     position: static;
   }
-  .back {
-    display: inline-flex;
+  /* En el móvil, las historias en una fila que se desliza, y el mapa debajo. */
+  .groups {
+    display: flex;
+    gap: 6px;
+    max-height: none;
+    overflow-x: auto;
+    padding-bottom: 6px;
   }
-  /* Las flechas, una encima de otra: el título tiene más sitio. */
+  .group {
+    display: contents;
+  }
+  .brand {
+    display: none;
+  }
+  .stories {
+    display: flex;
+    gap: 6px;
+  }
+  .stories li + li {
+    border-top: 0;
+  }
+  .row {
+    flex: none;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 2px var(--line);
+  }
+  .row[aria-current="true"] {
+    box-shadow: inset 0 0 0 2px var(--gold);
+  }
+  .stop {
+    grid-template-columns: 40px 46px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 8px 10px;
+  }
+  .stop::before {
+    left: 28px;
+  }
+  .pin {
+    width: 36px;
+    height: 36px;
+    font-size: 11px;
+  }
+  .thumb {
+    width: 46px;
+  }
+  /* En el móvil no se arrastra: flechas una encima de otra, de 44 px. */
+  .grip,
+  .pcOnly {
+    display: none;
+  }
+  .touchOnly {
+    display: inline;
+  }
   .arrows {
     flex-direction: column;
   }
@@ -238,8 +419,18 @@
     width: 44px;
     height: 44px;
   }
-  /* En el móvil, el estado en una línea: el rombo de color y su nombre (sin el rótulo arcade). */
-  .gameMeta :global(.state b) {
+  .stopMeta :global(.state b) {
     display: none;
+  }
+  .proposal {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .proposalCovers {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stop[data-siguiente] .pin {
+    animation: none;
   }
 }
