@@ -21,6 +21,7 @@ import {
 } from "./model";
 import { isSupabaseConfigured, localModeAllowed } from "./config";
 import { LocalRepository } from "./repo/local";
+import { archiveRun, reopenSameDayRun, runNumber } from "./runs";
 import type { Changes, Repository, StorageMode } from "./repo/types";
 import { type SteamImportCounts, type SteamImportItem, planSteamImport } from "./steam-import";
 
@@ -37,6 +38,8 @@ interface Actions {
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
   setStatus(id: string, status: GameStatus): void;
+  /** Empieza otra vuelta de un juego ya superado: lo terminado se guarda y no se pierde. */
+  replay(id: string): void;
   /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
   setStatusMany(ids: string[], status: GameStatus): void;
   /** Marca o quita el 100 %; marcarlo también lo pasa a Completado, en un solo guardado. */
@@ -180,8 +183,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
     const withStatus = (previous: Game, status: GameStatus): Game => {
-      const next: Game = { ...previous, status, updatedAt: nowIso() };
       const today = todayIso();
+      // Dejar «Completado» para volver a jugarlo (o tenerlo pendiente) es otra vuelta: la terminada se guarda.
+      // Volver a «Completado» el mismo día que se guardó es deshacer ese error, no otra vuelta.
+      const leaving = previous.status === "completado" && (status === "jugando" || status === "pendiente");
+      const base = leaving ? archiveRun(previous) : status === "completado" ? (reopenSameDayRun(previous, today) ?? previous) : previous;
+      const next: Game = { ...base, status, updatedAt: nowIso() };
       if (status === "jugando") {
         next.startedAt ??= today;
         next.lastPlayedAt = today;
@@ -201,8 +208,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const restored = previous.flatMap((old) => {
         const now = findGame(old.id);
         if (!now) return [];
-        const { status, startedAt, lastPlayedAt, finishedAt } = old;
-        return [{ ...now, status, startedAt, lastPlayedAt, finishedAt, updatedAt: nowIso() }];
+        const { status, startedAt, lastPlayedAt, finishedAt, pastRuns } = old;
+        return [{ ...now, status, startedAt, lastPlayedAt, finishedAt, pastRuns, updatedAt: nowIso() }];
       });
       if (restored.length) void saveGames(restored);
     };
@@ -247,6 +254,17 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         if (!previous || previous.status === status) return;
         void saveGame(withStatus(previous, status));
         toast(`«${previous.title}» pasa a ${STATUS_LABEL[status]}`, {
+          action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
+        });
+      },
+
+      replay(id) {
+        const previous = findGame(id);
+        if (!previous?.finishedAt || previous.endless) return;
+        const today = todayIso();
+        const next: Game = { ...archiveRun(previous), status: "jugando", startedAt: today, lastPlayedAt: today, updatedAt: nowIso() };
+        void saveGame(next);
+        toast(`«${previous.title}» empieza la vuelta ${runNumber(next)}`, {
           action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
         });
       },

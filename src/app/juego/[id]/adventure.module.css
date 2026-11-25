@@ -444,6 +444,11 @@
   color: var(--soft);
   font-size: var(--size-label);
 }
+/* La vuelta en curso de un juego que se rejuega: VT323, sin «ª» (en Press Start 2P se confunde). */
+.lap {
+  color: var(--gold);
+  font-size: var(--size-label);
+}
 .action {
   display: inline-flex;
   align-items: center;

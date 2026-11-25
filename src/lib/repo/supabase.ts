@@ -67,7 +67,8 @@ export class SupabaseRepository implements Repository {
     ]);
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     return {
-      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)),
+      // Sin la columna de las vueltas (o vacía), sin vueltas anteriores.
+      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [] })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, Trophy } from "lucide-react";
+import { RotateCcw, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
 import { PISTAS, PISTA_PAGINA, type PistaId, marcarPista, pistasVistas } from "@/lib/pistas";
+import { runNumber } from "@/lib/runs";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
@@ -160,6 +161,8 @@ export function GameDetail({ id }: { id: string }) {
               ))}
             </div>
             <div className={styles.extras}>
+              {/* Solo mientras se rejuega: terminada, la vuelta queda en la lista de «Tus récords». */}
+              {runNumber(game) >= 2 && !game.finishedAt && <span className={styles.lap}>Vuelta {runNumber(game)}</span>}
               <button type="button" className={styles.action} aria-pressed={game.favorite} onClick={() => update({ favorite: !game.favorite })}>
                 <Star aria-hidden fill={game.favorite ? "currentColor" : "none"} />
                 {game.favorite ? "En favoritos" : "Favorito"}
@@ -168,6 +171,13 @@ export function GameDetail({ id }: { id: string }) {
                 <Trophy aria-hidden fill={game.completed100 ? "currentColor" : "none"} />
                 {game.completed100 ? "Al 100 %" : "100 %"}
               </button>
+              {/* Rejugar es otra vuelta de un juego ya superado; uno sin final no se supera. */}
+              {game.finishedAt && !game.endless && (
+                <button type="button" className={styles.action} onClick={() => actions.replay(game.id)}>
+                  <RotateCcw aria-hidden />
+                  Rejugar
+                </button>
+              )}
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}
             </div>
             <button
