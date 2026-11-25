@@ -9,6 +9,8 @@ import {
   gameSchema,
   sagaExtraSchema,
   newId,
+  upgradeExtraV1,
+  upgradeGameV1,
   normalizeTitle,
   nowIso,
   wishSchema,
@@ -26,7 +28,8 @@ import {
 export const BACKUP_APP = "ludoteca";
 /** Nombre anterior de la app: sus copias se siguen pudiendo importar. */
 const LEGACY_APPS = ["sala-de-los-menesteres"] as const;
-export const BACKUP_VERSION = 1;
+/** 2: la franquicia es «franchise» y la saga, «saga». Las del 1 se pasan al 2 al leerlas (ver `upgradeGameV1`). */
+export const BACKUP_VERSION = 2;
 
 const backupSchema = z.object({
   app: z.enum([BACKUP_APP, ...LEGACY_APPS]),
@@ -79,7 +82,7 @@ export function parseBackup(text: string): ParseResult {
   if (app !== BACKUP_APP && !(LEGACY_APPS as readonly unknown[]).includes(app)) {
     return { ok: false, errors: ["Este archivo no es una copia de seguridad de esta biblioteca."] };
   }
-  const parsed = backupSchema.safeParse(raw);
+  const parsed = backupSchema.safeParse(upgradeV1(raw));
   if (!parsed.success) {
     const errors = parsed.error.issues.slice(0, 8).map((issue) => `${describePath(issue.path)}: ${issue.message}`);
     if (parsed.error.issues.length > 8) errors.push(`Y ${parsed.error.issues.length - 8} errores más.`);
@@ -94,6 +97,18 @@ export function parseBackup(text: string): ParseResult {
     };
   }
   return { ok: true, backup: parsed.data };
+}
+
+/** Una copia del formato 1, en el 2; las demás, tal cual. */
+function upgradeV1(raw: unknown): unknown {
+  const backup = raw as { version?: unknown; data?: { games?: unknown; extras?: unknown } };
+  if (backup.version !== 1 || typeof backup.data !== "object" || backup.data === null) return raw;
+  const list = (x: unknown, up: (item: unknown) => unknown) => (Array.isArray(x) ? x.map(up) : x);
+  return {
+    ...backup,
+    version: BACKUP_VERSION,
+    data: { ...backup.data, games: list(backup.data.games, upgradeGameV1), extras: list(backup.data.extras, upgradeExtraV1) },
+  };
 }
 
 function describePath(path: PropertyKey[]): string {

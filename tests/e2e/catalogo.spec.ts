@@ -17,8 +17,8 @@ function game(igdbId: number, title: string): CatalogGame {
     criticRating: null,
     summary: null,
     developer: null,
+    franchise: null,
     saga: null,
-    series: null,
     releaseDate: null,
     ageRating: null,
   };

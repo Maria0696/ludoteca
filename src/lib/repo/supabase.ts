@@ -12,7 +12,7 @@ type Row = Record<string, unknown>;
 const gameCols: [keyof Game, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["backdropUrl", "backdrop_url"], ["igdbId", "igdb_id"], ["steamAppId", "steam_app_id"], ["genres", "genres"],
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["endless", "endless"], ["favorite", "favorite"],
-  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["saga", "saga"], ["series", "series"], ["seriesOrder", "series_order"],
+  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["franchise", "franchise"], ["saga", "saga"], ["sagaOrder", "saga_order"],
   ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
   ["finishedAt", "finished_at"], ["pastRuns", "past_runs"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
@@ -34,8 +34,8 @@ const wishCols: [keyof WishItem, string][] = [
 ];
 
 const extraCols: [keyof SagaExtra, string][] = [
-  ["id", "id"], ["series", "series"], ["igdbId", "igdb_id"], ["title", "title"], ["coverUrl", "cover_url"],
-  ["releaseDate", "release_date"], ["seriesOrder", "series_order"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+  ["id", "id"], ["saga", "saga"], ["igdbId", "igdb_id"], ["title", "title"], ["coverUrl", "cover_url"],
+  ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
 /** Sin la tabla de los juegos de saga que no tienes (migración 0012 sin aplicar), la biblioteca carga igual. */
@@ -79,7 +79,7 @@ export class SupabaseRepository implements Repository {
     if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
     return {
       // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
-      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null })),
+      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
       extras: extras.error ? [] : (extras.data ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),

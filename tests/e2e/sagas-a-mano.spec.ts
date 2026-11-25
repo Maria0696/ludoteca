@@ -9,12 +9,12 @@ import { loadDemo, openApp } from "./helpers";
 const stamp = "2026-11-25T10:00:00.000Z";
 const extra = (patch: Partial<SagaExtra>): SagaExtra => ({
   id: crypto.randomUUID(),
-  series: "Jedi",
+  saga: "Jedi",
   title: "Jedi: precuela",
   igdbId: 9,
   coverUrl: null,
   releaseDate: "2015-01-01",
-  seriesOrder: null,
+  sagaOrder: null,
   createdAt: stamp,
   updatedAt: stamp,
   ...patch,
@@ -65,9 +65,9 @@ test("un juego que faltaba en una saga llega desde Deseos y ocupa su sitio", asy
   await loadDemo(page);
   await seed(
     page,
-    { Hades: { series: "Prueba" } },
+    { Hades: { saga: "Prueba" } },
     {
-      extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })],
+      extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })],
       wishlist: [{ id: crypto.randomUUID(), title: "Hades II", igdbId: 555, platform: "PC", priority: "media", genres: [], prices: [], createdAt: stamp, updatedAt: stamp }],
     },
   );
@@ -84,8 +84,8 @@ test("un juego que faltaba en una saga llega desde Deseos y ocupa su sitio", asy
 });
 
 const game = (title: string, patch: Partial<Game>): Game => ({ ...createGame({ title }), ...patch });
-const fallen = game("Jedi: Fallen Order", { series: "Jedi", releaseDate: "2019-11-15", igdbId: 1 });
-const survivor = game("Jedi: Survivor", { series: "Jedi", releaseDate: "2023-04-28", igdbId: 2 });
+const fallen = game("Jedi: Fallen Order", { saga: "Jedi", releaseDate: "2019-11-15", igdbId: 1 });
+const survivor = game("Jedi: Survivor", { saga: "Jedi", releaseDate: "2023-04-28", igdbId: 2 });
 const prequel = extra({ title: "Jedi: precuela", releaseDate: "2015-01-01", igdbId: 3 });
 const titleOf = (s: { kind: string; game?: Game; extra?: SagaExtra }) => (s.kind === "juego" ? s.game!.title : s.extra!.title);
 
@@ -102,9 +102,9 @@ test("las paradas mezclan los tuyos y los que faltan, en su orden", () => {
 test("con los que faltan ocultos, mover uno tuyo no los mueve", () => {
   const [story] = buildStories([fallen, survivor], [prequel]);
   expect(placeInStory(story, survivor.id, 0, false)).toEqual([
-    { kind: "falta", id: prequel.id, seriesOrder: 1 },
-    { kind: "juego", id: survivor.id, seriesOrder: 2 },
-    { kind: "juego", id: fallen.id, seriesOrder: 3 },
+    { kind: "falta", id: prequel.id, sagaOrder: 1 },
+    { kind: "juego", id: survivor.id, sagaOrder: 2 },
+    { kind: "juego", id: fallen.id, sagaOrder: 3 },
   ]);
   // Con todos a la vista, se coloca entre todos.
   expect(placeInStory(story, prequel.id, 2, true).map((p) => p.id)).toEqual([fallen.id, survivor.id, prequel.id]);
@@ -119,7 +119,7 @@ test("lo que falta en IGDB descarta lo que ya tienes o ya está", () => {
 /** Un juego del catálogo, como lo devuelve /api/catalogo. */
 const catalogGame = (igdbId: number, title: string, releaseDate: string | null = null) => ({
   igdbId, title, year: releaseDate ? Number(releaseDate.slice(0, 4)) : null, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"],
-  modes: [], moods: [], lengthHours: null, criticRating: null, summary: null, developer: null, saga: null, series: null, releaseDate, ageRating: null,
+  modes: [], moods: [], lengthHours: null, criticRating: null, summary: null, developer: null, franchise: null, saga: null, releaseDate, ageRating: null,
 });
 const stopsOf = (page: Page) => page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem");
 
@@ -139,7 +139,7 @@ test("sin historias, la pantalla es el mapa en blanco", async ({ page }) => {
 
 test("añadir a una saga un juego que no tienes lo pone en el camino; uno que tienes entra como tuyo", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { igdbId: 888 } });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { igdbId: 888 } });
   await page.route("**/api/catalogo?*", (route) => {
     const q = new URL(route.request().url()).searchParams.get("q") ?? "";
     return route.fulfill({ json: { ok: true, results: q.startsWith("hol") ? [catalogGame(888, "Hollow Knight", "2017-02-24")] : [catalogGame(777, "Hades II", "2025-09-25")] } });
@@ -158,7 +158,7 @@ test("añadir a una saga un juego que no tienes lo pone en el camino; uno que ti
 
 test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de la saga", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } }, { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
   await openApp(page, "/sagas?saga=Prueba");
   const toggle = page.getByRole("switch", { name: "Los que me faltan" });
   await expect(toggle).toHaveAttribute("aria-checked", "true");
@@ -177,7 +177,7 @@ test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de l
 
 test("quitar de la saga un juego tuyo lo deja sin historia", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Prueba" } });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Prueba" } });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar «Hollow Knight» de la saga" }).click();
   await expect(stopsOf(page)).toHaveCount(2);
@@ -185,7 +185,7 @@ test("quitar de la saga un juego tuyo lo deja sin historia", async ({ page }) =>
 
 test("buscar los que faltan: IGDB propone y tú eliges", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba", igdbId: 1 }, Celeste: { series: "Prueba" } });
+  await seed(page, { Hades: { saga: "Prueba", igdbId: 1 }, Celeste: { saga: "Prueba" } });
   await page.route("**/api/catalogo/serie", (route) =>
     route.fulfill({ json: { ok: true, games: [catalogGame(1, "Hades", "2020-09-17"), catalogGame(901, "Hades II", "2025-09-25"), catalogGame(902, "Hades III", "2030-01-01")] } }),
   );
@@ -221,12 +221,12 @@ test("nueva saga: nombre y sus primeros juegos, buscándolos", async ({ page }) 
 });
 
 test("un juego que llega toma la historia y el puesto de su parada hueca, aunque IGDB le dé otra", () => {
-  const hollow = extra({ series: "Prueba", title: "Hades II", igdbId: 555, seriesOrder: 2 });
-  const twin = extra({ series: "Otra", title: "Hades II", igdbId: 555 });
-  const arriving = game("Hades II", { igdbId: 555, series: "Supergiant" });
+  const hollow = extra({ saga: "Prueba", title: "Hades II", igdbId: 555, sagaOrder: 2 });
+  const twin = extra({ saga: "Otra", title: "Hades II", igdbId: 555 });
+  const arriving = game("Hades II", { igdbId: 555, saga: "Supergiant" });
   const { games, dropped } = absorbExtras([arriving], [hollow, twin]);
-  expect(games[0].series).toBe("Prueba");
-  expect(games[0].seriesOrder).toBe(2);
+  expect(games[0].saga).toBe("Prueba");
+  expect(games[0].sagaOrder).toBe(2);
   expect(dropped.sort()).toEqual([hollow.id, twin.id].sort());
   // Al revés: una parada hueca de algo que ya tienes sobra.
   expect(ownedExtras([hollow], [arriving])).toEqual([hollow.id]);
@@ -246,8 +246,8 @@ test("«Ya lo tienes» y «En deseos» no confunden un remake con el original", 
 
 test("añadir desde el catálogo un juego que estaba como parada hueca lo pone en su sitio", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } }, { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
-  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), series: "Supergiant" }] } }));
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
+  await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), saga: "Supergiant" }] } }));
   await openApp(page, "/biblioteca");
   await page.getByRole("button", { name: "Añadir juego" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Añadir juego" });
@@ -262,8 +262,11 @@ test("añadir desde el catálogo un juego que estaba como parada hueca lo pone e
 
 test("una copia de seguridad que solo trae juegos que no tienes se puede importar", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
-  const backup = { app: "ludoteca", version: 1, exportedAt: stamp, data: { games: [], copies: [], wishlist: [], extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] } };
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
+  // Una copia del formato 1: la saga del que no tienes era «series».
+  const { saga, sagaOrder, ...rest } = extra({ saga: "Prueba", title: "Hades II", igdbId: 555 });
+  const old = { ...rest, series: saga, seriesOrder: sagaOrder };
+  const backup = { app: "ludoteca", version: 1, exportedAt: stamp, data: { games: [], copies: [], wishlist: [], extras: [old] } };
   await openApp(page, "/importar?origen=copia");
   await page.getByTestId("importar-archivo").setInputFiles({ name: "copia.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(backup)) });
   await page.getByRole("button", { name: "Copiar a la ludoteca" }).click();
@@ -277,11 +280,11 @@ test("al unir dos sagas con «Cambiar nombre», los que faltan de la otra tambi�
   await seed(
     page,
     {
-      Hades: { series: "Prueba", releaseDate: "2020-09-17" },
-      Celeste: { series: "Prueba", releaseDate: "2018-01-25" },
-      "Hollow Knight": { series: "Otra", releaseDate: "2017-02-24", seriesOrder: 2 },
+      Hades: { saga: "Prueba", releaseDate: "2020-09-17" },
+      Celeste: { saga: "Prueba", releaseDate: "2018-01-25" },
+      "Hollow Knight": { saga: "Otra", releaseDate: "2017-02-24", sagaOrder: 2 },
     },
-    { extras: [extra({ series: "Otra", title: "Precuela", igdbId: 555, releaseDate: "2030-01-01", seriesOrder: 1 })] },
+    { extras: [extra({ saga: "Otra", title: "Precuela", igdbId: 555, releaseDate: "2030-01-01", sagaOrder: 1 })] },
   );
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Cambiar nombre" }).click();
@@ -296,8 +299,8 @@ test("un juego que no tienes solo está en una saga: añadirlo a otra lo mueve",
   await loadDemo(page);
   await seed(
     page,
-    { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Otra" }, Unpacking: { series: "Otra" } },
-    { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] },
+    { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Otra" }, Unpacking: { saga: "Otra" } },
+    { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555 })] },
   );
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [catalogGame(555, "Hades II", "2025-09-25")] } }));
   await openApp(page, "/sagas?saga=Otra");
@@ -315,8 +318,8 @@ test("una saga no está completada si no tienes ninguno, o te faltan algunos", a
   await loadDemo(page);
   await seed(
     page,
-    { Celeste: { series: "Prueba" }, Unpacking: { series: "Prueba" } },
-    { extras: [extra({ series: "Solo faltan", title: "Uno", igdbId: 1 }), extra({ series: "Solo faltan", title: "Dos", igdbId: 2 }), extra({ series: "Prueba", title: "Tres", igdbId: 3 })] },
+    { Celeste: { saga: "Prueba" }, Unpacking: { saga: "Prueba" } },
+    { extras: [extra({ saga: "Solo faltan", title: "Uno", igdbId: 1 }), extra({ saga: "Solo faltan", title: "Dos", igdbId: 2 }), extra({ saga: "Prueba", title: "Tres", igdbId: 3 })] },
   );
   await openApp(page, "/sagas?saga=Solo%20faltan");
   await expect(page.getByText("Aún no tienes ninguno")).toBeVisible();
@@ -329,7 +332,7 @@ test("una saga no está completada si no tienes ninguno, o te faltan algunos", a
 
 test("quitar una saga avisa de que los que no tienes se van con ella", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } }, { extras: [extra({ series: "Prueba", title: "Hades II", igdbId: 555 })] });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555 })] });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar saga" }).click();
   const alert = page.getByRole("region", { name: "Prueba" }).getByRole("alert");
@@ -339,7 +342,7 @@ test("quitar una saga avisa de que los que no tienes se van con ella", async ({ 
 
 test("buscar los que faltan enseña que está buscando", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   let answer: () => void = () => {};
   const waiting = new Promise<void>((resolve) => (answer = resolve));
   await page.route("**/api/catalogo/serie", async (route) => {
@@ -355,7 +358,7 @@ test("buscar los que faltan enseña que está buscando", async ({ page }) => {
 
 test("el buscador de IGDB no deja a la vista el mensaje de una búsqueda anterior", async ({ page }) => {
   await loadDemo(page);
-  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [] } }));
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Añadir a la saga" }).click();
@@ -364,4 +367,38 @@ test("el buscador de IGDB no deja a la vista el mensaje de una búsqueda anterio
   await expect(page.getByText("Nada con «zz» en IGDB.")).toBeVisible();
   await search.fill("z");
   await expect(page.getByText("Nada con «zz» en IGDB.")).toHaveCount(0);
+});
+
+test("las copias de seguridad van en el formato 2, con franquicia y saga; las del 1 se siguen leyendo", () => {
+  const jedi = game("Jedi: Survivor", { franchise: "Star Wars", saga: "Star Wars Jedi", sagaOrder: 2 });
+  const fresh = createBackup({ games: [jedi], copies: [], wishlist: [], extras: [extra({ saga: "Star Wars Jedi" })] });
+  expect(fresh.version).toBe(2);
+  const text = JSON.stringify(fresh);
+  expect(text).toContain('"franchise":"Star Wars"');
+  expect(text).not.toContain('"series"');
+  // El formato 1: «saga» era la franquicia, «series» la saga y lo descartado, «Sin historia».
+  const { franchise, saga, sagaOrder, ...rest } = jedi;
+  void franchise;
+  void saga;
+  void sagaOrder;
+  const old = {
+    app: "ludoteca",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: {
+      games: [
+        { ...rest, saga: "Star Wars", series: "Star Wars Jedi", seriesOrder: 2 },
+        { ...rest, id: crypto.randomUUID(), title: "Quitado", saga: "Sin saga", series: "Sin historia", seriesOrder: null },
+      ],
+      copies: [],
+      wishlist: [],
+      extras: [{ ...extra({}), saga: undefined, series: "Star Wars Jedi", seriesOrder: 1 }],
+    },
+  };
+  const parsed = parseBackup(JSON.stringify(old));
+  if (!parsed.ok) throw new Error(parsed.errors.join("\n"));
+  const [a, b] = parsed.backup.data.games;
+  expect([a.franchise, a.saga, a.sagaOrder]).toEqual(["Star Wars", "Star Wars Jedi", 2]);
+  expect([b.franchise, b.saga]).toEqual([null, "Sin saga"]);
+  expect(parsed.backup.data.extras.map((x) => [x.saga, x.sagaOrder])).toEqual([["Star Wars Jedi", 1]]);
 });

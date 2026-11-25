@@ -40,8 +40,8 @@ function catalogFields(c: CatalogGame) {
     criticRating: c.criticRating,
     summary: c.summary,
     developer: c.developer,
+    franchise: c.franchise,
     saga: c.saga,
-    series: c.series,
     releaseDate: c.releaseDate,
     ageRating: c.ageRating,
   } satisfies Partial<Game>;

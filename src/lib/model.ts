@@ -99,12 +99,12 @@ export const gameSchema = z.object({
   // Ficha técnica: la trae el catálogo y se puede corregir a mano.
   summary: optionalText,
   developer: optionalText,
-  /** La franquicia (Star Wars). Se llama «saga» por herencia: la saga es `series`. */
-  saga: optionalText,
+  /** La franquicia: Star Wars. */
+  franchise: optionalText,
   /** La saga dentro de la franquicia (la serie de IGDB o puesta a mano): Star Wars Jedi dentro de Star Wars. */
-  series: optionalText,
+  saga: optionalText,
   /** Su puesto en la cronología de la saga, puesto a mano; sin él, cuenta el de lanzamiento. */
-  seriesOrder: z.number().int().min(1).max(10000).nullish(),
+  sagaOrder: z.number().int().min(1).max(10000).nullish(),
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
@@ -176,12 +176,12 @@ export const wishSchema = z.object({
 /** Un juego de una saga que no tienes: lo metes a mano (buscándolo en IGDB) para verlo en su sitio del mapa. */
 export const sagaExtraSchema = z.object({
   id: z.string().min(1),
-  series: z.string().trim().min(1).max(200),
+  saga: z.string().trim().min(1).max(200),
   igdbId: z.number().int().nullish(),
   title: z.string().trim().min(1).max(200),
   coverUrl: z.string().max(2_000_000).nullish(),
   releaseDate: isoDate.nullish(),
-  seriesOrder: z.number().int().min(1).max(10000).nullish(),
+  sagaOrder: z.number().int().min(1).max(10000).nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),
@@ -203,6 +203,34 @@ export interface Library {
 }
 
 export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [] });
+
+/*
+ * Formato 1 de los datos guardados (hasta noviembre de 2026): «saga» era la franquicia, «series» la saga y
+ * «seriesOrder» su puesto; lo descartado se llamaba «Sin historia» y «Sin saga» como franquicia era no tenerla.
+ * Las copias de seguridad y el almacén del navegador de entonces se pasan al formato 2 al leerlos.
+ */
+type Raw = Record<string, unknown>;
+const isRaw = (x: unknown): x is Raw => typeof x === "object" && x !== null && !Array.isArray(x);
+const lower = (x: unknown) => (typeof x === "string" ? x.trim().toLowerCase() : null);
+
+/** Un juego del formato 1, en el formato 2. */
+export function upgradeGameV1(game: unknown): unknown {
+  if (!isRaw(game)) return game;
+  const { saga, series, seriesOrder, ...rest } = game;
+  return {
+    ...rest,
+    franchise: lower(saga) === "sin saga" ? null : (saga ?? null),
+    saga: lower(series) === "sin historia" ? "Sin saga" : (series ?? null),
+    sagaOrder: seriesOrder ?? null,
+  };
+}
+
+/** Un juego de saga que no tienes del formato 1, en el formato 2. */
+export function upgradeExtraV1(extra: unknown): unknown {
+  if (!isRaw(extra)) return extra;
+  const { series, seriesOrder, ...rest } = extra;
+  return { ...rest, saga: series, sagaOrder: seriesOrder ?? null };
+}
 
 export function newId(): string {
   return crypto.randomUUID();
@@ -240,8 +268,8 @@ export function createGame(input: NewGameInput): Game {
     startedAt: null,
     finishedAt: null,
     pastRuns: [],
-    series: null,
-    seriesOrder: null,
+    saga: null,
+    sagaOrder: null,
     lastPlayedAt: null,
     modes: [],
     moods: [],
