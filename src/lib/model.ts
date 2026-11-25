@@ -104,8 +104,11 @@ export const gameSchema = z.object({
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
   notes: optionalText,
+  // La vuelta en curso: su inicio y su fin.
   startedAt: isoDate.nullish(),
   finishedAt: isoDate.nullish(),
+  /** Las vueltas anteriores, ya terminadas, al rejugar un juego superado. Las copias antiguas no las traen. */
+  pastRuns: z.array(z.object({ start: isoDate.nullable(), end: isoDate })).default([]),
   lastPlayedAt: isoDate.nullish(),
   modes: z.array(z.enum(PLAY_MODES)).default([]),
   moods: z.array(z.enum(MOODS)).default([]),
@@ -213,6 +216,7 @@ export function createGame(input: NewGameInput): Game {
     notes: null,
     startedAt: null,
     finishedAt: null,
+    pastRuns: [],
     lastPlayedAt: null,
     modes: [],
     moods: [],

@@ -21,6 +21,7 @@ import {
 } from "./model";
 import { isSupabaseConfigured, localModeAllowed } from "./config";
 import { LocalRepository } from "./repo/local";
+import { archiveRun, reopenSameDayRun, runNumber } from "./runs";
 import type { Changes, Repository, StorageMode } from "./repo/types";
 import { type SteamImportCounts, type SteamImportItem, planSteamImport } from "./steam-import";
 
@@ -37,6 +38,8 @@ interface Actions {
   addGame(game: NewGameInput, copy?: NewCopyInput): Game;
   updateGame(id: string, patch: Partial<Game>): void;
   setStatus(id: string, status: GameStatus): void;
+  /** Empieza otra vuelta de un juego ya superado: lo terminado se guarda y no se pierde. */
+  replay(id: string): void;
   /** Cambia el estado de varios juegos de una vez: un solo guardado, un solo aviso y un solo «Deshacer». */
   setStatusMany(ids: string[], status: GameStatus): void;
   /** Marca o quita el 100 %; marcarlo también lo pasa a Completado, en un solo guardado. */
@@ -179,9 +182,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ games }));
     };
     /** Las mismas reglas al cambiar de estado, uno o varios: fechas de inicio, última partida y fin. */
-    const withStatus = (previous: Game, status: GameStatus): Game => {
-      const next: Game = { ...previous, status, updatedAt: nowIso() };
+    const withStatus = (previous: Game, status: GameStatus, reopen = true): Game => {
       const today = todayIso();
+      // Volver a jugar (o a tener pendiente) un juego ya terminado es otra vuelta: la terminada se guarda,
+      // venga de «Completado», «Pausado» o «Abandonado».
+      // Volver a «Completado» el mismo día que se guardó es deshacer ese error, no otra vuelta.
+      const leaving = Boolean(previous.finishedAt) && (status === "jugando" || status === "pendiente");
+      const base = leaving ? archiveRun(previous) : status === "completado" && reopen ? (reopenSameDayRun(previous, today) ?? previous) : previous;
+      const next: Game = { ...base, status, updatedAt: nowIso() };
       if (status === "jugando") {
         next.startedAt ??= today;
         next.lastPlayedAt = today;
@@ -201,8 +209,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const restored = previous.flatMap((old) => {
         const now = findGame(old.id);
         if (!now) return [];
-        const { status, startedAt, lastPlayedAt, finishedAt } = old;
-        return [{ ...now, status, startedAt, lastPlayedAt, finishedAt, updatedAt: nowIso() }];
+        const { status, startedAt, lastPlayedAt, finishedAt, pastRuns } = old;
+        return [{ ...now, status, startedAt, lastPlayedAt, finishedAt, pastRuns, updatedAt: nowIso() }];
       });
       if (restored.length) void saveGames(restored);
     };
@@ -251,6 +259,17 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       },
 
+      replay(id) {
+        const previous = findGame(id);
+        if (!previous?.finishedAt || previous.endless) return;
+        const today = todayIso();
+        const next: Game = { ...archiveRun(previous), status: "jugando", startedAt: today, lastPlayedAt: today, updatedAt: nowIso() };
+        void saveGame(next);
+        toast(`«${previous.title}» empieza la vuelta ${runNumber(next)}`, {
+          action: { label: "Deshacer", onClick: () => undoStatus([previous]) },
+        });
+      },
+
       setCompleted100(id, done) {
         const previous = findGame(id);
         if (!previous) return;
@@ -275,12 +294,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const finishing = Boolean(date) && previous.status !== "completado";
         const unfinishing = !date && previous.status === "completado" && !previous.completed100;
         const backTo: GameStatus = previous.startedAt ? "jugando" : "pendiente";
+        // Terminar hoy una vuelta recién guardada hoy la recupera tal cual, con su inicio; con otra fecha, no.
         const next = finishing
-          ? withStatus(previous, "completado")
+          ? withStatus(previous, "completado", date === todayIso())
           : unfinishing
             ? { ...previous, status: backTo, updatedAt: nowIso() }
             : { ...previous, updatedAt: nowIso() };
-        void saveGame({ ...next, finishedAt: date, startedAt: date ? (previous.startedAt ?? date) : next.startedAt });
+        const reopened = next.pastRuns !== previous.pastRuns;
+        void saveGame(reopened ? next : { ...next, finishedAt: date, startedAt: date ? (previous.startedAt ?? date) : next.startedAt });
         if (finishing || unfinishing) {
           const message = finishing ? `«${previous.title}» pasa a ${STATUS_LABEL.completado}` : `«${previous.title}» vuelve a ${STATUS_LABEL[backTo]}`;
           toast(message, { action: { label: "Deshacer", onClick: () => undoStatus([previous]) } });
@@ -316,12 +337,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       markPlayedToday(id) {
         const game = findGame(id);
         if (!game) return;
-        const patch: Partial<Game> = { lastPlayedAt: todayIso() };
-        if (game.status === "pendiente" || game.status === "pausado") {
-          patch.status = "jugando";
-          patch.startedAt = game.startedAt ?? todayIso();
-        }
-        void saveGame({ ...game, ...patch, updatedAt: nowIso() });
+        // Ponerse a jugar uno pendiente o en pausa: las mismas reglas del estado (si ya estaba terminado, otra vuelta).
+        const resumes = game.status === "pendiente" || game.status === "pausado";
+        const next = resumes ? withStatus(game, "jugando") : { ...game, lastPlayedAt: todayIso(), updatedAt: nowIso() };
+        void saveGame(next);
         toast(`Anotado: has jugado a «${game.title}» hoy`, {
           action: { label: "Deshacer", onClick: () => void saveGame({ ...game, updatedAt: nowIso() }) },
         });
@@ -437,6 +456,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             notes: notes || null,
             startedAt: null,
             finishedAt: null,
+            pastRuns: [],
             lastPlayedAt: null,
             modes: [],
             moods: [],

@@ -333,11 +333,16 @@ test("en el móvil, el bocadillo de la guardiana no tapa las casillas del mapa",
 
 test("en el móvil, Ajustes son iconos de dos en dos y el panel del elegido justo debajo", async ({ page }) => {
   await loadDemo(page);
-  await page.goto("/ajustes");
+  await openApp(page, "/ajustes");
   const tiles = page.getByRole("navigation", { name: "Apartados de Ajustes" });
   const links = tiles.getByRole("link");
-  const [first, second] = await Promise.all([links.nth(0).boundingBox(), links.nth(1).boundingBox()]);
-  expect(Math.round(first!.y)).toBe(Math.round(second!.y));
+  // Se mide cuando la página ya no se recoloca: medir a media carga daba un píxel de diferencia en el CI.
+  await expect
+    .poll(async () => {
+      const [first, second] = await Promise.all([links.nth(0).boundingBox(), links.nth(1).boundingBox()]);
+      return Math.round(first!.y) === Math.round(second!.y);
+    })
+    .toBe(true);
   for (const link of await links.all()) expect(Math.round((await link.boundingBox())!.height)).toBeGreaterThanOrEqual(44);
   await tiles.getByRole("link", { name: /^Cuenta/ }).click();
   await expect(page).toHaveURL(/\?apartado=cuenta$/);

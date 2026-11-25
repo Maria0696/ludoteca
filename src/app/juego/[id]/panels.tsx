@@ -3,6 +3,7 @@
 import { ImageUp, Infinity as InfinityIcon, Plus, Search, Trash2, Trophy } from "lucide-react";
 import { useState } from "react";
 import { TROPHY_URL } from "@/components/pixel/sprites";
+import { daysBetween } from "@/lib/backup-reminder";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
 import {
@@ -314,6 +315,30 @@ export function Records({ game, copies, update }: { game: Game; copies: Copy[]; 
             <span className={styles.recordValue}>{row.value}</span>
           </li>
         ))}
+      </ol>
+      <Laps game={game} />
+    </>
+  );
+}
+
+/** Las vueltas de un juego rejugado, de la primera a la en curso; con una sola vuelta, nada. */
+function Laps({ game }: { game: Game }) {
+  if (game.pastRuns.length === 0) return null;
+  const laps = [...game.pastRuns, { start: game.startedAt ?? null, end: game.finishedAt ?? null }];
+  const day = (iso: string) => new Date(`${iso}T12:00:00`);
+  return (
+    <>
+      <h3 className={styles.lapsHead}>Vueltas</h3>
+      <ol className={styles.laps} aria-label="Vueltas">
+        {laps.map((lap, i) => {
+          const days = lap.start && lap.end ? daysBetween(day(lap.start), day(lap.end)) : null;
+          return (
+            <li key={i}>
+              {i + 1}. {lap.start ? formatDate(lap.start) : ""} → {lap.end ? formatDate(lap.end) : "en curso"}
+              {days != null && ` · ${days} ${days === 1 ? "día" : "días"}`}
+            </li>
+          );
+        })}
       </ol>
     </>
   );

@@ -4,7 +4,7 @@ import { isoToDmy, parseDmy } from "../../src/lib/format";
 import type { Copy, Game } from "../../src/lib/model";
 import { addGame, cards, contrastRatio, loadDemo, openApp } from "./helpers";
 
-const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, lastPlayedAt: null } as unknown as Game;
+const base = { status: "pendiente", completed100: false, rating: null, hoursPlayed: null, lengthHours: null, startedAt: null, finishedAt: null, pastRuns: [], lastPlayedAt: null } as unknown as Game;
 const withData = (patch: Partial<Game>) => ({ ...base, ...patch }) as Game;
 const copy = {} as Copy;
 
