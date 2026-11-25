@@ -74,6 +74,7 @@ Migración `0011_sagas.sql`; las copias de seguridad antiguas siguen sirviendo (
 - Las historias con **dos o más** juegos suyos, agrupadas bajo su marca («Star Wars»: Jedi, KOTOR…; si la historia no tiene marca o se llama igual, va sola). Buscador por título de historia o de juego.
 - Cada historia, en una fila: nombre, cuántos juegos, cuántos superados («2 de 3») y «Siguiente: …».
 - Al abrir una historia: el interruptor **Lanzamiento / Historia** y la lista de sus juegos, cada uno con carátula pequeña, año, estado y enlace a su ficha. En «Historia», cada juego tiene flechas ↑ ↓ para moverlo; mover el primero guarda el orden de todos (1…n) partiendo del que se ve.
+- Un juego que entra en una historia que ya tiene orden puesto (sin `seriesOrder`) va **al final** del orden de la historia, hasta que ella lo mueva; en «Lanzamiento», en su sitio por fecha. *(Decisión del agente.)*
 - **Siguiente**: el primero, en el orden elegido, que no esté superado (`timesFinished = 0`) ni abandonado. Si todos lo están, «Saga completada».
 - Mismo mundo que el resto (ventanas con marco de papel, Press Start 2P en títulos, VT323 para leer, estados con su color y su nombre).
 
@@ -86,3 +87,4 @@ Migración `0011_sagas.sql`; las copias de seguridad antiguas siguen sirviendo (
 - La forma exacta de la pantalla y de la página de una historia (una sola pantalla con la historia abierta al lado, o dos pantallas), dentro del estilo.
 - La dirección de la página de una historia (p. ej. `/sagas?historia=…`).
 - Recordar en el navegador qué orden se eligió la última vez (Lanzamiento / Historia).
+- Cómo saber cuántos juegos tiene cada serie en IGDB para elegir la más concreta (p. ej. `collections.games`).
