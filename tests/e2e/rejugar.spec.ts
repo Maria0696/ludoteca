@@ -169,3 +169,16 @@ test("una biblioteca guardada antes de las vueltas se puede rejugar", async ({ p
   await page.getByRole("button", { name: "Rejugar" }).click();
   await expect(lap(page)).toHaveText("Vuelta 2");
 });
+
+test("la ficha enseña las vueltas con inicio, fin y días", async ({ page }) => {
+  await loadDemo(page);
+  await openGame(page, ZELDA);
+  const records = page.getByRole("region", { name: "Tus récords" });
+  // Una sola vuelta: no hay lista que enseñar.
+  await expect(records.getByRole("list", { name: "Vueltas" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Rejugar" }).click();
+  const laps = records.getByRole("list", { name: "Vueltas" }).getByRole("listitem");
+  await expect(laps).toHaveCount(2);
+  await expect(laps.nth(0)).toContainText(/^1\..+→.+\d+ días$/);
+  await expect(laps.nth(1)).toContainText(/^2\..+→ en curso$/);
+});
