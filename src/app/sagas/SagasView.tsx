@@ -59,6 +59,7 @@ export function SagasView() {
   const [adding, setAdding] = useState<string | null>(null);
   const [missing, setMissing] = useState<{ story: string; items: (CatalogGame & { add: boolean })[] } | null>(null);
   const [creating, setCreating] = useState<{ name: string; picks: CatalogGame[] } | null>(null);
+  const [finding, setFinding] = useState(false);
   const [order, setOrder] = useLocalChoice<StoryOrder>("ludoteca:orden-saga", "lanzamiento", ["lanzamiento", "historia"]);
   const [extrasChoice, setExtrasChoice] = useLocalChoice<"si" | "no">("ludoteca:saga-faltan", "si", ["si", "no"]);
   const showExtras = extrasChoice === "si";
@@ -77,14 +78,29 @@ export function SagasView() {
   const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
   const wished = (x: SagaExtra) => isWished(library.wishlist, x);
 
-  /** Mete un juego en una historia: si lo tienes, entra como tuyo (y deja su historia anterior); si no, como «no lo tienes». */
-  function addToStory(name: string, c: CatalogGame) {
-    const owned = ownedMatch(c);
-    if (owned) {
-      actions.updateGames([{ id: owned.id, patch: { series: name } }]);
-    } else if (!library.extras.some((x) => x.series === name && x.igdbId === c.igdbId)) {
-      actions.addExtras([{ series: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, seriesOrder: null }]);
+  /**
+   * Mete juegos en una historia: si lo tienes, entra como tuyo (y deja su historia anterior); si no, como «no lo
+   * tienes». Un juego solo está en una historia: si ya faltaba en otra, se mueve aquí.
+   */
+  function placeInSaga(name: string, list: CatalogGame[]) {
+    const games: { id: string; patch: { series: string } }[] = [];
+    const moved: { id: string; patch: { series: string; seriesOrder: null } }[] = [];
+    const added: CatalogGame[] = [];
+    for (const c of list) {
+      const owned = ownedMatch(c);
+      const hollow = library.extras.find((x) => x.igdbId === c.igdbId);
+      if (owned) games.push({ id: owned.id, patch: { series: name } });
+      else if (hollow) {
+        if (hollow.series !== name) moved.push({ id: hollow.id, patch: { series: name, seriesOrder: null } });
+      } else if (!added.some((a) => a.igdbId === c.igdbId)) added.push(c);
     }
+    if (games.length) actions.updateGames(games);
+    if (moved.length) actions.updateExtras(moved);
+    if (added.length) actions.addExtras(added.map((c) => ({ series: name, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, seriesOrder: null })));
+  }
+
+  function addToStory(name: string, c: CatalogGame) {
+    placeInSaga(name, [c]);
     toast(`«${c.title}» añadido a «${name}»`);
   }
 
@@ -126,6 +142,7 @@ export function SagasView() {
   }
 
   async function findMissing(story: Story) {
+    setFinding(true);
     try {
       const res = await fetch("/api/catalogo/serie", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: story.name }) });
       const body = (await res.json()) as SeriesGamesResponse;
@@ -135,6 +152,8 @@ export function SagasView() {
       else toast(`IGDB no conoce más juegos de «${story.name}» que te falten.`);
     } catch {
       toast.error("No se pudo consultar el catálogo.");
+    } finally {
+      setFinding(false);
     }
   }
 
@@ -264,6 +283,7 @@ export function SagasView() {
               onRemove={() => removeStory(open)}
               onAdd={() => setAdding(open.name)}
               onFindMissing={() => void findMissing(open)}
+              finding={finding}
               onWish={(x) => {
                 actions.addWish({ title: x.title, coverUrl: x.coverUrl ?? null, igdbId: x.igdbId ?? null });
                 toast(`«${x.title}» añadido a tu lista de deseos`);
@@ -278,7 +298,10 @@ export function SagasView() {
                   ...open.games.map((g) => ({ id: g.id, patch: { series: name, seriesOrder: merging ? null : (g.seriesOrder ?? null) } })),
                   ...others.map((g) => ({ id: g.id, patch: { seriesOrder: null } })),
                 ]);
-                actions.updateExtras(open.extras.map((x) => ({ id: x.id, patch: { series: name, seriesOrder: merging ? null : (x.seriesOrder ?? null) } })));
+                actions.updateExtras([
+                  ...open.extras.map((x) => ({ id: x.id, patch: { series: name, seriesOrder: merging ? null : (x.seriesOrder ?? null) } })),
+                  ...library.extras.filter((x) => x.series === name).map((x) => ({ id: x.id, patch: { seriesOrder: null } })),
+                ]);
                 go(name);
               }}
             />
@@ -339,7 +362,7 @@ export function SagasView() {
                 disabled={!missing.items.some((i) => i.add)}
                 onClick={() => {
                   const chosen = missing.items.filter((i) => i.add);
-                  actions.addExtras(chosen.map((c) => ({ series: missing.story, igdbId: c.igdbId, title: c.title, coverUrl: c.coverUrl, releaseDate: c.releaseDate, seriesOrder: null })));
+                  placeInSaga(missing.story, chosen);
                   toast(`${count(chosen.length, "juego añadido", "juegos añadidos")} a «${missing.story}»`);
                   setMissing(null);
                 }}
@@ -401,7 +424,8 @@ export function SagasView() {
                 disabled={!creating.name.trim() || creating.picks.length < 2}
                 onClick={() => {
                   const name = creating.name.trim();
-                  for (const c of creating.picks) addToStory(name, c);
+                  placeInSaga(name, creating.picks);
+                  toast(`Saga «${name}» creada`);
                   setCreating(null);
                   go(name);
                 }}
@@ -509,6 +533,7 @@ function StoryMap({
   onRename,
   onAdd,
   onFindMissing,
+  finding,
   onWish,
   onDropGame,
   onDropExtra,
@@ -525,6 +550,7 @@ function StoryMap({
   onRename: (name: string) => void;
   onAdd: () => void;
   onFindMissing: () => void;
+  finding: boolean;
   onWish: (x: SagaExtra) => void;
   onDropGame: (g: Game) => void;
   onDropExtra: (x: SagaExtra) => void;
@@ -690,15 +716,17 @@ function StoryMap({
       </ol>
 
       <div className={styles.foot}>
-        <span className={styles.verdict}>{next ? `Siguiente: ${next.title}` : "Saga completada"}</span>
+        <span className={styles.verdict}>
+          {next ? `Siguiente: ${next.title}` : story.games.length === 0 ? "Aún no tienes ninguno" : story.extras.length ? "Superados los que tienes" : "Saga completada"}
+        </span>
         <div className={styles.footActions}>
           <button type="button" className="btn btn-sm" onClick={onAdd}>
             <Plus aria-hidden />
             Añadir a la saga
           </button>
-          <button type="button" className="btn btn-sm btn-quiet" onClick={onFindMissing}>
+          <button type="button" className="btn btn-sm btn-quiet" disabled={finding} onClick={onFindMissing}>
             <SearchCheck aria-hidden />
-            Buscar los que faltan
+            {finding ? "Buscando…" : "Buscar los que faltan"}
           </button>
           {!confirming && (
             <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirming(true)}>
@@ -711,7 +739,14 @@ function StoryMap({
       {confirming && (
         <div className={styles.confirm} role="alert">
           <p>
-            ¿Quitar la saga «{story.name}»? Sus {story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una historia, y Traer de IGDB no la vuelve a proponer.
+            ¿Quitar la saga «{story.name}»?
+            {story.games.length > 0 &&
+              (story.games.length === 1
+                ? " Su juego se queda en tu biblioteca; solo deja de estar en una historia."
+                : ` Sus ${story.games.length} juegos se quedan en tu biblioteca; solo dejan de estar en una historia.`)}
+            {story.extras.length > 0 &&
+              (story.extras.length === 1 ? " El que no tienes desaparece con ella." : ` Los ${story.extras.length} que no tienes desaparecen con ella.`)}{" "}
+            Traer de IGDB no la vuelve a proponer.
           </p>
           <div className={styles.confirmActions}>
             <button type="button" className="btn btn-danger btn-sm" onClick={onRemove}>

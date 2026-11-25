@@ -13,7 +13,8 @@ import styles from "./sagas.module.css";
 export function IgdbSearch({ onPick, owned, chosen = [] }: { onPick: (game: CatalogGame) => void; owned: (game: CatalogGame) => boolean; chosen?: number[] }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<CatalogGame[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  // El mensaje va con su búsqueda: si escribes otra cosa, deja de verse.
+  const [message, setMessage] = useState<{ query: string; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -26,9 +27,10 @@ export function IgdbSearch({ onPick, owned, chosen = [] }: { onPick: (game: Cata
         const res = await fetch(`/api/catalogo?q=${encodeURIComponent(query)}`, { signal: ctrl.signal });
         const data = (await res.json()) as CatalogResponse;
         setResults(data.ok ? data.results : []);
-        setMessage(data.ok ? (data.results.length ? null : `Nada con «${query}» en IGDB.`) : data.message);
+        const text = data.ok ? (data.results.length ? null : `Nada con «${query}» en IGDB.`) : data.message;
+        setMessage(text ? { query, text } : null);
       } catch (e) {
-        if ((e as Error).name !== "AbortError") setMessage("No se pudo consultar el catálogo.");
+        if ((e as Error).name !== "AbortError") setMessage({ query, text: "No se pudo consultar el catálogo." });
       } finally {
         setLoading(false);
       }
@@ -49,7 +51,7 @@ export function IgdbSearch({ onPick, owned, chosen = [] }: { onPick: (game: Cata
         <input className="input" type="search" placeholder="Busca el juego en IGDB" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
       </label>
       {loading && <p className={styles.hint}>Buscando…</p>}
-      {message && !loading && <p className={styles.hint}>{message}</p>}
+      {message?.query === q.trim() && !loading && <p className={styles.hint}>{message.text}</p>}
       {visible.length > 0 && (
         <ul className={styles.results}>
           {visible.map((r) => (
