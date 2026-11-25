@@ -134,10 +134,11 @@ export type Proposal = { name: string; games: Game[] };
  * Lo que propone IGDB: por historia, los juegos que no tienen ninguna (los que se quedaron en «Sin historia»
  * a propósito no cuentan). Ella elige cuáles añadir.
  */
-export function proposeStories(games: Game[], found: Record<string, string | null>): Proposal[] {
+export function proposeStories(games: Game[], found: Record<string, string | null>, { discarded = false } = {}): Proposal[] {
   const map = new Map<string, Game[]>();
   for (const g of games) {
-    const name = g.igdbId != null && !g.series?.trim() ? found[String(g.igdbId)]?.trim() : null;
+    const waiting = discarded ? g.series === NO_STORY : !g.series?.trim();
+    const name = g.igdbId != null && waiting ? found[String(g.igdbId)]?.trim() : null;
     if (name) map.set(name, [...(map.get(name) ?? []), g]);
   }
   return [...map.entries()].map(([name, list]) => ({ name, games: list })).sort((a, b) => byName(a.name, b.name));

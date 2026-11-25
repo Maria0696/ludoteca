@@ -60,6 +60,7 @@ export function SagasView() {
   const [missing, setMissing] = useState<{ story: string; items: (CatalogGame & { add: boolean })[] } | null>(null);
   const [creating, setCreating] = useState<{ name: string; picks: CatalogGame[] } | null>(null);
   const [finding, setFinding] = useState(false);
+  const [again, setAgain] = useState(false);
   const [order, setOrder] = useLocalChoice<StoryOrder>("ludoteca:orden-saga", "lanzamiento", ["lanzamiento", "historia"]);
   const [extrasChoice, setExtrasChoice] = useLocalChoice<"si" | "no">("ludoteca:saga-faltan", "si", ["si", "no"]);
   const showExtras = extrasChoice === "si";
@@ -73,6 +74,8 @@ export function SagasView() {
   // Sin elegir, la primera: el mapa siempre enseña una historia.
   const open = stories.find((s) => s.name === params.get("historia")) ?? visible[0] ?? null;
   const unsorted = library.games.filter((g) => g.igdbId != null && !g.series?.trim());
+  // Los que se dejaron sin historia a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
+  const discarded = library.games.filter((g) => g.igdbId != null && g.series === NO_STORY);
   const go = (name: string | null) => router.push(name ? `/sagas?historia=${encodeURIComponent(name)}` : "/sagas", { scroll: false });
 
   const ownedMatch = (c: { igdbId?: number | null; title: string }) => findOwned(library.games, c);
@@ -104,27 +107,45 @@ export function SagasView() {
     toast(`«${c.title}» añadido a «${name}»`);
   }
 
+  /** La historia de IGDB de cada juego, por tandas. Si IGDB falla, lo dice y devuelve null. */
+  async function seriesOf(list: Game[]): Promise<Record<string, string | null> | null> {
+    const found: Record<string, string | null> = {};
+    const ids = list.map((g) => g.igdbId!);
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const res = await fetch("/api/catalogo/series", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ igdbIds: ids.slice(i, i + BATCH) }),
+      });
+      const body = (await res.json()) as SeriesResponse;
+      if (!body.ok) {
+        toast.error(body.message);
+        return null;
+      }
+      Object.assign(found, body.series);
+    }
+    return found;
+  }
+
   async function fetchSeries() {
     setFetching(true);
-    const found: Record<string, string | null> = {};
     try {
-      const ids = unsorted.map((g) => g.igdbId!);
-      for (let i = 0; i < ids.length; i += BATCH) {
-        const res = await fetch("/api/catalogo/series", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ igdbIds: ids.slice(i, i + BATCH) }),
-        });
-        const body = (await res.json()) as SeriesResponse;
-        if (!body.ok) {
-          toast.error(body.message);
-          return;
-        }
-        Object.assign(found, body.series);
-      }
+      const found = unsorted.length ? await seriesOf(unsorted) : {};
+      if (!found) return;
       const list = proposeStories(library.games, found);
-      if (list.length) setProposals(list.map((p) => ({ ...p, add: true })));
-      else toast("IGDB no tiene historias nuevas para tus juegos.");
+      if (list.length) {
+        setProposals(list.map((p) => ({ ...p, add: true })));
+        setAgain(false);
+        return;
+      }
+      // Nada nuevo: lo descartado, sin marcar, por si cambias de idea.
+      const before = discarded.length ? await seriesOf(discarded) : {};
+      if (!before) return;
+      const old = proposeStories(library.games, before, { discarded: true });
+      if (old.length) {
+        setProposals(old.map((p) => ({ ...p, add: false })));
+        setAgain(true);
+      } else toast("IGDB no tiene historias nuevas para tus juegos.");
     } catch {
       toast.error("No se pudo consultar el catálogo.");
     } finally {
@@ -134,8 +155,10 @@ export function SagasView() {
 
   function applyProposals() {
     if (!proposals) return;
-    // Lo que no se añade se queda en «Sin historia»: así no se vuelve a proponer.
-    actions.updateGames(proposals.flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { series: p.add ? p.name : NO_STORY } }))));
+    // Lo que no se añade se queda en «Sin historia»: así no se vuelve a proponer (lo ya descartado, ni se toca).
+    actions.updateGames(
+      proposals.filter((p) => p.add || !again).flatMap((p) => p.games.map((g) => ({ id: g.id, patch: { series: p.add ? p.name : NO_STORY } }))),
+    );
     const added = proposals.filter((p) => p.add).length;
     toast(added ? count(added, "historia añadida", "historias añadidas") : "No se ha añadido ninguna historia.");
     setProposals(null);
@@ -187,7 +210,7 @@ export function SagasView() {
   }
 
   const fetchButton = (primary: boolean) => (
-    <button type="button" className={`btn ${primary ? "btn-ink" : ""}`} disabled={fetching || unsorted.length === 0} onClick={() => void fetchSeries()}>
+    <button type="button" className={`btn ${primary ? "btn-ink" : ""}`} disabled={fetching || unsorted.length + discarded.length === 0} onClick={() => void fetchSeries()}>
       <DownloadCloud aria-hidden />
       {fetching ? "Trayendo…" : "Traer historias de IGDB"}
     </button>
@@ -228,7 +251,9 @@ export function SagasView() {
               {newSagaButton}
             </div>
             <p className={styles.hint}>
-              {unsorted.length ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué historias añadir.` : "Ninguno de tus juegos espera historia de IGDB."}
+              {unsorted.length ? `${count(unsorted.length, "juego tuyo está enlazado", "juegos tuyos están enlazados")} con IGDB. Tú eliges qué historias añadir.` : discarded.length
+                  ? `${count(discarded.length, "juego lo dejaste", "juegos los dejaste")} sin historia: Traer te ofrece recuperarlos.`
+                  : "Ninguno de tus juegos espera historia de IGDB."}
             </p>
           </div>
         </section>
@@ -312,7 +337,7 @@ export function SagasView() {
       <Dialog
         open={proposals !== null}
         onClose={() => setProposals(null)}
-        title={`IGDB propone ${count(proposals?.length ?? 0, "historia", "historias")}`}
+        title={again ? "Historias que descartaste" : `IGDB propone ${count(proposals?.length ?? 0, "historia", "historias")}`}
         footer={
           proposals && (
             <>
@@ -328,7 +353,11 @@ export function SagasView() {
       >
         {proposals && (
           <div className={styles.review}>
-            <p className={styles.hint}>Marca las que quieras añadir. Las demás no se añaden y no te las vuelve a proponer; siempre puedes ponerlas a mano en la ficha.</p>
+            <p className={styles.hint}>
+              {again
+                ? "IGDB no tiene historias nuevas para tus juegos. Estas las descartaste: marca las que quieras recuperar."
+                : "Marca las que quieras añadir. Las demás no se añaden y no te las vuelve a proponer; siempre puedes ponerlas a mano en la ficha."}
+            </p>
             <AllOrNone onAll={(add) => setProposals(proposals.map((p) => ({ ...p, add })))} />
             <ul className={styles.proposals}>
               {proposals.map((p, i) => (
