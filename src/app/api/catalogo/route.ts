@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { CatalogResponse } from "@/lib/catalog";
-import { catalogSearchQuery, rankCatalogResults } from "@/lib/catalog-search";
+import { catalogNameQuery, catalogSearchQuery, searchCatalog } from "@/lib/catalog-search";
 import { fetchCatalogGames, igdbConfigured } from "@/lib/igdb";
 import { authorizeRequest } from "@/lib/supabase/server";
 
@@ -28,10 +28,15 @@ export async function GET(request: Request) {
   if (!id && q.length < 2) return NextResponse.json<CatalogResponse>({ ok: true, results: [] });
 
   try {
-    const found = await fetchCatalogGames((fields) => (id ? `fields ${fields}; where id = ${id}; limit 1;` : catalogSearchQuery(q, fields)), {
-      requireTimes: params.has("duracion"),
-    });
-    return NextResponse.json<CatalogResponse>({ ok: true, results: id ? found : rankCatalogResults(found, q) });
+    const options = { requireTimes: params.has("duracion") };
+    const results = id
+      ? await fetchCatalogGames((fields) => `fields ${fields}; where id = ${id}; limit 1;`, options)
+      : await searchCatalog(
+          q,
+          () => fetchCatalogGames((fields) => catalogSearchQuery(q, fields), options),
+          () => fetchCatalogGames((fields) => catalogNameQuery(q, fields), options),
+        );
+    return NextResponse.json<CatalogResponse>({ ok: true, results });
   } catch (e) {
     return NextResponse.json<CatalogResponse>(
       { ok: false, reason: "error", message: e instanceof Error ? e.message : "No se pudo consultar el catálogo." },

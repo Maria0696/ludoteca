@@ -14,9 +14,31 @@ export const CATALOG_RESULTS = 8;
 const HIDDEN_GAME_TYPES = "5,7,13,14";
 const FETCHED = 30;
 
+const safeText = (q: string) => q.replace(/["\\]/g, " ").slice(0, 80);
+
 export function catalogSearchQuery(q: string, fields: string): string {
-  const safe = q.replace(/["\\]/g, " ").slice(0, 80);
-  return `search "${safe}"; fields ${fields}; where version_parent = null & game_type != (${HIDDEN_GAME_TYPES}); limit ${FETCHED};`;
+  return `search "${safeText(q)}"; fields ${fields}; where version_parent = null & game_type != (${HIDDEN_GAME_TYPES}); limit ${FETCHED};`;
+}
+
+/**
+ * Por nombre: el texto dentro del nombre, sin filtrar por tipo. Para cuando la búsqueda de IGDB no trae el juego que
+ * se llama así (le pasaba a «God of War Ragnarök: Valhalla», un DLC).
+ */
+export function catalogNameQuery(q: string, fields: string): string {
+  return `fields ${fields}; where name ~ *"${safeText(q)}"*; limit 10;`;
+}
+
+/**
+ * Busca en el catálogo: primero con la búsqueda de IGDB y, si no trae el juego que se llama exactamente así, también
+ * por nombre (si eso falla, quedan los de la primera). Ordenados con `rankCatalogResults`.
+ */
+export async function searchCatalog(q: string, search: () => Promise<CatalogGame[]>, byName: () => Promise<CatalogGame[]>): Promise<CatalogGame[]> {
+  const found = await search();
+  const wanted = normalizeTitle(q);
+  if (found.some((g) => normalizeTitle(g.title) === wanted)) return rankCatalogResults(found, q);
+  const more = await byName().catch((): CatalogGame[] => []);
+  const seen = new Set(found.map((g) => g.igdbId));
+  return rankCatalogResults([...found, ...more.filter((g) => !seen.has(g.igdbId))], q);
 }
 
 /** Primero el título exacto, luego los que empiezan igual y después el resto, respetando el orden de IGDB dentro de cada grupo. */

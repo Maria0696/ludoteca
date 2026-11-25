@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { CatalogGame } from "../../src/lib/catalog";
-import { catalogSearchQuery, rankCatalogResults } from "../../src/lib/catalog-search";
+import { catalogNameQuery, catalogSearchQuery, rankCatalogResults, searchCatalog } from "../../src/lib/catalog-search";
 
 function game(igdbId: number, title: string): CatalogGame {
   return {
@@ -42,3 +42,41 @@ test.describe("buscar en el catálogo", () => {
     expect(query).toBe('search "Genshin  Impact "; fields name; where version_parent = null & game_type != (5,7,13,14); limit 30;');
   });
 });
+
+test.describe("búsqueda por nombre cuando IGDB no trae el título exacto", () => {
+  test("si la búsqueda no trae el título exacto, se busca por nombre y sale el primero", async () => {
+    let asked = 0;
+    const results = await searchCatalog(
+      "God of War Ragnarök: Valhalla",
+      async () => [game(1, "God of War Ragnarök"), game(2, "God of War")],
+      async () => {
+        asked++;
+        return [game(3, "God of War Ragnarök: Valhalla"), game(1, "God of War Ragnarök")];
+      },
+    );
+    expect(asked).toBe(1);
+    expect(results.map((g) => g.title)).toEqual(["God of War Ragnarök: Valhalla", "God of War Ragnarök", "God of War"]);
+  });
+
+  test("si ya está el título exacto (aunque sin tilde), no se pregunta más", async () => {
+    let asked = 0;
+    const results = await searchCatalog("god of war ragnarok", async () => [game(1, "God of War Ragnarök")], async () => {
+      asked++;
+      return [];
+    });
+    expect(asked).toBe(0);
+    expect(results.map((g) => g.title)).toEqual(["God of War Ragnarök"]);
+  });
+
+  test("si la búsqueda por nombre falla, quedan los resultados de la primera", async () => {
+    const results = await searchCatalog("Valhalla", async () => [game(1, "Assassin's Creed Valhalla")], async () => {
+      throw new Error("IGDB");
+    });
+    expect(results.map((g) => g.title)).toEqual(["Assassin's Creed Valhalla"]);
+  });
+
+  test("la consulta por nombre busca el texto dentro del nombre, sin filtrar por tipo", () => {
+    expect(catalogNameQuery('God of War "Ragnarök": Valhalla', "name")).toBe('fields name; where name ~ *"God of War  Ragnarök : Valhalla"*; limit 10;');
+  });
+});
+
