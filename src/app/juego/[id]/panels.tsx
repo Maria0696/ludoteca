@@ -6,6 +6,7 @@ import { TROPHY_URL } from "@/components/pixel/sprites";
 import { daysBetween } from "@/lib/backup-reminder";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
+import { useLibrary } from "@/lib/store";
 import {
   type Copy,
   type Game,
@@ -473,14 +474,17 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
 
 /** Lo que el catálogo sabe del juego. Cada hueco tiene su botón: lo que hayas corregido se queda. */
 export function TechSheet({ game, update }: { game: Game; update: Update }) {
-  const bring = (what: string, field: "summary" | "developer" | "saga" | "releaseDate" | "ageRating") =>
+  const { library } = useLibrary();
+  // Las historias que ya existen, para elegir una al escribir.
+  const stories = [...new Set(library.games.flatMap((g) => (g.series?.trim() ? [g.series.trim()] : [])))].sort((a, b) => a.localeCompare(b, "es"));
+  const bring = (what: string, field: "summary" | "developer" | "saga" | "series" | "releaseDate" | "ageRating") =>
     game.igdbId != null &&
     !game[field] && <FillFromIgdb igdbId={game.igdbId} what={what} update={update} read={(found) => (found[field] ? { [field]: found[field] } : null)} />;
 
-  const text = (label: string, field: "developer" | "saga" | "ageRating") => (
+  const text = (label: string, field: "developer" | "saga" | "series" | "ageRating", suggestions?: string[]) => (
     <Row label={label}>
       <div className={styles.fieldLine}>
-        <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} onSave={(v) => update({ [field]: v })} />
+        <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} suggestions={suggestions} onSave={(v) => update({ [field]: v })} />
         {bring(label.toLowerCase(), field)}
       </div>
     </Row>
@@ -498,6 +502,8 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
       <dl className={styles.stats}>
         {text("Desarrolladora", "developer")}
         {text("Saga", "saga")}
+        {/* La historia dentro de la saga, para la pantalla Sagas (Star Wars Jedi dentro de Star Wars). */}
+        {text("Historia", "series", stories)}
         <Row label="Lanzamiento">
           <div className={styles.fieldLine}>
             <Editable kind="date" quiet label="Lanzamiento" value={game.releaseDate} display={game.releaseDate ? formatDate(game.releaseDate) : null} empty="Añadir" onSave={(releaseDate) => update({ releaseDate })} />

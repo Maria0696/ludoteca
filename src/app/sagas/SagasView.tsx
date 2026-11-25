@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowLeft, ArrowUp, DownloadCloud, Search } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, DownloadCloud, Pencil, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -124,6 +124,14 @@ export function SagasView() {
               onMove={(id, dir) => {
                 for (const m of moveInStory(open, id, dir)) actions.updateGame(m.id, { seriesOrder: m.seriesOrder });
               }}
+              onRename={(name) => {
+                // Si ya hay una historia con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
+                const merging = stories.some((s) => s.name === name && s.name !== open.name) || library.games.some((g) => g.series?.trim() === name && !open.games.includes(g));
+                const others = merging ? library.games.filter((g) => g.series?.trim() === name) : [];
+                for (const g of open.games) actions.updateGame(g.id, merging ? { series: name, seriesOrder: null } : { series: name });
+                for (const g of others) actions.updateGame(g.id, { seriesOrder: null });
+                router.push(`/sagas?historia=${encodeURIComponent(name)}`, { scroll: false });
+              }}
             />
           )}
         </div>
@@ -155,22 +163,49 @@ function StoryPanel({
   setOrder,
   onClose,
   onMove,
+  onRename,
 }: {
   story: Story;
   order: StoryOrder;
   setOrder: (o: StoryOrder) => void;
   onClose: () => void;
   onMove: (id: string, dir: -1 | 1) => void;
+  onRename: (name: string) => void;
 }) {
   const ordered = orderStory(story, order);
   const next = nextInStory(ordered);
+  const [renaming, setRenaming] = useState(false);
   return (
     <section className={`window ${styles.story}`} aria-labelledby="historia-abierta">
       <button type="button" className={`btn btn-quiet btn-sm ${styles.back}`} onClick={onClose}>
         <ArrowLeft aria-hidden />
         Todas las sagas
       </button>
-      <h2 id="historia-abierta">{story.name}</h2>
+      <div className={styles.titleLine}>
+        <h2 id="historia-abierta">{story.name}</h2>
+        {!renaming && (
+          <button type="button" className="btn btn-quiet btn-sm" onClick={() => setRenaming(true)}>
+            <Pencil aria-hidden />
+            Cambiar nombre
+          </button>
+        )}
+      </div>
+      {renaming && (
+        <form
+          className={styles.rename}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const name = String(new FormData(e.currentTarget).get("nombre") ?? "").trim();
+            setRenaming(false);
+            if (name && name !== story.name) onRename(name);
+          }}
+        >
+          <input className="input" name="nombre" aria-label="Nombre de la historia" defaultValue={story.name} maxLength={200} autoFocus onKeyDown={(e) => e.key === "Escape" && setRenaming(false)} />
+          <button type="submit" className="btn btn-sm">
+            Guardar
+          </button>
+        </form>
+      )}
       {story.brand && <p className={styles.storyBrand}>{story.brand}</p>}
       <div className={styles.orders} role="radiogroup" aria-label="Orden">
         {ORDERS.map((o) => (

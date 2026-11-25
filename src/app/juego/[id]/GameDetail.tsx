@@ -14,6 +14,7 @@ import { ARCADE_STATUS } from "@/components/ui/StatusMark";
 import { GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
 import { PISTAS, PISTA_PAGINA, type PistaId, marcarPista, pistasVistas } from "@/lib/pistas";
 import { runNumber } from "@/lib/runs";
+import { storyPosition } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
@@ -107,6 +108,8 @@ export function GameDetail({ id }: { id: string }) {
   }
 
   const reached = reachedStages(game, copies);
+  // Su puesto en la historia de su saga, si la historia tiene dos o más juegos.
+  const story = storyPosition(game, library.games);
   const update = (patch: Parameters<typeof actions.updateGame>[1]) => actions.updateGame(game.id, patch);
 
   const toggle100 = () => {
@@ -177,6 +180,11 @@ export function GameDetail({ id }: { id: string }) {
                   <RotateCcw aria-hidden />
                   Rejugar
                 </button>
+              )}
+              {story && (
+                <Link href={`/sagas?historia=${encodeURIComponent(story.name)}`} className={styles.storyLink}>
+                  Historia: {story.name} · <span className={styles.nowrap}>{story.position} de {story.total}</span>
+                </Link>
               )}
               {game.demo && <span className={styles.demoTag}>Juego de demostración</span>}
             </div>

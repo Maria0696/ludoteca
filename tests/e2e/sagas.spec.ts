@@ -147,3 +147,50 @@ test("traer de IGDB rellena las historias vacías y no pisa las corregidas", asy
   // Celeste conserva la historia que se le puso a mano.
   await expect(sagas.getByRole("link", { name: /^Celeste/ })).toHaveCount(0);
 });
+
+async function openGame(page: Page, title: string) {
+  await openApp(page, "/biblioteca?agrupar=ninguno");
+  await page.getByRole("link", { name: new RegExp(`^${title}`) }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+}
+
+async function setStory(page: Page, title: string, story: string | null) {
+  await openGame(page, title);
+  const sheet = page.getByRole("region", { name: "Ficha técnica" });
+  await sheet.getByRole("button", { name: /^Historia: / }).click();
+  // Con historias ya puestas, el campo ofrece sugerencias (y se anuncia como combobox).
+  const field = sheet.getByLabel("Historia", { exact: true });
+  await field.fill(story ?? "");
+  await field.press("Enter");
+}
+
+test("la ficha lleva a su historia con su puesto", async ({ page }) => {
+  await loadDemo(page);
+  await setStory(page, "Hades", "Prueba");
+  await setStory(page, "Celeste", "Prueba");
+  // Celeste (2018) va antes que Hades (2020).
+  await page.getByRole("link", { name: "Historia: Prueba · 1 de 2" }).click();
+  await expect(page).toHaveURL(/\/sagas\?historia=Prueba$/);
+  await expect(page.getByRole("heading", { level: 2, name: "Prueba" })).toBeVisible();
+});
+
+test("vaciar la historia de un juego deja la historia fuera si se queda con uno", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" } });
+  await setStory(page, "Hades", null);
+  await expect(page.getByRole("link", { name: /^Historia: / })).toHaveCount(0);
+  await openApp(page, "/sagas");
+  await expect(page.getByRole("heading", { level: 2, name: "Aún no hay historias" })).toBeVisible();
+});
+
+test("cambiar el nombre de una historia lo cambia en todos sus juegos y une las que se llaman igual", async ({ page }) => {
+  await loadDemo(page);
+  await seed(page, { Hades: { series: "Prueba" }, Celeste: { series: "Prueba" }, "Hollow Knight": { series: "Otra" }, Spiritfarer: { series: "Otra" } });
+  await openApp(page, "/sagas?historia=Prueba");
+  await page.getByRole("button", { name: "Cambiar nombre" }).click();
+  await page.getByRole("textbox", { name: "Nombre de la historia" }).fill("Otra");
+  await page.getByRole("textbox", { name: "Nombre de la historia" }).press("Enter");
+  await expect(page).toHaveURL(/historia=Otra$/);
+  await expect(storyGames(page)).toHaveCount(4);
+  await expect(page.getByRole("region", { name: "Sagas" }).getByRole("link", { name: /^Prueba/ })).toHaveCount(0);
+});
