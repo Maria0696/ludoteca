@@ -20,7 +20,8 @@ export function reachedStages(game: Game, copies: Copy[]): boolean[] {
     Boolean(game.startedAt),
     (game.hoursPlayed ?? 0) > 0 || Boolean(game.lastPlayedAt),
     game.rating != null,
-    game.endless ? Boolean(game.lastPlayedAt) : Boolean(game.finishedAt) || game.status === "completado",
+    // Superado una vez, superado siempre: mientras se rejuega, «Terminado» sigue alcanzado.
+    game.endless ? Boolean(game.lastPlayedAt) : Boolean(game.finishedAt) || game.status === "completado" || game.pastRuns.length > 0,
     game.completed100,
   ];
 }

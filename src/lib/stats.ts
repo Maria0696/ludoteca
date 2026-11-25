@@ -1,4 +1,5 @@
 import { type Format, type GameStatus, type Library, GAME_STATUSES, PLATFORM_FAMILIES } from "./model";
+import { finishDates } from "./runs";
 
 /*
  * Estadísticas calculadas solo a partir de los datos guardados.
@@ -60,7 +61,8 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
 
   for (const g of library.games) {
     byStatus[g.status]++;
-    if (g.finishedAt?.startsWith(year)) finishedThisYear++;
+    // Cada vuelta terminada cuenta en el año en que acaba, también las de un juego rejugado.
+    finishedThisYear += finishDates(g).filter((d) => d.startsWith(year)).length;
     if (g.status === "completado" && !g.finishedAt) completedWithoutDate++;
     if (g.completed100) completed100++;
     if (g.hoursPlayed != null) {
@@ -88,9 +90,9 @@ export function computeStats(library: Library, today = new Date()): CollectionSt
       endless.byStatus[g.status]++;
       if (g.status === "pendiente") endless.pending++;
     }
-    if (g.finishedAt) {
-      if (g.finishedAt.startsWith(year)) finishedByMonth[Number(g.finishedAt.slice(5, 7)) - 1]++;
-      if (!lastFinished || g.finishedAt > lastFinished.finishedAt) lastFinished = { id: g.id, title: g.title, finishedAt: g.finishedAt };
+    for (const end of finishDates(g)) {
+      if (end.startsWith(year)) finishedByMonth[Number(end.slice(5, 7)) - 1]++;
+      if (!lastFinished || end > lastFinished.finishedAt) lastFinished = { id: g.id, title: g.title, finishedAt: end };
     }
     for (const genre of g.genres) genreMap.set(genre, (genreMap.get(genre) ?? 0) + 1);
     if (g.metacritic != null) {

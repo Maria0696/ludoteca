@@ -1,6 +1,8 @@
 import { type Page, expect, test } from "@playwright/test";
 import { type Game, createGame, gameSchema } from "../../src/lib/model";
 import { archiveRun, finishDates, reopenSameDayRun, runNumber, timesFinished } from "../../src/lib/runs";
+import { computeStats } from "../../src/lib/stats";
+import { reachedStages } from "../../src/app/juego/[id]/progress";
 import { addGame, loadDemo } from "./helpers";
 
 /* Rejugar un juego ya superado: las vueltas anteriores se guardan con su inicio y su fin. */
@@ -42,6 +44,21 @@ test("una copia antigua, sin vueltas, se sigue leyendo", () => {
   const { pastRuns, ...old } = game({});
   void pastRuns;
   expect(gameSchema.parse(old).pastRuns).toEqual([]);
+});
+
+test("Estadísticas cuenta cada vuelta terminada en su año y su mes", () => {
+  const replayed = game({ status: "completado", pastRuns: [{ start: null, end: "2026-01-10" }], startedAt: "2026-11-01", finishedAt: "2026-11-23" });
+  const stats = computeStats({ games: [replayed], copies: [], wishlist: [] }, new Date("2026-11-25T12:00:00"));
+  expect(stats.finishedThisYear).toBe(2);
+  expect(stats.finishedByMonth[0]).toBe(1);
+  expect(stats.finishedByMonth[10]).toBe(1);
+  // «El último»: la vuelta terminada hoy, no la de enero.
+  expect(stats.lastFinished?.finishedAt).toBe("2026-11-23");
+});
+
+test("el mapa mantiene «Terminado» mientras rejuegas", () => {
+  const replaying = game({ status: "jugando", startedAt: "2026-11-23", finishedAt: null, pastRuns: [{ start: "2019-03-12", end: "2019-05-02" }] });
+  expect(reachedStages(replaying, [])[5]).toBe(true);
 });
 
 const ZELDA = "The Legend of Zelda: Tears of the Kingdom";
