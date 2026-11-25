@@ -7,6 +7,15 @@ import { timesFinished } from "./runs";
  */
 
 export type StoryOrder = "lanzamiento" | "historia";
+
+/** Lo que guarda la ficha al quitar una historia a mano: así traer de IGDB no la vuelve a poner. */
+export const NO_STORY = "Sin historia";
+
+/** La historia del juego; «Sin historia» y vacío no son historia. */
+export function storyOf(game: Game): string | null {
+  const name = game.series?.trim();
+  return name && name.toLowerCase() !== NO_STORY.toLowerCase() ? name : null;
+}
 export type Story = { name: string; brand: string | null; games: Game[] };
 
 const byName = (a: string, b: string) => a.localeCompare(b, "es");
@@ -21,7 +30,7 @@ export function brandOf(game: Game): string | null {
 export function buildStories(games: Game[]): Story[] {
   const map = new Map<string, Game[]>();
   for (const g of games) {
-    const name = g.series?.trim();
+    const name = storyOf(g);
     if (name) map.set(name, [...(map.get(name) ?? []), g]);
   }
   return [...map.entries()]
@@ -76,7 +85,7 @@ export function nextInStory(ordered: Game[]): Game | null {
 
 /** El puesto del juego en el orden de su historia, si su historia tiene dos o más juegos. */
 export function storyPosition(game: Game, games: Game[]): { name: string; position: number; total: number } | null {
-  const story = buildStories(games).find((s) => s.name === game.series?.trim());
+  const story = buildStories(games).find((s) => s.name === storyOf(game));
   if (!story) return null;
   const ordered = orderStory(story, "historia");
   return { name: story.name, position: ordered.findIndex((g) => g.id === game.id) + 1, total: ordered.length };

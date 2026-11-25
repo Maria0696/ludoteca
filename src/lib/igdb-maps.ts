@@ -129,3 +129,11 @@ export function pickSeries(collections: { name: string; games?: number[] }[] | u
   const own = collections.filter((c) => !same(c.name)).sort((a, b) => (a.games?.length ?? Infinity) - (b.games?.length ?? Infinity));
   return (own[0] ?? collections[0]).name;
 }
+
+/**
+ * La historia de un juego de IGDB. La marca que se descarta es solo la «franchise»: si IGDB no la tiene,
+ * la serie amplia no se toma por marca (si no, «Star Wars» saldría como historia y «Star Wars Jedi» como marca).
+ */
+export function seriesForIgdbGame(g: { franchise?: { name: string }; franchises?: { name: string }[]; collections?: { name: string; games?: number[] }[] }): string | null {
+  return pickSeries(g.collections, g.franchise?.name ?? g.franchises?.[0]?.name ?? null);
+}

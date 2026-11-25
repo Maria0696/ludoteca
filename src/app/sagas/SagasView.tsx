@@ -61,7 +61,7 @@ export function SagasView() {
         }
         filled += actions.fillSeries(body.series);
       }
-      toast(filled ? count(filled, "historia rellenada", "historias rellenadas") : "IGDB no tiene historias nuevas para tus juegos.");
+      toast(filled ? `${count(filled, "juego", "juegos")} con historia nueva` : "IGDB no tiene historias nuevas para tus juegos.");
     } catch {
       toast.error("No se pudo consultar el catálogo.");
     } finally {
@@ -117,19 +117,21 @@ export function SagasView() {
 
           {open && (
             <StoryPanel
+              key={open.name}
               story={open}
               order={order}
               setOrder={setOrder}
               onClose={() => router.push("/sagas", { scroll: false })}
-              onMove={(id, dir) => {
-                for (const m of moveInStory(open, id, dir)) actions.updateGame(m.id, { seriesOrder: m.seriesOrder });
-              }}
+              onMove={(id, dir) => actions.updateGames(moveInStory(open, id, dir).map((m) => ({ id: m.id, patch: { seriesOrder: m.seriesOrder } })))}
               onRename={(name) => {
                 // Si ya hay una historia con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
-                const merging = stories.some((s) => s.name === name && s.name !== open.name) || library.games.some((g) => g.series?.trim() === name && !open.games.includes(g));
-                const others = merging ? library.games.filter((g) => g.series?.trim() === name) : [];
-                for (const g of open.games) actions.updateGame(g.id, merging ? { series: name, seriesOrder: null } : { series: name });
-                for (const g of others) actions.updateGame(g.id, { seriesOrder: null });
+                const others = library.games.filter((g) => g.series?.trim() === name && !open.games.includes(g));
+                const merging = others.length > 0;
+                // Sin unir, cada juego conserva su puesto; al unir, todos vuelven al orden de lanzamiento.
+                actions.updateGames([
+                  ...open.games.map((g) => ({ id: g.id, patch: { series: name, seriesOrder: merging ? null : (g.seriesOrder ?? null) } })),
+                  ...others.map((g) => ({ id: g.id, patch: { seriesOrder: null } })),
+                ]);
                 router.push(`/sagas?historia=${encodeURIComponent(name)}`, { scroll: false });
               }}
             />

@@ -6,6 +6,7 @@ import { TROPHY_URL } from "@/components/pixel/sprites";
 import { daysBetween } from "@/lib/backup-reminder";
 import type { CatalogGame, CatalogResponse } from "@/lib/catalog";
 import { formatDate, formatNumber, priceText, relativeDay } from "@/lib/format";
+import { NO_STORY, storyOf } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import {
   type Copy,
@@ -476,7 +477,7 @@ export function PlayOptions({ game, update }: { game: Game; update: Update }) {
 export function TechSheet({ game, update }: { game: Game; update: Update }) {
   const { library } = useLibrary();
   // Las historias que ya existen, para elegir una al escribir.
-  const stories = [...new Set(library.games.flatMap((g) => (g.series?.trim() ? [g.series.trim()] : [])))].sort((a, b) => a.localeCompare(b, "es"));
+  const stories = [...new Set(library.games.flatMap((g) => storyOf(g) ?? []))].sort((a, b) => a.localeCompare(b, "es"));
   const bring = (what: string, field: "summary" | "developer" | "saga" | "series" | "releaseDate" | "ageRating") =>
     game.igdbId != null &&
     !game[field] && <FillFromIgdb igdbId={game.igdbId} what={what} update={update} read={(found) => (found[field] ? { [field]: found[field] } : null)} />;
@@ -484,7 +485,18 @@ export function TechSheet({ game, update }: { game: Game; update: Update }) {
   const text = (label: string, field: "developer" | "saga" | "series" | "ageRating", suggestions?: string[]) => (
     <Row label={label}>
       <div className={styles.fieldLine}>
-        <Editable kind="text" quiet label={label} value={game[field]} display={game[field] ?? null} empty="Añadir" maxLength={200} suggestions={suggestions} onSave={(v) => update({ [field]: v })} />
+        <Editable
+          kind="text"
+          quiet
+          label={label}
+          value={game[field]}
+          display={game[field] ?? null}
+          empty="Añadir"
+          maxLength={200}
+          suggestions={suggestions}
+          // Quitar la historia a mano la deja en «Sin historia»: así traer de IGDB no la vuelve a poner.
+          onSave={(v) => update({ [field]: field === "series" && !v && game.series ? NO_STORY : v })}
+        />
         {bring(label.toLowerCase(), field)}
       </div>
     </Row>

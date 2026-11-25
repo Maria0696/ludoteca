@@ -1,6 +1,6 @@
 import "server-only";
 import type { CatalogGame } from "./catalog";
-import { GENRES_ES, PLATFORM_NAMES, guessMoods, mapModes, pickSeries } from "./igdb-maps";
+import { GENRES_ES, PLATFORM_NAMES, guessMoods, mapModes, seriesForIgdbGame } from "./igdb-maps";
 
 /*
  * Consultas al catálogo de IGDB (gratuito para uso no comercial con una
@@ -118,7 +118,7 @@ export async function fetchCatalogGames(query: (fields: string) => string, optio
       summary: g.summary?.trim().slice(0, 2000) || null,
       developer: (g.involved_companies ?? []).flatMap((c) => (c.developer && c.company ? [c.company.name] : [])).join(", ").slice(0, 2000) || null,
       saga: sagaOf(g),
-      series: pickSeries(g.collections, sagaOf(g)),
+      series: seriesForIgdbGame(g),
       releaseDate: g.first_release_date ? new Date(g.first_release_date * 1000).toISOString().slice(0, 10) : null,
       ageRating: pegiRating(g.age_ratings),
     };
@@ -133,7 +133,7 @@ export async function seriesByIgdbIds(ids: number[]): Promise<Record<string, str
     "games",
     `fields franchise.name,franchises.name,collections.name,collections.games; where id = (${ids.join(",")}); limit ${ids.length};`,
   );
-  return Object.fromEntries(games.map((g) => [String(g.id), pickSeries(g.collections, sagaOf(g))]));
+  return Object.fromEntries(games.map((g) => [String(g.id), seriesForIgdbGame(g)]));
 }
 
 interface SteamLink {
