@@ -40,11 +40,13 @@ export function brandOf(game: Game): string | null {
 export function buildStories(games: Game[], extras: SagaExtra[] = []): Story[] {
   const map = new Map<string, Game[]>();
   const missing = new Map<string, SagaExtra[]>();
+  // Lo quitado del apartado no cuenta (su ficha conserva la saga).
   for (const g of games) {
     const name = storyOf(g);
-    if (name) map.set(name, [...(map.get(name) ?? []), g]);
+    if (name && !g.sagaHidden) map.set(name, [...(map.get(name) ?? []), g]);
   }
   for (const x of extras) {
+    if (x.hidden) continue;
     const name = x.saga.trim();
     missing.set(name, [...(missing.get(name) ?? []), x]);
     if (!map.has(name)) map.set(name, []);
@@ -133,7 +135,27 @@ export function missingFrom<T extends CatalogEntry>(story: Story, catalog: T[], 
   return catalog.filter((c) => !owned.has(c.igdbId) && !there.has(c.igdbId));
 }
 
-export type Proposal = { name: string; games: Game[] };
+/** Una saga para añadir: la que propone IGDB o una que se quitó (con sus juegos que no tienes, guardados). */
+export type Proposal = { name: string; games: Game[]; extras?: SagaExtra[] };
+
+/**
+ * Las sagas quitadas del apartado (todos sus juegos ocultos, con dos o más paradas): Traer las vuelve a proponer.
+ * Un juego quitado de una saga que sigue a la vista no cuenta.
+ */
+export function hiddenStories(games: Game[], extras: SagaExtra[] = []): Proposal[] {
+  const visible = new Set(buildStories(games, extras).map((s) => s.name));
+  const map = new Map<string, { games: Game[]; extras: SagaExtra[] }>();
+  const at = (name: string) => map.get(name) ?? map.set(name, { games: [], extras: [] }).get(name)!;
+  for (const g of games) {
+    const name = storyOf(g);
+    if (name && g.sagaHidden && !visible.has(name)) at(name).games.push(g);
+  }
+  for (const x of extras) if (x.hidden && !visible.has(x.saga.trim())) at(x.saga.trim()).extras.push(x);
+  return [...map.entries()]
+    .filter(([, s]) => s.games.length + s.extras.length >= 2 && s.games.length > 0)
+    .map(([name, s]) => ({ name, games: s.games, extras: s.extras }))
+    .sort((a, b) => byName(a.name, b.name));
+}
 
 /**
  * Lo que propone IGDB: por saga, los juegos que no tienen ninguna (los que se quedaron en «Sin saga»
@@ -156,7 +178,7 @@ export function nextInStory(ordered: Game[]): Game | null {
 
 /** El puesto del juego entre tus juegos de su saga (los que faltan no cuentan), si la saga se ve. */
 export function storyPosition(game: Game, games: Game[], extras: SagaExtra[] = []): { name: string; position: number; total: number } | null {
-  const story = buildStories(games, extras).find((s) => s.name === storyOf(game));
+  const story = game.sagaHidden ? undefined : buildStories(games, extras).find((s) => s.name === storyOf(game));
   if (!story) return null;
   const ordered = orderStory(story, "historia");
   return { name: story.name, position: ordered.findIndex((g) => g.id === game.id) + 1, total: ordered.length };
@@ -188,7 +210,8 @@ export function absorbExtras(games: Game[], extras: SagaExtra[]): { games: Game[
     if (!matches.length) return g;
     for (const x of matches) dropped.add(x.id);
     const [x] = matches;
-    return { ...g, saga: x.saga, sagaOrder: x.sagaOrder ?? null, releaseDate: g.releaseDate ?? x.releaseDate ?? null };
+    // Si su saga estaba quitada del apartado, llega quitado también.
+    return { ...g, saga: x.saga, sagaOrder: x.sagaOrder ?? null, sagaHidden: x.hidden ?? false, releaseDate: g.releaseDate ?? x.releaseDate ?? null };
   });
   return { games: out, dropped: [...dropped] };
 }

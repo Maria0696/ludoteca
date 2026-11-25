@@ -175,12 +175,17 @@ test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de l
   await expect(page.getByRole("region", { name: "Deseos" })).toContainText("Hades II");
 });
 
-test("quitar de la saga un juego tuyo lo deja sin historia", async ({ page }) => {
+test("quitar de la saga un juego tuyo lo saca del mapa, pero su ficha conserva la saga", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Prueba" } });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar «Hollow Knight» de la saga" }).click();
   await expect(stopsOf(page)).toHaveCount(2);
+  await page.reload();
+  await expect(stopsOf(page)).toHaveCount(2);
+  await openApp(page, "/biblioteca?agrupar=ninguno");
+  await page.getByRole("link", { name: /^Hollow Knight/ }).first().click();
+  await expect(page.getByRole("region", { name: "Ficha técnica" }).getByRole("button", { name: /^Saga: Prueba/ })).toBeVisible();
 });
 
 test("buscar los que faltan: IGDB propone y tú eliges", async ({ page }) => {
@@ -224,6 +229,8 @@ test("un juego que llega toma la historia y el puesto de su parada hueca, aunque
   const hollow = extra({ saga: "Prueba", title: "Hades II", igdbId: 555, sagaOrder: 2 });
   const twin = extra({ saga: "Otra", title: "Hades II", igdbId: 555 });
   const arriving = game("Hades II", { igdbId: 555, saga: "Supergiant" });
+  // Si su parada estaba oculta (saga quitada), llega oculto también.
+  expect(absorbExtras([arriving], [{ ...hollow, hidden: true }]).games[0].sagaHidden).toBe(true);
   const { games, dropped } = absorbExtras([arriving], [hollow, twin]);
   expect(games[0].saga).toBe("Prueba");
   expect(games[0].sagaOrder).toBe(2);
@@ -330,14 +337,18 @@ test("una saga no está completada si no tienes ninguno, o te faltan algunos", a
   await expect(page.getByText("Saga completada")).toHaveCount(0);
 });
 
-test("quitar una saga avisa de que los que no tienes se van con ella", async ({ page }) => {
+test("quitar una saga guarda los que no tienes y vuelven con ella", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555 })] });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar saga" }).click();
   const alert = page.getByRole("region", { name: "Prueba" }).getByRole("alert");
-  await expect(alert).toContainText("Sus 2 juegos se quedan en tu biblioteca");
-  await expect(alert).toContainText("El que no tienes desaparece con ella");
+  await expect(alert).toContainText("Sus 2 juegos la conservan en su ficha");
+  await expect(alert).toContainText("El que no tienes se guarda");
+  await alert.getByRole("button", { name: "Quitar saga" }).click();
+  await page.getByRole("button", { name: "Traer sagas de IGDB" }).click();
+  await page.getByRole("dialog", { name: "IGDB propone 1 saga" }).getByRole("button", { name: "Añadir 1 saga" }).click();
+  await expect(stopsOf(page)).toHaveCount(3);
 });
 
 test("buscar los que faltan enseña que está buscando", async ({ page }) => {
