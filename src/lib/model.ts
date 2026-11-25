@@ -172,18 +172,36 @@ export const wishSchema = z.object({
   demo: z.boolean().optional(),
 });
 
+/** Un juego de una saga que no tienes: lo metes a mano (buscándolo en IGDB) para verlo en su sitio del mapa. */
+export const sagaExtraSchema = z.object({
+  id: z.string().min(1),
+  series: z.string().trim().min(1).max(200),
+  igdbId: z.number().int().nullish(),
+  title: z.string().trim().min(1).max(200),
+  coverUrl: z.string().max(2_000_000).nullish(),
+  releaseDate: isoDate.nullish(),
+  seriesOrder: z.number().int().min(1).max(10000).nullish(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  demo: z.boolean().optional(),
+});
+
 export type Game = z.infer<typeof gameSchema>;
 export type Copy = z.infer<typeof copySchema>;
 export type PriceRecord = z.infer<typeof priceRecordSchema>;
 export type WishItem = z.infer<typeof wishSchema>;
+export type SagaExtra = z.infer<typeof sagaExtraSchema>;
+export type NewExtraInput = Omit<SagaExtra, "id" | "createdAt" | "updatedAt">;
 
 export interface Library {
   games: Game[];
   copies: Copy[];
   wishlist: WishItem[];
+  /** Juegos de saga que no tienes. */
+  extras: SagaExtra[];
 }
 
-export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [] });
+export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [] });
 
 export function newId(): string {
   return crypto.randomUUID();

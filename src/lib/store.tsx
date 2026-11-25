@@ -10,6 +10,8 @@ import {
   type Library,
   type NewCopyInput,
   type NewGameInput,
+  type NewExtraInput,
+  type SagaExtra,
   type WishItem,
   STATUS_LABEL,
   createCopy,
@@ -60,6 +62,10 @@ interface Actions {
   addWish(wish: Partial<WishItem> & { title: string }): WishItem;
   updateWish(id: string, patch: Partial<WishItem>): void;
   deleteWish(id: string): void;
+  /** Juegos de saga que no tienes: se meten a mano (con lo que trae IGDB), se ordenan y se quitan. */
+  addExtras(items: NewExtraInput[]): SagaExtra[];
+  updateExtras(patches: { id: string; patch: Partial<SagaExtra> }[]): void;
+  deleteExtra(id: string): void;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
   applyChanges(changes: Changes): Promise<void>;
@@ -233,6 +239,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return persist((r) => r.save({ wishlist: [wish] }));
     };
     const findGame = (id: string) => libRef.current.games.find((g) => g.id === id);
+    /**
+     * Un juego que llega a la biblioteca y estaba en una saga como «no lo tienes» (mismo número de IGDB):
+     * toma su historia y su puesto, y la parada hueca desaparece.
+     */
+    const absorb = (game: Game): { game: Game; extra: SagaExtra | null } => {
+      if (game.igdbId == null || game.series?.trim()) return { game, extra: null };
+      const extra = libRef.current.extras.find((x) => x.igdbId === game.igdbId) ?? null;
+      if (!extra) return { game, extra: null };
+      return { game: { ...game, series: extra.series, seriesOrder: extra.seriesOrder ?? null, releaseDate: game.releaseDate ?? extra.releaseDate ?? null }, extra };
+    };
 
     const a: Actions = {
       reload,
@@ -245,13 +261,18 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         }
         if (game.status === "completado") game.finishedAt ??= todayIso();
         const copy = copyInput ? createCopy(game.id, copyInput) : null;
+        const { game: added, extra } = absorb(game);
         commit({
           ...libRef.current,
-          games: [...libRef.current.games, game],
+          games: [...libRef.current.games, added],
           copies: copy ? [...libRef.current.copies, copy] : libRef.current.copies,
+          extras: extra ? libRef.current.extras.filter((x) => x.id !== extra.id) : libRef.current.extras,
         });
-        void persist((r) => r.save({ games: [game], copies: copy ? [copy] : [] }));
-        return game;
+        void persist(async (r) => {
+          await r.save({ games: [added], copies: copy ? [copy] : [] });
+          if (extra) await r.deleteExtra(extra.id);
+        });
+        return added;
       },
 
       updateGame(id, patch) {
@@ -447,6 +468,42 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       },
 
+      addExtras(items) {
+        const stamp = nowIso();
+        const extras = items.map((item) => ({ ...item, id: newId(), createdAt: stamp, updatedAt: stamp }));
+        if (!extras.length) return [];
+        commit({ ...libRef.current, extras: [...libRef.current.extras, ...extras] });
+        void persist((r) => r.save({ extras }));
+        return extras;
+      },
+
+      updateExtras(patches) {
+        const stamp = nowIso();
+        const extras = patches.flatMap(({ id, patch }) => {
+          const extra = libRef.current.extras.find((x) => x.id === id);
+          return extra ? [{ ...extra, ...patch, id, updatedAt: stamp }] : [];
+        });
+        if (!extras.length) return;
+        commit({ ...libRef.current, extras: libRef.current.extras.map((x) => extras.find((e) => e.id === x.id) ?? x) });
+        void persist((r) => r.save({ extras }));
+      },
+
+      deleteExtra(id) {
+        const extra = libRef.current.extras.find((x) => x.id === id);
+        if (!extra) return;
+        commit({ ...libRef.current, extras: libRef.current.extras.filter((x) => x.id !== id) });
+        void persist((r) => r.deleteExtra(id));
+        toast(`«${extra.title}» quitado de la saga`, {
+          action: {
+            label: "Deshacer",
+            onClick: () => {
+              commit({ ...libRef.current, extras: [...libRef.current.extras, extra] });
+              void persist((r) => r.save({ extras: [extra] }));
+            },
+          },
+        });
+      },
+
       convertWish(id, copyInput, existingGameId) {
         const before = libRef.current;
         const wish = before.wishlist.find((w) => w.id === id);
@@ -496,15 +553,19 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           demo: wish.demo,
         });
         const isNewGame = !before.games.some((g) => g.id === game!.id);
+        const absorbed = isNewGame ? absorb(game) : { game, extra: null };
+        game = absorbed.game;
         commit({
           ...before,
           games: isNewGame ? [...before.games, game] : before.games,
           copies: [...before.copies, copy],
           wishlist: before.wishlist.filter((w) => w.id !== id),
+          extras: absorbed.extra ? before.extras.filter((x) => x.id !== absorbed.extra!.id) : before.extras,
         });
         void persist(async (r) => {
           await r.save({ games: isNewGame ? [game!] : [], copies: [copy] });
           await r.deleteWish(id);
+          if (absorbed.extra) await r.deleteExtra(absorbed.extra.id);
         });
         return game;
       },

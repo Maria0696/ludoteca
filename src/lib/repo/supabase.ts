@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Copy, Game, Library, WishItem } from "../model";
+import type { Copy, Game, Library, SagaExtra, WishItem } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -33,6 +33,15 @@ const wishCols: [keyof WishItem, string][] = [
   ["prices", "prices"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
+const extraCols: [keyof SagaExtra, string][] = [
+  ["id", "id"], ["series", "series"], ["igdbId", "igdb_id"], ["title", "title"], ["coverUrl", "cover_url"],
+  ["releaseDate", "release_date"], ["seriesOrder", "series_order"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+];
+
+/** Sin la tabla de los juegos de saga que no tienes (migración 0012 sin aplicar), la biblioteca carga igual. */
+const missingTable = (error: { code?: string; message?: string } | null) =>
+  Boolean(error && (error.code === "42P01" || error.code === "PGRST205" || /saga_extras/.test(error.message ?? "")));
+
 const NUMERIC = new Set(["rating", "hours_played", "length_hours", "price_paid", "target_price"]);
 
 function toRow<T>(item: T, cols: [keyof T, string][]): Row {
@@ -60,17 +69,20 @@ export class SupabaseRepository implements Repository {
   constructor(private readonly db: SupabaseClient) {}
 
   async load(): Promise<Library> {
-    const [games, copies, wishlist] = await Promise.all([
+    const [games, copies, wishlist, extras] = await Promise.all([
       this.db.from("games").select("*"),
       this.db.from("copies").select("*"),
       this.db.from("wishlist").select("*"),
+      this.db.from("saga_extras").select("*"),
     ]);
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
+    if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
     return {
       // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
       games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], series: g.series ?? null, seriesOrder: g.seriesOrder ?? null })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
+      extras: extras.error ? [] : (extras.data ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),
     };
   }
 
@@ -80,6 +92,7 @@ export class SupabaseRepository implements Repository {
     await Promise.all([
       changes.copies?.length ? this.upsert("copies", changes.copies.map((c) => toRow(c, copyCols))) : null,
       changes.wishlist?.length ? this.upsert("wishlist", changes.wishlist.map((w) => toRow(w, wishCols))) : null,
+      changes.extras?.length ? this.upsert("saga_extras", changes.extras.map((x) => toRow(x, extraCols))) : null,
     ]);
   }
 
@@ -104,15 +117,23 @@ export class SupabaseRepository implements Repository {
     return this.remove("wishlist", "id", id);
   }
 
+  deleteExtra(id: string) {
+    return this.remove("saga_extras", "id", id);
+  }
+
   async deleteAllGames() {
     // Las copias se borran en cascada con su juego. Supabase exige un filtro para borrar.
     const games = await this.db.from("games").delete().not("id", "is", null);
     if (games.error) throw new Error(games.error.message);
+    const extras = await this.db.from("saga_extras").delete().not("id", "is", null);
+    if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
   }
 
   async deleteDemo() {
     await this.remove("copies", "demo", true);
     await this.remove("games", "demo", true);
     await this.remove("wishlist", "demo", true);
+    const extras = await this.db.from("saga_extras").delete().eq("demo", true);
+    if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
   }
 }
