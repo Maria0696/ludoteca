@@ -222,7 +222,7 @@ test("nueva saga: nombre y sus primeros juegos, buscándolos", async ({ page }) 
   await expect(stopsOf(page).filter({ hasText: "Juego nuevo" })).toContainText("No lo tienes");
   // La ficha de Hades lleva a su saga, aunque el otro juego no lo tengas.
   await stopsOf(page).getByRole("link", { name: "Hades" }).click();
-  await expect(page.getByRole("link", { name: "Saga: Mi saga · 1 de 1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Saga Mi saga: juego 1 de 1" })).toBeVisible();
 });
 
 test("un juego que llega toma la historia y el puesto de su parada hueca, aunque IGDB le dé otra", () => {
