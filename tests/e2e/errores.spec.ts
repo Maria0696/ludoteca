@@ -10,6 +10,9 @@ test("qué se cuenta de un error y qué se descarta", () => {
   expect(describeError("texto suelto")).toEqual({ name: "Error", message: "texto suelto" });
   expect(describeError({ codigo: 42 })).toEqual({ name: "Valor lanzado", message: '{"codigo":42}' });
   expect(isNoise({ name: "Error", message: "ResizeObserver loop completed with undelivered notifications." })).toBe(true);
+  // Una transición de pantalla que el navegador corta (cambió el tamaño de la ventana, otra navegación…).
+  expect(isNoise({ name: "InvalidStateError", message: "Transition was aborted because of invalid state. Viewport size changed" })).toBe(true);
+  expect(isNoise({ name: "AbortError", message: "Transition was skipped" })).toBe(true);
   expect(isNoise({ name: "Error", message: "boom", stack: "at chrome-extension://abc/content.js:1:1" })).toBe(true);
   expect(isNoise({ name: "TypeError", message: "boom", stack: "at /_next/static/chunks/app.js:1:1" })).toBe(false);
   expect(cut("abcdef", 4)).toBe("abc…");
