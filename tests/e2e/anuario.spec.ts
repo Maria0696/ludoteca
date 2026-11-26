@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { activeYears, compareLine, computeYear } from "../../src/lib/anuario";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Copy, type Game, type Library, type YearWrap, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
-import { loadDemo, openApp } from "./helpers";
+import { loadDemo, openApp, seedDemo } from "./helpers";
 
 /* Anuario: el resumen de cada año, calculado de las fechas que hay y congelado al cerrarlo. */
 
@@ -170,12 +170,15 @@ async function seedGames(page: Page, patches: Record<string, Record<string, unkn
       new Promise<void>((resolve) => {
         const open = indexedDB.open("ludoteca", 1);
         open.onsuccess = () => {
-          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const tx = open.result.transaction("library", "readwrite");
+          // Hasta que la transacción no termina, lo escrito no está guardado.
+          tx.oncomplete = () => resolve();
+          const store = tx.objectStore("library");
           const req = store.get("data");
           req.onsuccess = () => {
             const value = req.result;
             for (const g of value.games) if (patches[g.title]) Object.assign(g, { demo: false, pastRuns: [] }, patches[g.title]);
-            store.put(value, "data").onsuccess = () => resolve();
+            store.put(value, "data");
           };
         };
       }),
@@ -201,7 +204,8 @@ async function pause(page: Page) {
  */
 async function openYear(page: Page, patches: Record<string, Record<string, unknown>>, year = 2026, { play = false } = {}) {
   await page.clock.setFixedTime(new Date("2026-11-26T10:00:00"));
-  await loadDemo(page);
+  // Directo en el navegador: con el botón, la app se cargaría dos veces (una para pulsarlo y otra para abrir el año).
+  await seedDemo(page);
   await seedGames(page, patches);
   await openApp(page, `/anuario/${year}`);
   if (!play) await pause(page);
@@ -381,14 +385,23 @@ test("el año ocupa toda la pantalla, por encima de la cabecera", async ({ page 
 
 test("las pantallas avanzan solas; manteniendo pulsado o con «Pausar», se paran", async ({ page }) => {
   await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2026-03-01" } }, 2026, { play: true });
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 1 de/);
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/, { timeout: 9000 });
-  // En pausa no avanza.
+  // A cámara rápida (×4): cada pantalla dura 1,5 s en vez de 6, y la prueba no se pasa medio minuto esperando.
+  await page.evaluate(() =>
+    setInterval(() => {
+      for (const a of document.getAnimations()) if (a.playbackRate === 1) a.playbackRate = 4;
+    }, 20),
+  );
+  const at = async () => Number((await screen(page).getAttribute("aria-label"))!.match(/^Pantalla (\d+)/)![1]);
+  // Avanza sola.
+  await expect.poll(at).toBeGreaterThan(1);
+  // En pausa no avanza. Con el equipo cargado puede haber pasado de pantalla antes del clic: se vuelve a la segunda.
   await page.getByRole("button", { name: "Pausar" }).click();
-  await page.waitForTimeout(7000);
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
+  while ((await at()) > 2) await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(2000);
+  expect(await at()).toBe(2);
+  // Al seguir, vuelve a avanzar.
   await page.getByRole("button", { name: "Seguir" }).click();
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 3 de/, { timeout: 9000 });
+  await expect.poll(at).toBeGreaterThan(2);
 });
 
 test("las cifras grandes suben como una puntuación hasta su número", async ({ page }) => {

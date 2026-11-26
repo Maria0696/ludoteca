@@ -11,7 +11,7 @@ const DB_NAME = "ludoteca";
 const STORE = "library";
 const KEY = "data";
 /** Formato de lo guardado. Sin él, es el 1: «saga» era la franquicia y «series» la saga (ver `upgradeGameV1`). */
-const FORMAT = 2;
+export const FORMAT = 2;
 type Stored = Partial<Library> & { format?: number };
 
 function openDb(): Promise<IDBDatabase> {

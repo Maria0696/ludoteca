@@ -165,7 +165,7 @@ test("datos de demostración separados y retirables", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await addGame(page, { title: "Mi juego real", platform: "PC", format: "Digital" });
-  await page.goto("/ajustes?apartado=demostracion");
+  await openApp(page, "/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración junto a 1 juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
   await expect(page.getByRole("dialog").getByText(/Tu juego no se toca\.$/)).toBeVisible();

@@ -1,5 +1,5 @@
 import { type Page, expect, test } from "@playwright/test";
-import { loadDemo } from "./helpers";
+import { addGame, loadDemo, openApp } from "./helpers";
 
 async function statuses(page: Page) {
   await page.goto("/biblioteca?agrupar=ninguno&orden=titulo&vista=lista");
@@ -49,4 +49,22 @@ test("navegar, volver atrás y recargar no cambia ningún estado", async ({ page
   await at(page, "/");
 
   expect(await statuses(page)).toEqual(before);
+});
+
+test("mientras se guarda un cambio, la página lo marca; al terminar, se quita y el cambio sigue al recargar", async ({ page }) => {
+  await openApp(page, "/biblioteca");
+  // Apunta cada vez que aparece o se va la marca, para no depender de mirar justo en el momento.
+  await page.evaluate(() => {
+    const w = window as unknown as { marcas: string[] };
+    w.marcas = [];
+    new MutationObserver(() => w.marcas.push(document.documentElement.hasAttribute("data-guardando") ? "guardando" : "guardado")).observe(
+      document.documentElement,
+      { attributeFilter: ["data-guardando"] },
+    );
+  });
+  await addGame(page, { title: "Tunic", platform: "PC" });
+  await expect(page.locator("html")).not.toHaveAttribute("data-guardando");
+  expect(await page.evaluate(() => (window as unknown as { marcas: string[] }).marcas)).toContain("guardando");
+  await page.reload();
+  await expect(page.getByRole("link", { name: /^Tunic/ }).first()).toBeVisible();
 });

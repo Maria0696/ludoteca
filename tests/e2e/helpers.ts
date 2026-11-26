@@ -1,4 +1,6 @@
 import { type Locator, type Page, expect } from "@playwright/test";
+import { createDemoLibrary } from "../../src/lib/demo";
+import { FORMAT } from "../../src/lib/repo/local";
 
 /**
  * Espera a que acabe la transición de pantalla (si la hay): mientras dura, lo que anima no recibe toques, así que medir
@@ -8,9 +10,54 @@ export async function screenSettled(page: Page) {
   await page.waitForFunction(() => !document.getAnimations().some((a) => (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition")));
 }
 
+/**
+ * Espera a que la app termine de guardar en el navegador (mientras guarda, la página lleva `data-guardando`).
+ * Recargar o ir a otra página antes cortaría el guardado y el cambio se perdería.
+ */
+export async function saved(page: Page) {
+  await page.waitForFunction(() => !document.documentElement.hasAttribute("data-guardando"));
+}
+
 export async function openApp(page: Page, path = "/") {
+  await saved(page);
   await page.goto(path);
   await expect(page.getByText("Cargando tu biblioteca…")).toHaveCount(0);
+}
+
+/** Recarga la página cuando ya está guardado lo último que se hizo. */
+export async function reloadApp(page: Page) {
+  await saved(page);
+  await page.reload();
+  await expect(page.getByText("Cargando tu biblioteca…")).toHaveCount(0);
+}
+
+/**
+ * La biblioteca de demostración, escrita directamente en el navegador: lo mismo que deja «Probar con datos de
+ * demostración», pero sin cargar la app dos veces. Se escribe desde una página estática del mismo sitio; después hay
+ * que abrir la app (openApp).
+ */
+export async function seedDemo(page: Page) {
+  await page.goto("/offline.html");
+  await page.evaluate(
+    (value) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onupgradeneeded = () => open.result.createObjectStore("library");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("library", "readwrite");
+          tx.objectStore("library").put(value, "data");
+          // Hasta que la transacción no termina, lo escrito no está guardado.
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    { ...createDemoLibrary(), format: FORMAT },
+  );
 }
 
 /** Abre un apartado del menú de Ajustes (copia, datos, demostracion, catalogo, steam, creditos, eliminar). */
@@ -18,6 +65,10 @@ export async function openAjustes(page: Page, apartado: string) {
   await openApp(page, `/ajustes?apartado=${apartado}`);
 }
 
+/**
+ * Deja la Biblioteca abierta con los datos de demostración, con el botón de verdad. Si después se van a retocar los
+ * datos en el navegador y abrir otra pantalla, seedDemo ahorra una carga de la app.
+ */
 export async function loadDemo(page: Page) {
   await openApp(page, "/biblioteca");
   await page.getByRole("button", { name: "Probar con datos de demostración" }).click();
