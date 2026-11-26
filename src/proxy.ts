@@ -43,5 +43,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|icon.svg|robots.txt).*)"],
+  // Lo que el móvil necesita para instalar la app (manifiesto, iconos, service worker y la pantalla sin conexión) se
+  // pide sin sesión: si se mandara a «Entrar», no podría instalarse.
+  matcher: ["/((?!_next/static|_next/image|icon.svg|robots.txt|manifest.webmanifest|sw.js|offline.html|icon-[^/]*.png|apple-icon[^/]*).*)"],
 };

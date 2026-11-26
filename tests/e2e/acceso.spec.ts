@@ -17,6 +17,13 @@ test("sin sesión, las pantallas redirigen a «Entrar»", async ({ page }) => {
   await expect(page.getByLabel("Contraseña")).toBeVisible();
 });
 
+test("sin sesión, el móvil puede leer lo que necesita para instalar la app", async ({ request }) => {
+  for (const path of ["/manifest.webmanifest", "/sw.js", "/offline.html", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/apple-icon.png"]) {
+    const res = await request.get(path, { maxRedirects: 0 });
+    expect(res.status(), path).toBe(200);
+  }
+});
+
 test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   const search = await request.get("/api/catalogo?q=hades");
   expect(search.status()).toBe(401);
