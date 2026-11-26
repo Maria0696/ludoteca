@@ -41,12 +41,16 @@ export function describeError(value: unknown): ErrorDetails {
   return { name: "Valor lanzado", message };
 }
 
-/** Lo que no viene de la app: extensiones del navegador y avisos inofensivos. */
+/**
+ * Lo que no viene de la app: extensiones del navegador y avisos inofensivos, como una transición de pantalla que el
+ * navegador corta (cambió el tamaño de la ventana, llegó otra navegación…): la pantalla cambia igual, sin animar.
+ */
 export function isNoise(details: ErrorDetails): boolean {
   const text = `${details.message}\n${details.stack ?? ""}`;
   return (
     /(chrome|moz|safari(-web)?)-extension:\/\//.test(text) ||
     details.message.startsWith("ResizeObserver loop") ||
+    /^Transition was (aborted|skipped)/.test(details.message) ||
     details.message === "Script error."
   );
 }

@@ -868,13 +868,56 @@ dialog.sheet:not([open]) {
   }
 }
 
-.page-enter {
-  animation: page-enter 380ms var(--ease-out) backwards;
+/*
+ * Cambiar de pantalla (View Transitions, desde app/template.tsx): la vieja se va con un fundido rápido y la nueva
+ * entra con uno breve, subiendo un poco. La cabecera y el menú no se mueven; se puede tocar mientras dura.
+ */
+::view-transition {
+  pointer-events: none;
 }
-@keyframes page-enter {
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+/* La cabecera y el menú de abajo, quietos y por encima de la pantalla que se va. */
+::view-transition-group(cabecera),
+::view-transition-group(menu-inferior) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(cabecera),
+::view-transition-old(menu-inferior) {
+  display: none;
+}
+::view-transition-new(cabecera),
+::view-transition-new(menu-inferior) {
+  animation: none;
+}
+::view-transition-old(.pantalla-sale) {
+  animation: 120ms var(--ease-out) both pantalla-sale;
+}
+::view-transition-new(.pantalla-entra) {
+  animation: 200ms var(--ease-out) 60ms both pantalla-entra;
+}
+@keyframes pantalla-sale {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pantalla-entra {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
+  }
+}
+@keyframes pantalla-fundido {
+  from {
+    opacity: 0;
   }
 }
 
@@ -892,6 +935,10 @@ dialog.sheet:not([open]) {
 /* Reducción de movimiento -------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Al cambiar de pantalla, solo el fundido: sin desplazamiento. */
+  ::view-transition-new(.pantalla-entra) {
+    animation: 160ms ease both pantalla-fundido;
+  }
   *,
   *::before,
   *::after {

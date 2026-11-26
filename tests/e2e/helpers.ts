@@ -1,5 +1,13 @@
 import { type Locator, type Page, expect } from "@playwright/test";
 
+/**
+ * Espera a que acabe la transición de pantalla (si la hay): mientras dura, lo que anima no recibe toques, así que medir
+ * qué se toca en un punto antes de tiempo engaña.
+ */
+export async function screenSettled(page: Page) {
+  await page.waitForFunction(() => !document.getAnimations().some((a) => (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith("::view-transition")));
+}
+
 export async function openApp(page: Page, path = "/") {
   await page.goto(path);
   await expect(page.getByText("Cargando tu biblioteca…")).toHaveCount(0);

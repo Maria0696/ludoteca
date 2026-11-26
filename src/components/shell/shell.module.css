@@ -20,6 +20,8 @@
   position: sticky;
   top: 0;
   z-index: 30;
+  /* Al cambiar de pantalla, quieta y por encima (ver «Cambiar de pantalla» en globals.css). */
+  view-transition-name: cabecera;
   height: var(--topbar);
   display: flex;
   align-items: center;
@@ -235,6 +237,7 @@
 
 .bottom {
   display: none;
+  view-transition-name: menu-inferior;
 }
 
 .gate {
