@@ -96,6 +96,12 @@ export const GAME_TYPES = [
 ] as const;
 export type GameType = (typeof GAME_TYPES)[number];
 
+/** La marca de una parada en el mapa de su saga: principal (número), opcional (estrella) o DLC (pieza de puzle). */
+export const SAGA_ROLES = ["main", "optional", "dlc"] as const;
+export type SagaRole = (typeof SAGA_ROLES)[number];
+/** De qué juego es versión (su número de IGDB); 0 = parada propia, decidido. Sin él, aún no se sabe. */
+const versionOf = z.number().int().min(0).max(2_147_483_647).nullish();
+
 export const gameSchema = z.object({
   id: z.string().min(1),
   title: z.string().trim().min(1, "El título es obligatorio").max(200),
@@ -132,6 +138,9 @@ export const gameSchema = z.object({
   gameType: z.enum(GAME_TYPES).nullish(),
   /** De qué juego es, si es DLC, expansión, edición…: «God of War Ragnarök». */
   baseGame: optionalText,
+  /** Su marca en el mapa de la saga; sin ella, según su tipo (los DLC, con la pieza de puzle). */
+  sagaRole: z.enum(SAGA_ROLES).nullish(),
+  versionOf,
   releaseDate: isoDate.nullish(),
   ageRating: optionalText,
   hoursPlayed: z.number().min(0).max(100000).nullish(),
@@ -212,6 +221,8 @@ export const sagaExtraSchema = z.object({
   /** Su saga se quitó del apartado Sagas: se guarda para cuando vuelva. */
   hidden: z.boolean().optional(),
   gameType: z.enum(GAME_TYPES).nullish(),
+  sagaRole: z.enum(SAGA_ROLES).nullish(),
+  versionOf,
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),

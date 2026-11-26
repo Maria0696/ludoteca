@@ -623,3 +623,84 @@
     animation: none;
   }
 }
+
+/* La marca de cada parada: número (principal), estrella (opcional) o pieza de puzle (DLC). */
+.pin svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Debajo de la parada, bajo su texto: sus versiones y sus opciones. En el móvil, a todo lo ancho. */
+.below {
+  grid-column: 3 / -1;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.stopOptions .orders {
+  flex-wrap: wrap;
+}
+@media (max-width: 899px) {
+  .below {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Las versiones del mismo juego, dentro de su parada: en pequeño, una por línea. */
+.versions {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  padding-left: 10px;
+  border-left: 2px dotted var(--frame-soft);
+}
+.version {
+  display: grid;
+  gap: 6px;
+}
+.versionLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: var(--size-meta);
+}
+.versionLine strong {
+  font-weight: 400;
+  color: var(--muted);
+}
+.versionActions {
+  display: inline-flex;
+  margin-left: auto;
+}
+
+/* Opciones de una parada: su marca y de qué juego es versión. */
+.stopOptions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 2px solid var(--frame-soft);
+  background: var(--raised);
+}
+.stopOptions :global(.chip) svg {
+  width: 14px;
+  height: 14px;
+}
+.versionOf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--size-meta);
+}
+.versionSelect {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 2px solid var(--control);
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+}
+
