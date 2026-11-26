@@ -172,18 +172,27 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
   }, [applyLoad, fetchLibrary]);
 
-  /** Guarda en segundo plano; si falla, avisa y vuelve a cargar lo guardado. */
+  /**
+   * Guarda en segundo plano; si falla, avisa y vuelve a cargar lo guardado. Mientras queda algo por guardar, la página
+   * lleva `data-guardando`: recargar o cerrar en ese momento perdería el cambio (las pruebas esperan a que se quite).
+   */
+  const pending = useRef(0);
   const persist = useCallback(
     (work: (repo: Repository) => Promise<void>) => {
       const repo = repoRef.current;
       if (!repo) return Promise.resolve();
-      return work(repo).catch((e: unknown) => {
-        toast.error("No se ha podido guardar el cambio", {
-          description: e instanceof Error ? e.message : undefined,
-          action: { label: "Reintentar carga", onClick: () => void reload() },
+      if (pending.current++ === 0) document.documentElement.setAttribute("data-guardando", "");
+      return work(repo)
+        .catch((e: unknown) => {
+          toast.error("No se ha podido guardar el cambio", {
+            description: e instanceof Error ? e.message : undefined,
+            action: { label: "Reintentar carga", onClick: () => void reload() },
+          });
+          void reload();
+        })
+        .finally(() => {
+          if (--pending.current === 0) document.documentElement.removeAttribute("data-guardando");
         });
-        void reload();
-      });
     },
     [reload],
   );
