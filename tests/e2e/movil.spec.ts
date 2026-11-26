@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { addGame, cards, choosePlatform, expectCarcasaText, loadDemo, openApp } from "./helpers";
+import { addGame, cards, choosePlatform, expectCarcasaText, loadDemo, openApp, screenSettled } from "./helpers";
 
 const LONG_TITLE = "Un juego con un título larguísimo que no tiene carátula todavía";
 
@@ -311,6 +311,7 @@ test("en el móvil, el bocadillo de la guardiana no tapa las casillas del mapa",
     await cards(page).getByRole("link", { name: /Hades/ }).first().click();
     const hint = page.getByRole("status", { name: "Pista de la guardiana" });
     await expect(hint).toContainText("¡Toca una!");
+    await screenSettled(page);
     // «¡Toca una!»: todas las casillas tienen que poder tocarse mientras lo dice.
     for (const node of await page.getByRole("button", { name: /, (conseguido|pendiente)$/ }).all()) {
       const covered = await node.evaluate((el) => {
