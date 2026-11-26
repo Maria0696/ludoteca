@@ -547,21 +547,46 @@ test("en el mapa: cada juego dice qué es, las versiones van dentro y cada parad
   await expect(stopsOf(page)).toHaveCount(3);
 });
 
-test("qué es versión de qué lo pregunta a IGDB, solo por lo que aún no se sabe", async ({ page }) => {
+test("de qué es versión y qué es cada juego lo pregunta a IGDB, solo por lo que aún no se sabe", async ({ page }) => {
   await loadDemo(page);
   await seed(
     page,
-    { Hades: { saga: "Prueba", igdbId: 10, releaseDate: "2020-09-17" }, Celeste: { saga: "Prueba", igdbId: 20, versionOf: 0, releaseDate: "2018-01-25" } },
-    { extras: [extra({ saga: "Prueba", title: "Hades Remastered", igdbId: 11, gameType: "remaster", releaseDate: "2024-01-01" })] },
+    {
+      Hades: { saga: "Prueba", igdbId: 10, releaseDate: "2020-09-17" },
+      Celeste: { saga: "Prueba", igdbId: 20, versionOf: 0, gameType: "main", releaseDate: "2018-01-25" },
+    },
+    {
+      extras: [
+        extra({ saga: "Prueba", title: "Hades Remastered", igdbId: 11, gameType: "remaster", releaseDate: "2024-01-01" }),
+        // Uno que no tienes, añadido antes de saber su tipo.
+        extra({ saga: "Prueba", title: "Hades: Ecos", igdbId: 12, versionOf: 0, releaseDate: "2021-01-01" }),
+      ],
+    },
   );
   let asked: number[] = [];
   await page.route("**/api/catalogo/versiones", async (route) => {
     asked = (route.request().postDataJSON() as { igdbIds: number[] }).igdbIds;
-    await route.fulfill({ json: { ok: true, originals: { "10": 0, "11": 10 } } });
+    await route.fulfill({
+      json: {
+        ok: true,
+        originals: { "10": 0, "11": 10, "12": 0 },
+        types: { "10": { gameType: "main", baseGame: null }, "11": { gameType: "remaster", baseGame: null }, "12": { gameType: "dlc", baseGame: "Hades" } },
+      },
+    });
   });
   await openApp(page, "/sagas?saga=Prueba");
-  await expect(stopsOf(page)).toHaveCount(2);
+  await expect(stopsOf(page)).toHaveCount(3);
   await expect(page.getByRole("group", { name: "Versiones de «Hades»" })).toContainText("Hades Remastered");
-  expect(asked.sort()).toEqual([10, 11]);
+  const hades = stopsOf(page).filter({ hasText: "Hades Remastered" });
+  await expect(hades).toContainText("Juego base");
+  const ecos = stopsOf(page).filter({ hasText: "Hades: Ecos" });
+  await expect(ecos).toContainText("DLC");
+  await expect(ecos.locator("[data-marca='dlc']")).toHaveCount(1);
+  expect(asked.sort()).toEqual([10, 11, 12]);
+
+  // El tipo también se pone a mano, aunque no lo tengas.
+  await page.getByRole("button", { name: "Opciones de «Hades: Ecos»" }).click();
+  await page.getByRole("combobox", { name: "Tipo de «Hades: Ecos»" }).selectOption({ label: "Expansión" });
+  await expect(ecos).toContainText("Expansión");
 });
 

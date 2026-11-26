@@ -4,7 +4,7 @@ import type { VersionsResponse } from "@/lib/catalog";
 import { igdbConfigured, originalsByIgdbIds } from "@/lib/igdb";
 import { authorizeRequest } from "@/lib/supabase/server";
 
-/* De qué juego es versión cada uno (remaster, remake, edición…), para agruparlos en el mapa de su saga. */
+/* De qué juego es versión cada uno (remaster, remake, edición…) y qué es, para el mapa de su saga. */
 
 const bodySchema = z.object({ igdbIds: z.array(z.number().int().positive().max(2_147_483_647)).min(1).max(50) });
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!body.success) return reply({ ok: false, reason: "error", message: "Petición no válida." }, 400);
 
   try {
-    return reply({ ok: true, originals: await originalsByIgdbIds(body.data.igdbIds) });
+    return reply({ ok: true, ...(await originalsByIgdbIds(body.data.igdbIds)) });
   } catch {
     return reply({ ok: false, reason: "error", message: "No se pudo consultar el catálogo." }, 502);
   }

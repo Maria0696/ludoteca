@@ -50,9 +50,12 @@ export type TypesResponse =
   | { ok: true; types: Record<string, { gameType: GameType | null; baseGame: string | null }> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
 
-/** Respuesta de /api/catalogo/versiones: de qué juego es versión cada uno (su número de IGDB; 0, de ninguno). */
+/**
+ * Respuesta de /api/catalogo/versiones: de qué juego es versión cada uno (su número de IGDB; 0, de ninguno) y qué es
+ * (juego base, DLC…) y de cuál.
+ */
 export type VersionsResponse =
-  | { ok: true; originals: Record<string, number> }
+  | { ok: true; originals: Record<string, number>; types?: Record<string, { gameType: GameType | null; baseGame: string | null }> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
 
 /** Respuesta de /api/catalogo/serie: los juegos de una serie de IGDB. */

@@ -162,13 +162,16 @@ export async function seriesByIgdbIds(ids: number[]): Promise<{ sagas: Record<st
 /**
  * De qué juego es versión cada uno, por su número de IGDB (0 si de ninguno): una edición, el de su `version_parent`;
  * un remake, remaster, port o versión ampliada, el juego que lo tiene en `remakes`, `remasters`, `ports` o
- * `expanded_games`. Para agrupar las versiones del mismo juego en el mapa de su saga.
+ * `expanded_games`. Y, de paso, qué es cada uno y de cuál. Para el mapa de su saga.
  */
-export async function originalsByIgdbIds(ids: number[]): Promise<Record<string, number>> {
+export async function originalsByIgdbIds(
+  ids: number[],
+): Promise<{ originals: Record<string, number>; types: Record<string, { gameType: GameType | null; baseGame: string | null }> }> {
   const list = ids.join(",");
   type Parent = { id: number; remakes?: number[]; remasters?: number[]; ports?: number[]; expanded_games?: number[] };
+  type Own = { id: number; game_type?: number; version_parent?: { id: number; name?: string } | null; parent_game?: { name?: string } | null };
   const [own, parents] = await Promise.all([
-    igdb<{ id: number; version_parent?: number }[]>("games", `fields version_parent; where id = (${list}); limit ${ids.length};`),
+    igdb<Own[]>("games", `fields version_parent,${TYPE_FIELDS}; where id = (${list}); limit ${ids.length};`),
     igdb<Parent[]>(
       "games",
       `fields remakes,remasters,ports,expanded_games; where remakes = (${list}) | remasters = (${list}) | ports = (${list}) | expanded_games = (${list}); limit 500;`,
@@ -181,8 +184,9 @@ export async function originalsByIgdbIds(ids: number[]): Promise<Record<string, 
       if (wanted.has(v) && v !== p.id) out[String(v)] = p.id;
     }
   }
-  for (const g of own) if (g.version_parent) out[String(g.id)] = g.version_parent;
-  return out;
+  for (const g of own) if (g.version_parent?.id) out[String(g.id)] = g.version_parent.id;
+  const types = Object.fromEntries(own.map((g) => [String(g.id), { gameType: gameTypeOf(g), baseGame: baseGameOf(g) }]));
+  return { originals: out, types };
 }
 
 /** Qué es cada juego de IGDB y de cuál, por su número: para completar el tipo de los que ya tienes. */

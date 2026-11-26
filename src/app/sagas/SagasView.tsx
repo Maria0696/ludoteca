@@ -10,8 +10,8 @@ import { Dialog } from "@/components/ui/Dialog";
 import { StatusMark } from "@/components/ui/StatusMark";
 import type { CatalogGame, SeriesGamesResponse, SeriesResponse } from "@/lib/catalog";
 import { useLocalChoice } from "@/lib/local-choice";
-import { gameTypeLabel } from "@/lib/game-type";
-import type { Game, GameType, SagaExtra, SagaRole } from "@/lib/model";
+import { GAME_TYPE_LABEL, gameTypeLabel } from "@/lib/game-type";
+import { GAME_TYPES, type Game, type GameType, type SagaExtra, type SagaRole } from "@/lib/model";
 import { timesFinished } from "@/lib/runs";
 import {
   NO_STORY,
@@ -662,7 +662,7 @@ function StoryMap({
   onDropGame: (g: Game) => void;
   onDropExtra: (x: SagaExtra) => void;
   /** Su marca o de qué juego es versión. */
-  onPatch: (stop: Stop, patch: { sagaRole?: SagaRole; versionOf?: number }) => void;
+  onPatch: (stop: Stop, patch: { sagaRole?: SagaRole; versionOf?: number; gameType?: GameType | null }) => void;
 }) {
   const groups = storyGroups(story, order, showExtras);
   const marks = groupMarks(groups);
@@ -739,6 +739,22 @@ function StoryMap({
             ))}
           </div>
         )}
+        <label className={styles.versionOf}>
+          <span>Tipo</span>
+          <select
+            className={styles.versionSelect}
+            aria-label={`Tipo de «${title}»`}
+            value={infoOf(s).gameType ?? ""}
+            onChange={(e) => onPatch(s, { gameType: (e.target.value || null) as GameType | null })}
+          >
+            <option value="">Sin indicar</option>
+            {GAME_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {GAME_TYPE_LABEL[type]}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className={styles.versionOf}>
           <span>Es versión de</span>
           <select
