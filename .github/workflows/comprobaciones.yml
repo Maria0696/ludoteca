@@ -42,13 +42,13 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      # Tipos y lint, una sola vez: en la primera parte.
+      # Tipos y lint, una sola vez: en la última parte, que es la que menos pruebas pesadas tiene.
       - name: Tipos
-        if: matrix.parte == 1
+        if: matrix.parte == 4
         run: npm run typecheck
 
       - name: Lint
-        if: matrix.parte == 1
+        if: matrix.parte == 4
         run: npm run lint
 
       # Las pruebas usan el Chrome que ya trae la máquina de GitHub.
