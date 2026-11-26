@@ -1,8 +1,9 @@
 // Genera los iconos de la app (la guardiana sobre morado noche) a partir de su dibujo de píxeles.
 // Uso: node scripts/iconos.mjs   (Node 23.6+ lee el dibujo directamente del .ts)
 // Salen: public/icon-192.png, public/icon-512.png, public/icon-maskable-512.png, src/app/apple-icon.png y
-// src/app/icon.svg (el de la pestaña del navegador).
-import { writeFile } from "node:fs/promises";
+// src/app/icon.svg (el de la pestaña del navegador). También mete la guardiana en public/offline.html, que sin
+// conexión no puede cargar nada de fuera.
+import { readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { KEEPER, KEEPER_PALETTE } from "../src/components/pixel/sprites.ts";
 
@@ -36,6 +37,18 @@ function iconSvg(grid, size) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${grid} ${grid}" shape-rendering="crispEdges"><rect width="${grid}" height="${grid}" fill="${BG}"/>${art}${scan}</svg>`;
 }
 
+/** Solo la guardiana, sin fondo: para la pantalla sin conexión. */
+function artSvg() {
+  let art = "";
+  rows.forEach((row, y) => {
+    [...row].forEach((c, x) => {
+      const fill = KEEPER_PALETTE[c];
+      if (fill) art += `<rect x="${x - left}" y="${y}" width="1" height="1" fill="${fill}"/>`;
+    });
+  });
+  return `<svg viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges" aria-hidden="true">${art}</svg>`;
+}
+
 const png = (svg, file) => sharp(Buffer.from(svg)).png().toFile(file);
 
 await png(iconSvg(20, 192), "public/icon-192.png");
@@ -44,4 +57,8 @@ await png(iconSvg(22, 512), "public/icon-maskable-512.png");
 await png(iconSvg(20, 180), "src/app/apple-icon.png");
 // En la pestaña se ve a 16–32 px: sin líneas de pantalla, que ahí solo ensucian.
 await writeFile("src/app/icon.svg", iconSvg(16, 32).replace(/<rect x="0" y="[\d.]+" width="\d+" height="[\d.]+" fill="#000" opacity="0.22"\/>/g, "") + "\n");
+const offline = await readFile("public/offline.html", "utf8");
+const marked = /(<!-- guardiana:[^>]*-->\n)[\s\S]*?(\s*<!-- \/guardiana -->)/;
+if (!marked.test(offline)) throw new Error("public/offline.html no tiene las marcas de la guardiana");
+await writeFile("public/offline.html", offline.replace(marked, (_, open, close) => `${open}      ${artSvg()}${close}`));
 console.log("Iconos listos.");

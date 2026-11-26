@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { LibraryProvider } from "@/lib/store";
 import { AddGameProvider } from "../game/AddGameProvider";
 import { BottomNav } from "./BottomNav";
+import { ServiceWorker } from "./ServiceWorker";
 import { StateGate } from "./StateGate";
 import { TopBar } from "./TopBar";
 import { useShortcuts } from "./useShortcuts";
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <>
         {children}
         <AppToaster />
+        <ServiceWorker />
       </>
     );
   }
@@ -50,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
         <BottomNav />
         <AppToaster />
+        <ServiceWorker />
       </AddGameProvider>
     </LibraryProvider>
   );
