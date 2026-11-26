@@ -163,3 +163,104 @@ test("a partir del 1 de enero, el año anterior se congela solo, una sola vez", 
   expect((await stored(page)).wraps).toHaveLength(1);
 });
 
+/** Marca juegos de la demostración como tuyos (los de demostración no cuentan) y les pone datos, por título. */
+async function seedGames(page: Page, patches: Record<string, Record<string, unknown>>) {
+  await page.evaluate(
+    (patches) =>
+      new Promise<void>((resolve) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onsuccess = () => {
+          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const req = store.get("data");
+          req.onsuccess = () => {
+            const value = req.result;
+            for (const g of value.games) if (patches[g.title]) Object.assign(g, { demo: false, pastRuns: [] }, patches[g.title]);
+            store.put(value, "data").onsuccess = () => resolve();
+          };
+        };
+      }),
+    patches,
+  );
+}
+
+/** Abre el año con el reloj puesto: el 26 de noviembre de 2026, con 2026 en curso. */
+async function openYear(page: Page, patches: Record<string, Record<string, unknown>>, year = 2026) {
+  await page.clock.setFixedTime(new Date("2026-11-26T10:00:00"));
+  await loadDemo(page);
+  await seedGames(page, patches);
+  await openApp(page, `/anuario/${year}`);
+}
+
+const screen = (page: Page) => page.getByRole("region", { name: /^Pantalla \d+ de \d+$/ });
+const total = async (page: Page) => Number((await screen(page).getAttribute("aria-label"))!.match(/de (\d+)$/)![1]);
+
+test("las pantallas de un año se pasan con los botones y las flechas, y Esc vuelve a los años", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01", rating: 9, genres: ["Rol"] }, Celeste: { finishedAt: "2026-03-01" } });
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 1 de/);
+  await expect(screen(page)).toContainText("Tu 2026");
+  await page.getByRole("button", { name: "Siguiente" }).click();
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
+  await expect(screen(page)).toContainText("2");
+  await page.keyboard.press("ArrowRight");
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 3 de/);
+  await page.keyboard.press("ArrowLeft");
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/anuario$/);
+});
+
+test("sin notas no hay pantalla de favoritos", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01", rating: 9 }, Celeste: { finishedAt: "2026-03-01", rating: null } });
+  const withRating = await total(page);
+  await seedGames(page, { Hades: { finishedAt: "2026-05-01", rating: null } });
+  await openApp(page, "/anuario/2026");
+  await expect.poll(() => total(page)).toBe(withRating - 1);
+});
+
+test("cerrar el año lo guarda tal cual: aunque luego se borre un juego, el recuerdo sigue entero", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2026-03-01" } });
+  const n = await total(page);
+  for (let i = 1; i < n; i++) await page.keyboard.press("ArrowRight");
+  await page.getByRole("button", { name: "Cerrar el año" }).click();
+  await page.getByRole("alert").getByRole("button", { name: "Cerrar el año" }).click();
+  await expect(screen(page)).toContainText("Guardado el");
+  // Se borra Celeste: el año guardado sigue contándola y nombrándola.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onsuccess = () => {
+          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const req = store.get("data");
+          req.onsuccess = () => {
+            const value = req.result;
+            value.games = value.games.filter((g: { title: string }) => g.title !== "Celeste");
+            store.put(value, "data").onsuccess = () => resolve();
+          };
+        };
+      }),
+  );
+  await openApp(page, "/anuario/2026");
+  await page.keyboard.press("ArrowRight");
+  await expect(screen(page)).toContainText("2");
+  while (!(await screen(page).textContent())?.includes("Primero y último")) await page.keyboard.press("ArrowRight");
+  await expect(screen(page)).toContainText("Celeste");
+});
+
+test("con «Reducir movimiento», las pantallas entran solo con un fundido", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" } });
+  await page.getByRole("button", { name: "Siguiente" }).click();
+  // La animación de entrada de la pantalla nueva, por su nombre.
+  const anims = () => page.evaluate(() => document.getAnimations().map((a) => (a as CSSAnimation).animationName));
+  await expect.poll(anims).toContain("anuario-fundido");
+  expect(await anims()).not.toContain("anuario-entra");
+});
+
+test("si varios meses empatan, todos son tu mes", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-07-01" }, Celeste: { finishedAt: "2026-11-02" } });
+  while (!(await screen(page).textContent())?.match(/Tus? mes/)) await page.keyboard.press("ArrowRight");
+  await expect(screen(page)).toContainText("Tus meses");
+  await expect(screen(page)).toContainText("Julio y noviembre: 1 juego terminado en cada uno");
+});
+
