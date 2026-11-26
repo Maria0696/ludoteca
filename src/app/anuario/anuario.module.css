@@ -927,74 +927,317 @@
   }
 }
 
-/* Todos los años: una tarjeta por año y la tabla para compararlos. */
+/*
+ * Todos los años: cada año, un cartucho de su color (--bg, --ink, desde colors.ts) con esquinas de píxel. El más
+ * reciente ocupa toda la fila. Debajo, la tabla para compararlos, con barras del color de cada año.
+ */
+.yearsPage {
+  max-width: 1120px;
+}
 .head {
   display: grid;
   gap: 6px;
 }
 .years {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
 }
-.yearCard {
+/* Esquinas mordidas de 10 px: la silueta de un cartucho o de una ventana de píxeles. */
+.cartridge,
+.banner {
+  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 10px calc(100% - 10px), 0 calc(100% - 10px));
+}
+.cartridge {
+  position: relative;
   display: grid;
-  gap: 8px;
-  padding: 16px;
-  color: var(--text);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "year"
+    "status"
+    "fan"
+    "figures"
+    "play";
+  align-content: start;
+  align-items: start;
+  gap: 12px;
+  padding: 22px 22px 20px;
+  background: var(--bg);
+  color: var(--ink);
   text-decoration: none;
+  transition: transform 160ms var(--ease-out);
+  animation: cartridge-in 420ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i) * 60ms);
 }
-@media (hover: hover) and (pointer: fine) {
-  .yearCard:hover {
-    background: var(--hover);
+@keyframes cartridge-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
 }
-.yearNumber {
+/* Líneas de pantalla, como en el Wrapped. */
+.cartridge::after,
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgb(0 0 0 / 0.06) 50%, transparent 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cartridge:hover {
+    transform: translateY(-4px);
+  }
+  .cartridge:hover .cartridgePlay {
+    background: var(--white);
+    color: #12101f;
+  }
+}
+.cartridge:focus-visible,
+.bannerPlay:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: -6px;
+}
+.cartridgeYear {
+  grid-area: year;
   font-family: var(--font-pixel);
-  font-size: 26px;
+  font-size: clamp(36px, 5vw, 56px);
   font-weight: 400;
-  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0.06em 0.06em 0 rgb(0 0 0 / 0.25);
 }
-.yearCovers {
+.cartridgeStatus {
+  grid-area: status;
+  justify-self: start;
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--size-note);
+  white-space: nowrap;
+}
+.cartridgeFan {
+  grid-area: fan;
+  justify-self: start;
+  min-height: 92px;
+}
+.cartridgeFigures {
+  grid-area: figures;
+  font-size: var(--size-body);
+  line-height: 1.2;
+}
+.cartridgePlay,
+.bannerPlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  min-height: 44px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.cartridgePlay {
+  grid-area: play;
+  justify-self: start;
+}
+.cartridgePlay svg,
+.bannerPlay svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* El más reciente: toda la fila, el año enorme a la izquierda y el abanico grande a la derecha. */
+.cartridge[data-grande] {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "year fan"
+    "status fan"
+    "figures fan"
+    "play fan";
+  align-items: center;
+  row-gap: 14px;
+  padding: 32px 36px;
+}
+.cartridge[data-grande] .cartridgeYear {
+  font-size: clamp(56px, 8vw, 104px);
+}
+.cartridge[data-grande] .cartridgeFan {
+  align-self: center;
+  justify-self: end;
+}
+.cartridge[data-grande] .coverFanCover {
+  width: clamp(72px, 8vw, 104px);
+}
+
+/* Las carátulas en abanico. */
+.coverFan {
   display: flex;
-  min-height: 56px;
+  padding: 6px 4px 4px;
 }
-.yearCover {
-  width: 42px;
+.coverFanItem {
+  flex: none;
+  margin-left: -18px;
+  transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 6deg));
+}
+.coverFanItem:first-child {
+  margin-left: 0;
+}
+.coverFanCover {
+  width: 60px;
   aspect-ratio: 3 / 4;
-  box-shadow: 0 0 0 2px var(--window);
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.3);
 }
-.yearCover + .yearCover {
-  margin-left: -12px;
-}
-.yearFigures {
-  font-size: var(--size-meta);
-}
+
+/* Comparar: una fila por año, cada cifra con su barra del color del año. */
 .tableBox {
-  padding: 14px;
+  padding: 18px 20px;
   overflow-x: auto;
 }
 .table {
+  width: 100%;
   border-collapse: collapse;
   font-size: var(--size-body);
 }
 .table caption {
-  padding-bottom: 8px;
-  color: var(--muted);
+  padding-bottom: 10px;
+  color: var(--gold);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  line-height: 1.5;
   text-align: left;
 }
 .table th,
 .table td {
-  padding: 6px 16px 6px 0;
-  text-align: right;
+  padding: 8px 16px 8px 0;
+  text-align: left;
   white-space: nowrap;
 }
-.table thead th {
-  color: var(--gold);
-  font-weight: 400;
+.table :is(th, td):last-child {
+  padding-right: 0;
 }
-.table tbody th {
+.table thead th {
   color: var(--muted);
   font-weight: 400;
-  text-align: left;
+  font-size: var(--size-label);
+}
+.table tbody tr + tr :is(th, td) {
+  border-top: 2px solid var(--line);
+}
+.table tbody th {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--paper);
+}
+.barCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+.miniBar {
+  flex: none;
+  width: calc(var(--w) * 120px);
+  min-width: 4px;
+  height: 14px;
+  background: var(--bg);
+}
+.barValue {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La banda de Estadísticas: lleva al Wrapped del año en curso. */
+.banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 30px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.bannerText {
+  display: grid;
+  gap: 6px;
+}
+.bannerYear {
+  font-family: var(--font-pixel);
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.1;
+  text-shadow: 0.06em 0.06em 0 rgb(0 0 0 / 0.25);
+}
+.bannerFigures {
+  font-size: var(--size-body);
+}
+.bannerFan .coverFanCover {
+  width: 64px;
+}
+.bannerPlay {
+  position: relative;
+  z-index: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .bannerPlay:hover {
+    background: var(--white);
+    color: #12101f;
+  }
+}
+
+@media (max-width: 899px) {
+  .cartridge[data-grande] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "year"
+      "status"
+      "fan"
+      "figures"
+      "play";
+    padding: 24px 22px;
+  }
+  .cartridge[data-grande] .cartridgeFan {
+    justify-self: start;
+  }
+  .cartridge[data-grande] .coverFanCover {
+    width: 64px;
+  }
+  .banner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px 22px;
+  }
+  .bannerFan {
+    display: none;
+  }
+  .bannerPlay {
+    justify-self: start;
+  }
+  /* En el móvil, las cuatro columnas caben: barras más cortas y menos aire. */
+  .tableBox {
+    padding: 16px 14px;
+  }
+  .table th,
+  .table td {
+    padding-right: 10px;
+  }
+  .barCell {
+    gap: 6px;
+    min-width: 0;
+  }
+  .miniBar {
+    width: calc(var(--w) * 40px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartridge {
+    animation-name: fade;
+    transition: none;
+  }
 }

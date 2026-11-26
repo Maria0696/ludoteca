@@ -322,9 +322,14 @@ test("todos los años: el guardado y el en curso, cada uno con sus cifras, y la 
   await expect(years.getByRole("link", { name: /^2026/ })).toContainText("En curso");
   await expect(years.getByRole("link", { name: /^2025/ })).toContainText("Guardado el");
   await expect(years.getByRole("link", { name: /^2026/ })).toContainText("1 terminado");
+  await expect(years.getByRole("link", { name: /^2026/ })).toContainText("Ver tu 2026");
+  // El año en curso va primero y en grande.
+  const [now, past] = [await years.getByRole("link", { name: /^2026/ }).boundingBox(), await years.getByRole("link", { name: /^2025/ }).boundingBox()];
+  expect(now!.width).toBeGreaterThan(past!.width);
+  // Para comparar, una fila por año con sus barras.
   const table = page.getByRole("table", { name: "Tus años, uno al lado del otro" });
-  await expect(table.getByRole("columnheader")).toHaveText(["2026", "2025"]);
-  await expect(table.getByRole("row", { name: /^Terminados/ })).toContainText("1");
+  await expect(table.getByRole("columnheader")).toHaveText(["Año", "Terminados", "Empezados", "Copias"]);
+  await expect(table.getByRole("row", { name: /^2026/ })).toContainText("1");
   await years.getByRole("link", { name: /^2026/ }).click();
   await expect(page).toHaveURL(/\/anuario\/2026$/);
 });
@@ -338,7 +343,9 @@ test("un año sin nada lo dice y no ofrece guardarlo", async ({ page }) => {
 test("desde Estadísticas se llega al año en curso del Anuario", async ({ page }) => {
   await openYear(page, { Hades: { finishedAt: "2026-05-01" } });
   await openApp(page, "/estadisticas");
-  await page.getByRole("link", { name: "Tu 2026 en el Anuario" }).click();
+  const banner = page.getByRole("region", { name: "Tu 2026 en el Anuario" });
+  await expect(banner).toContainText("1 terminado");
+  await banner.getByRole("link", { name: "Ver tu 2026" }).click();
   await expect(page).toHaveURL(/\/anuario\/2026$/);
 });
 

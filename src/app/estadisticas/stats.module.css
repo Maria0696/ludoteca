@@ -435,11 +435,3 @@
     box-shadow: inset 0 0 0 2px var(--window);
   }
 }
-
-/* El año en curso, en el Anuario. */
-.anuario {
-  justify-self: start;
-  color: var(--gold);
-  font-size: var(--size-body);
-  text-underline-offset: 4px;
-}
