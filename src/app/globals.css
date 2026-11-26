@@ -921,6 +921,10 @@ dialog.sheet:not([open]) {
   }
 }
 
+/* El Anuario a pantalla completa, por encima de la cabecera también mientras dura la transición. */
+::view-transition-group(anuario) {
+  z-index: 150;
+}
 /* Anuario: cada pantalla del año entra con un fundido y subiendo un poco (con movimiento reducido, solo fundido). */
 .anuario-pantalla {
   animation: 220ms var(--ease-out) both anuario-entra;

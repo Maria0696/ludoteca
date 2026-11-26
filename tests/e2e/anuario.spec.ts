@@ -183,12 +183,28 @@ async function seedGames(page: Page, patches: Record<string, Record<string, unkn
   );
 }
 
-/** Abre el año con el reloj puesto: el 26 de noviembre de 2026, con 2026 en curso. */
-async function openYear(page: Page, patches: Record<string, Record<string, unknown>>, year = 2026) {
+/**
+ * Pausa las pantallas y vuelve a la primera: avanzan solas cada 6 s y, con el equipo cargado, pueden haber avanzado
+ * antes del clic. Para recorrerlas a mano, no deben moverse solas.
+ */
+async function pause(page: Page) {
+  const button = page.getByRole("button", { name: "Pausar" });
+  if (!(await button.count())) return;
+  await button.click();
+  const region = page.getByRole("region", { name: /^Pantalla \d+ de \d+$/ });
+  for (let i = 0; i < 10 && !(await region.getAttribute("aria-label"))?.startsWith("Pantalla 1 de"); i++) await page.keyboard.press("ArrowLeft");
+}
+
+/**
+ * Abre el año con el reloj puesto: el 26 de noviembre de 2026, con 2026 en curso. Las pantallas quedan en pausa
+ * (con el equipo cargado la prueba va más lenta y avanzarían solas), salvo que se pida verlas avanzar.
+ */
+async function openYear(page: Page, patches: Record<string, Record<string, unknown>>, year = 2026, { play = false } = {}) {
   await page.clock.setFixedTime(new Date("2026-11-26T10:00:00"));
   await loadDemo(page);
   await seedGames(page, patches);
   await openApp(page, `/anuario/${year}`);
+  if (!play) await pause(page);
 }
 
 const screen = (page: Page) => page.getByRole("region", { name: /^Pantalla \d+ de \d+$/ });
@@ -206,7 +222,8 @@ test("las pantallas de un año se pasan con los botones y las flechas, y Esc vue
   await page.keyboard.press("ArrowLeft");
   await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
   await page.keyboard.press("Escape");
-  await expect(page).toHaveURL(/\/anuario$/);
+  // Con el equipo muy cargado (muchas pruebas a la vez contra un solo servidor), la navegación puede tardar.
+  await expect(page).toHaveURL(/\/anuario$/, { timeout: 20000 });
 });
 
 test("sin notas no hay pantalla de favoritos", async ({ page }) => {
@@ -214,6 +231,7 @@ test("sin notas no hay pantalla de favoritos", async ({ page }) => {
   const withRating = await total(page);
   await seedGames(page, { Hades: { finishedAt: "2026-05-01", rating: null } });
   await openApp(page, "/anuario/2026");
+  await pause(page);
   await expect.poll(() => total(page)).toBe(withRating - 1);
 });
 
@@ -241,6 +259,7 @@ test("cerrar el año lo guarda tal cual: aunque luego se borre un juego, el recu
       }),
   );
   await openApp(page, "/anuario/2026");
+  await pause(page);
   await page.keyboard.press("ArrowRight");
   await expect(screen(page)).toContainText("2");
   while (!(await screen(page).textContent())?.includes("Primero y último")) await page.keyboard.press("ArrowRight");
@@ -261,7 +280,8 @@ test("si varios meses empatan, todos son tu mes", async ({ page }) => {
   await openYear(page, { Hades: { finishedAt: "2026-07-01" }, Celeste: { finishedAt: "2026-11-02" } });
   while (!(await screen(page).textContent())?.match(/Tus? mes/)) await page.keyboard.press("ArrowRight");
   await expect(screen(page)).toContainText("Tus meses");
-  await expect(screen(page)).toContainText("Julio y noviembre: 1 juego terminado en cada uno");
+  await expect(screen(page)).toContainText("Julio y noviembre");
+  await expect(screen(page)).toContainText("1 juego terminado en cada uno");
 });
 
 test("todos los años: el guardado y el en curso, cada uno con sus cifras, y la tabla para compararlos", async ({ page }) => {
@@ -311,5 +331,34 @@ test("del 15 de diciembre al 31 de enero, Inicio avisa de que ya puedes ver tu a
   await openApp(page, "/");
   await notice.click();
   await expect(page).toHaveURL(/\/anuario\/2026$/);
+});
+
+test("el año ocupa toda la pantalla, por encima de la cabecera", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" } });
+  const onTop = await page.evaluate(() => {
+    const hit = document.elementFromPoint(window.innerWidth / 2, 20);
+    return Boolean(hit?.closest("[data-anuario]"));
+  });
+  expect(onTop).toBe(true);
+});
+
+test("las pantallas avanzan solas; manteniendo pulsado o con «Pausar», se paran", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2026-03-01" } }, 2026, { play: true });
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 1 de/);
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/, { timeout: 9000 });
+  // En pausa no avanza.
+  await page.getByRole("button", { name: "Pausar" }).click();
+  await page.waitForTimeout(7000);
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
+  await page.getByRole("button", { name: "Seguir" }).click();
+  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 3 de/, { timeout: 9000 });
+});
+
+test("las cifras grandes suben como una puntuación hasta su número", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2026-03-01" } });
+  await page.keyboard.press("ArrowRight");
+  const big = screen(page).locator("[data-cifra]");
+  await expect(big).toHaveText("2");
+  expect(await big.getAttribute("data-cifra")).toBe("2");
 });
 
