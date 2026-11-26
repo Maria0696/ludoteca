@@ -264,3 +264,24 @@ test("si varios meses empatan, todos son tu mes", async ({ page }) => {
   await expect(screen(page)).toContainText("Julio y noviembre: 1 juego terminado en cada uno");
 });
 
+test("todos los años: el guardado y el en curso, cada uno con sus cifras, y la tabla para compararlos", async ({ page }) => {
+  // 2025 se congela solo al abrir la app (ya acabó); 2026 está en curso.
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2025-03-01" } });
+  await openApp(page, "/anuario");
+  const years = page.getByRole("region", { name: "Tus años" });
+  await expect(years.getByRole("link", { name: /^2026/ })).toContainText("En curso");
+  await expect(years.getByRole("link", { name: /^2025/ })).toContainText("Guardado el");
+  await expect(years.getByRole("link", { name: /^2026/ })).toContainText("1 terminado");
+  const table = page.getByRole("table", { name: "Tus años, uno al lado del otro" });
+  await expect(table.getByRole("columnheader")).toHaveText(["2026", "2025"]);
+  await expect(table.getByRole("row", { name: /^Terminados/ })).toContainText("1");
+  await years.getByRole("link", { name: /^2026/ }).click();
+  await expect(page).toHaveURL(/\/anuario\/2026$/);
+});
+
+test("un año sin nada lo dice y no ofrece guardarlo", async ({ page }) => {
+  await openYear(page, {}, 2019);
+  await expect(page.getByText("No hay nada de 2019 en tu ludoteca.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Guardar este año|Cerrar el año/ })).toHaveCount(0);
+});
+

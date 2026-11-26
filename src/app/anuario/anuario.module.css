@@ -245,3 +245,75 @@
     width: 100px;
   }
 }
+
+/* Todos los años: una tarjeta por año y la tabla para compararlos. */
+.head {
+  display: grid;
+  gap: 6px;
+}
+.years {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.yearCard {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  color: var(--text);
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .yearCard:hover {
+    background: var(--hover);
+  }
+}
+.yearNumber {
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--gold);
+}
+.yearCovers {
+  display: flex;
+  min-height: 56px;
+}
+.yearCover {
+  width: 42px;
+  aspect-ratio: 3 / 4;
+  box-shadow: 0 0 0 2px var(--window);
+}
+.yearCover + .yearCover {
+  margin-left: -12px;
+}
+.yearFigures {
+  font-size: var(--size-meta);
+}
+.tableBox {
+  padding: 14px;
+  overflow-x: auto;
+}
+.table {
+  border-collapse: collapse;
+  font-size: var(--size-body);
+}
+.table caption {
+  padding-bottom: 8px;
+  color: var(--muted);
+  text-align: left;
+}
+.table th,
+.table td {
+  padding: 6px 16px 6px 0;
+  text-align: right;
+  white-space: nowrap;
+}
+.table thead th {
+  color: var(--gold);
+  font-weight: 400;
+}
+.table tbody th {
+  color: var(--muted);
+  font-weight: 400;
+  text-align: left;
+}
