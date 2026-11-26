@@ -704,6 +704,18 @@ function StoryMap({
     );
 
   const toggleOptions = (id: string) => setOptions((o) => (o === id ? null : id));
+  /** Deseos, con un corazón: hueco para añadirlo; relleno si ya está. Solo en los que no tienes. */
+  const wishControl = (s: Stop) =>
+    s.kind !== "falta" ? null : wished(s.extra) ? (
+      <span className={styles.inWish} data-en-deseos="" title="En deseos">
+        <Heart aria-hidden fill="currentColor" />
+        <span className="sr-only">En deseos</span>
+      </span>
+    ) : (
+      <button type="button" className="btn btn-quiet btn-icon" aria-label={`Añadir «${infoOf(s).title}» a deseos`} title="Añadir a deseos" onClick={() => onWish(s.extra)}>
+        <Heart aria-hidden />
+      </button>
+    );
   const optionsButton = (s: Stop) => (
     <button
       type="button"
@@ -902,16 +914,6 @@ function StoryMap({
                 )}
                 <span className={styles.stopMeta}>{metaOf(lead)}</span>
                 {isNext && <span className={styles.nextTag}>▶ Siguiente{next && next.id !== lead.id ? `: ${next.title}` : ""}</span>}
-                {lead.kind === "falta" &&
-                  (wished(lead.extra) ? (
-                    <span className={styles.inWish}>
-                      <Heart aria-hidden /> En deseos
-                    </span>
-                  ) : (
-                    <button type="button" className={`btn btn-sm ${styles.wishBtn}`} aria-label={`Añadir «${title}» a deseos`} onClick={() => onWish(lead.extra)}>
-                      <Heart aria-hidden /> Añadir a deseos
-                    </button>
-                  ))}
               </span>
               <span className={styles.arrows}>
                 {editable && (
@@ -925,6 +927,7 @@ function StoryMap({
                     </button>
                   </>
                 )}
+                {wishControl(lead)}
                 {optionsButton(lead)}
                 {dropButton(lead)}
               </span>
@@ -948,11 +951,7 @@ function StoryMap({
                             )}
                             <span className={styles.stopMeta}>{metaOf(v)}</span>
                             <span className={styles.versionActions}>
-                              {v.kind === "falta" && !wished(v.extra) && (
-                                <button type="button" className="btn btn-quiet btn-icon" aria-label={`Añadir «${vTitle}» a deseos`} onClick={() => onWish(v.extra)}>
-                                  <Heart aria-hidden />
-                                </button>
-                              )}
+                              {wishControl(v)}
                               {optionsButton(v)}
                               {dropButton(v)}
                             </span>
