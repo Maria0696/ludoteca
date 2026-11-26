@@ -155,7 +155,10 @@ test("una copia de antes, con listas, se sigue importando y las listas se ignora
 });
 
 test("datos de demostración separados y retirables", async ({ page }) => {
-  await loadDemo(page);
+  // El botón de verdad: las demás pruebas cargan la demostración directamente en el navegador (loadDemo).
+  await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Probar con datos de demostración" }).click();
+  await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
   // Sin juegos propios no se habla de «0 juegos tuyos».
   await page.goto("/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración y ningún juego tuyo\.$/)).toBeVisible();
@@ -165,7 +168,7 @@ test("datos de demostración separados y retirables", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await addGame(page, { title: "Mi juego real", platform: "PC", format: "Digital" });
-  await page.goto("/ajustes?apartado=demostracion");
+  await openApp(page, "/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración junto a 1 juego tuyo\.$/)).toBeVisible();
   await page.getByRole("button", { name: "Retirar datos de demostración" }).click();
   await expect(page.getByRole("dialog").getByText(/Tu juego no se toca\.$/)).toBeVisible();

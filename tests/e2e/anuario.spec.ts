@@ -381,14 +381,23 @@ test("el año ocupa toda la pantalla, por encima de la cabecera", async ({ page 
 
 test("las pantallas avanzan solas; manteniendo pulsado o con «Pausar», se paran", async ({ page }) => {
   await openYear(page, { Hades: { finishedAt: "2026-05-01" }, Celeste: { finishedAt: "2026-03-01" } }, 2026, { play: true });
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 1 de/);
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/, { timeout: 9000 });
-  // En pausa no avanza.
+  // A cámara rápida (×4): cada pantalla dura 1,5 s en vez de 6, y la prueba no se pasa medio minuto esperando.
+  await page.evaluate(() =>
+    setInterval(() => {
+      for (const a of document.getAnimations()) if (a.playbackRate === 1) a.playbackRate = 4;
+    }, 20),
+  );
+  const at = async () => Number((await screen(page).getAttribute("aria-label"))!.match(/^Pantalla (\d+)/)![1]);
+  // Avanza sola.
+  await expect.poll(at).toBeGreaterThan(1);
+  // En pausa no avanza. Con el equipo cargado puede haber pasado de pantalla antes del clic: se vuelve a la segunda.
   await page.getByRole("button", { name: "Pausar" }).click();
-  await page.waitForTimeout(7000);
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 2 de/);
+  while ((await at()) > 2) await page.keyboard.press("ArrowLeft");
+  await page.waitForTimeout(2000);
+  expect(await at()).toBe(2);
+  // Al seguir, vuelve a avanzar.
   await page.getByRole("button", { name: "Seguir" }).click();
-  await expect(screen(page)).toHaveAttribute("aria-label", /^Pantalla 3 de/, { timeout: 9000 });
+  await expect.poll(at).toBeGreaterThan(2);
 });
 
 test("las cifras grandes suben como una puntuación hasta su número", async ({ page }) => {
