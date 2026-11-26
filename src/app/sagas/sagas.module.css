@@ -392,12 +392,8 @@
 .missingTag {
   color: #8fe3a8;
 }
-/* Ya en deseos: el corazón rojo y relleno, del tamaño de los botones de al lado. */
+/* Ya en deseos: el corazón rojo y relleno; al tocarlo, se quita. */
 .inWish {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
   color: #ff4d5e;
 }
 .inWish svg {

@@ -284,6 +284,11 @@ export function isWished(wishlist: Titled[], x: Titled): boolean {
   return wishlist.some((w) => sameGame(w, x));
 }
 
+/** El deseo que es este juego, si está en deseos. */
+export function findWish<T extends Titled>(wishlist: T[], x: Titled): T | undefined {
+  return wishlist.find((w) => sameGame(w, x));
+}
+
 /**
  * Juegos que llegan a la biblioteca y estaban en una saga como «no lo tienes» (mismo número de IGDB): toman la
  * saga y el puesto de esa parada, aunque IGDB les dé otra. Devuelve también las paradas que sobran.

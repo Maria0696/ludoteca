@@ -24,6 +24,7 @@ import {
   type StoryOrder,
   buildStories,
   findOwned,
+  findWish,
   groupByBrand,
   hiddenStories,
   isWished,
@@ -398,6 +399,10 @@ export function SagasView() {
                 actions.addWish({ title: x.title, coverUrl: x.coverUrl ?? null, igdbId: x.igdbId ?? null });
                 toast(`«${x.title}» añadido a tu lista de deseos`);
               }}
+              onUnwish={(x) => {
+                const wish = findWish(library.wishlist, x);
+                if (wish) actions.deleteWish(wish.id);
+              }}
               onDropGame={dropGame}
               onDropExtra={(x) => actions.deleteExtra(x.id)}
               onPatch={(stop, patch) =>
@@ -653,6 +658,7 @@ function StoryMap({
   onFindMissing,
   finding,
   onWish,
+  onUnwish,
   onDropGame,
   onDropExtra,
   onPatch,
@@ -671,6 +677,8 @@ function StoryMap({
   onFindMissing: () => void;
   finding: boolean;
   onWish: (x: SagaExtra) => void;
+  /** Lo quita de deseos (con «Deshacer»). */
+  onUnwish: (x: SagaExtra) => void;
   onDropGame: (g: Game) => void;
   onDropExtra: (x: SagaExtra) => void;
   /** Su marca o de qué juego es versión. */
@@ -704,13 +712,21 @@ function StoryMap({
     );
 
   const toggleOptions = (id: string) => setOptions((o) => (o === id ? null : id));
-  /** Deseos, con un corazón: hueco para añadirlo; relleno si ya está. Solo en los que no tienes. */
+  /** Deseos, con un corazón: hueco para añadirlo; rojo y relleno si ya está, y entonces lo quita. Solo en los que no tienes. */
   const wishControl = (s: Stop) =>
     s.kind !== "falta" ? null : wished(s.extra) ? (
-      <span className={styles.inWish} data-en-deseos="" title="En deseos">
+      <button
+        type="button"
+        className={`btn btn-quiet btn-icon ${styles.inWish}`}
+        data-en-deseos=""
+        aria-pressed="true"
+        aria-label={`Quitar «${infoOf(s).title}» de deseos`}
+        title="En deseos: quitar"
+        onClick={() => onUnwish(s.extra)}
+      >
         <Heart aria-hidden fill="currentColor" />
         <span className="sr-only">En deseos</span>
-      </span>
+      </button>
     ) : (
       <button type="button" className="btn btn-quiet btn-icon" aria-label={`Añadir «${infoOf(s).title}» a deseos`} title="Añadir a deseos" onClick={() => onWish(s.extra)}>
         <Heart aria-hidden />
