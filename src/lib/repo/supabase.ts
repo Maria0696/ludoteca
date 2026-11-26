@@ -12,7 +12,7 @@ type Row = Record<string, unknown>;
 const gameCols: [keyof Game, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["backdropUrl", "backdrop_url"], ["igdbId", "igdb_id"], ["steamAppId", "steam_app_id"], ["genres", "genres"],
   ["tags", "tags"], ["status", "status"], ["completed100", "completed_100"], ["endless", "endless"], ["favorite", "favorite"],
-  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["franchise", "franchise"], ["saga", "saga"], ["sagaOrder", "saga_order"], ["sagaHidden", "saga_hidden"], ["gameType", "game_type"], ["baseGame", "base_game"],
+  ["rating", "rating"], ["metacritic", "metacritic"], ["criticRating", "critic_rating"], ["summary", "summary"], ["developer", "developer"], ["franchise", "franchise"], ["saga", "saga"], ["sagaOrder", "saga_order"], ["sagaHidden", "saga_hidden"], ["gameType", "game_type"], ["baseGame", "base_game"], ["sagaRole", "saga_role"], ["versionOf", "version_of"],
   ["releaseDate", "release_date"], ["ageRating", "age_rating"], ["hoursPlayed", "hours_played"], ["notes", "notes"], ["startedAt", "started_at"],
   ["finishedAt", "finished_at"], ["pastRuns", "past_runs"], ["lastPlayedAt", "last_played_at"], ["modes", "modes"], ["moods", "moods"],
   ["sessionMinutes", "session_minutes"], ["lengthHours", "length_hours"], ["demo", "demo"],
@@ -35,7 +35,7 @@ const wishCols: [keyof WishItem, string][] = [
 
 const extraCols: [keyof SagaExtra, string][] = [
   ["id", "id"], ["saga", "saga"], ["igdbId", "igdb_id"], ["title", "title"], ["coverUrl", "cover_url"],
-  ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["hidden", "hidden"], ["gameType", "game_type"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+  ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["hidden", "hidden"], ["gameType", "game_type"], ["sagaRole", "saga_role"], ["versionOf", "version_of"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
 /** Sin la tabla de los juegos de saga que no tienes (migración 0012 sin aplicar), la biblioteca carga igual. */

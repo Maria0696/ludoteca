@@ -1,7 +1,21 @@
 import { type Page, expect, test } from "@playwright/test";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Game, type SagaExtra, createGame, emptyLibrary } from "../../src/lib/model";
-import { absorbExtras, buildStories, findOwned, isWished, missingFrom, orderStory, ownedExtras, placeInStory, storyStops } from "../../src/lib/sagas";
+import {
+  absorbExtras,
+  buildStories,
+  findOwned,
+  groupMarks,
+  isWished,
+  missingFrom,
+  nextInGroups,
+  orderStory,
+  ownedExtras,
+  placeInStory,
+  roleOf,
+  storyGroups,
+  storyStops,
+} from "../../src/lib/sagas";
 import { loadDemo, openApp } from "./helpers";
 
 /* Sagas a mano: juegos de una saga que no tienes (guardados aparte), buscados en IGDB, con «Añadir a deseos». */
@@ -415,13 +429,13 @@ test("las copias de seguridad van en el formato 2, con franquicia y saga; las de
 });
 
 
-test("en el mapa, los que no son juego base dicen qué son, también al buscarlos para añadir", async ({ page }) => {
+test("en el mapa cada juego dice qué es, también al buscarlos para añadir", async ({ page }) => {
   await loadDemo(page);
   await seed(page, { Hades: { saga: "Prueba", gameType: "main" }, Celeste: { saga: "Prueba", gameType: "remake" } });
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), gameType: "dlc" }] } }));
   await openApp(page, "/sagas?saga=Prueba");
   await expect(stopsOf(page).filter({ hasText: "Celeste" })).toContainText("Remake");
-  await expect(stopsOf(page).filter({ hasText: "Hades" })).not.toContainText("Juego base");
+  await expect(stopsOf(page).filter({ hasText: "Hades" }).first()).toContainText("Juego base");
   await page.getByRole("button", { name: "Añadir a la saga" }).click();
   const dialog = page.getByRole("dialog", { name: /^Añadir a «Prueba»/ });
   await dialog.getByRole("searchbox", { name: "Buscar en IGDB" }).fill("hades");
@@ -445,3 +459,109 @@ test("Ajustes completa desde IGDB el tipo de los juegos que no lo tienen", async
   expect(asked.sort()).toEqual([101, 102]);
   await expect(page.getByRole("button", { name: /^Completar el tipo desde IGDB/ })).toHaveCount(0);
 });
+
+const leadTitle = (g: { lead: { kind: string; game?: Game; extra?: SagaExtra } }) => titleOf(g.lead);
+
+test("las versiones del mismo juego van dentro de la parada del original, por fecha", () => {
+  const iii = game("God of War III", { saga: "GoW", igdbId: 30, releaseDate: "2010-03-16" });
+  const remaster = extra({ saga: "GoW", title: "God of War III Remastered", igdbId: 31, versionOf: 30, releaseDate: "2015-07-14" });
+  const remake = extra({ saga: "GoW", title: "God of War III Remake", igdbId: 32, versionOf: 30, releaseDate: null });
+  const ascension = extra({ saga: "GoW", title: "God of War: Ascension", igdbId: 40, versionOf: 0, releaseDate: "2013-03-12" });
+  // Su original no está en la saga: va sola.
+  const lonely = extra({ saga: "GoW", title: "Edición suelta", igdbId: 50, versionOf: 99, releaseDate: "2020-01-01" });
+  const [story] = buildStories([iii], [remake, ascension, remaster, lonely]);
+  const groups = storyGroups(story, "lanzamiento");
+  expect(groups.map((g) => [leadTitle(g), g.versions.map(titleOf)])).toEqual([
+    ["God of War III", ["God of War III Remastered", "God of War III Remake"]],
+    ["God of War: Ascension", []],
+    ["Edición suelta", []],
+  ]);
+  // Sin los que faltan, solo los tuyos.
+  expect(storyGroups(story, "lanzamiento", false).map(leadTitle)).toEqual(["God of War III"]);
+  // Mover el original mueve sus versiones: todas toman el puesto de su parada.
+  const placed = placeInStory(story, iii.id, 2);
+  const order = (id: string) => placed.find((p) => p.id === id)?.sagaOrder;
+  expect([order(ascension.id), order(lonely.id), order(iii.id), order(remaster.id), order(remake.id)]).toEqual([1, 2, 3, 3, 3]);
+});
+
+test("la marca de cada parada: según su tipo, o la que ponga ella; los números cuentan solo las principales", () => {
+  expect(roleOf({ gameType: "dlc" })).toBe("dlc");
+  expect(roleOf({ gameType: "expansion" })).toBe("dlc");
+  expect(roleOf({ gameType: "main" })).toBe("main");
+  expect(roleOf({})).toBe("main");
+  expect(roleOf({ gameType: "dlc", sagaRole: "optional" })).toBe("optional");
+  const a = game("A", { saga: "S", releaseDate: "2001-01-01" });
+  const b = game("B", { saga: "S", releaseDate: "2002-01-01", sagaRole: "optional" });
+  const c = game("C", { saga: "S", releaseDate: "2003-01-01", gameType: "dlc" });
+  const d = game("D", { saga: "S", releaseDate: "2004-01-01" });
+  const [story] = buildStories([a, b, c, d]);
+  const groups = storyGroups(story, "lanzamiento");
+  expect(groupMarks(groups)).toEqual([1, "optional", "dlc", 2]);
+  // «Siguiente», solo entre las principales.
+  expect(nextInGroups(groups)?.title).toBe("A");
+  const [done] = buildStories([{ ...a, status: "completado" }, b, c, d]);
+  expect(nextInGroups(storyGroups(done, "lanzamiento"))?.title).toBe("D");
+});
+
+test("en el mapa: cada juego dice qué es, las versiones van dentro y cada parada lleva su marca", async ({ page }) => {
+  await loadDemo(page);
+  await seed(
+    page,
+    {
+      Hades: { saga: "Prueba", igdbId: 10, gameType: "main", releaseDate: "2020-09-17", versionOf: 0 },
+      Celeste: { saga: "Prueba", igdbId: 20, gameType: "main", releaseDate: "2018-01-25", versionOf: 0 },
+    },
+    {
+      extras: [
+        extra({ saga: "Prueba", title: "Hades Remastered", igdbId: 11, versionOf: 10, gameType: "remaster", releaseDate: "2024-01-01" }),
+        extra({ saga: "Prueba", title: "Hades: Ecos", igdbId: 12, versionOf: 0, gameType: "dlc", releaseDate: "2021-01-01" }),
+      ],
+    },
+  );
+  await openApp(page, "/sagas?saga=Prueba");
+  await expect(stopsOf(page)).toHaveCount(3);
+  const celeste = stopsOf(page).filter({ hasText: "Celeste" });
+  const hades = stopsOf(page).filter({ hasText: "Hades Remastered" });
+  const dlc = stopsOf(page).filter({ hasText: "Hades: Ecos" });
+  await expect(celeste).toContainText("Juego base");
+  await expect(hades.getByRole("group", { name: "Versiones de «Hades»" })).toContainText("Remaster");
+  await expect(celeste.locator("[data-marca='principal']")).toHaveText("1");
+  await expect(hades.locator("[data-marca='principal']")).toHaveText("2");
+  await expect(dlc.locator("[data-marca='dlc']")).toHaveCount(1);
+
+  // Celeste, opcional: Hades pasa a ser la 1.
+  await page.getByRole("button", { name: "Opciones de «Celeste»" }).click();
+  await page.getByRole("radiogroup", { name: "Marca de «Celeste»" }).getByRole("radio", { name: "Opcional" }).click();
+  await expect(celeste.locator("[data-marca='opcional']")).toHaveCount(1);
+  await expect(hades.locator("[data-marca='principal']")).toHaveText("1");
+  await page.reload();
+  await expect(stopsOf(page).filter({ hasText: "Celeste" }).locator("[data-marca='opcional']")).toHaveCount(1);
+
+  // A mano: Celeste, versión de Hades; y luego, parada propia otra vez.
+  await page.getByRole("button", { name: "Opciones de «Celeste»" }).click();
+  await page.getByRole("combobox", { name: "Es versión de" }).selectOption({ label: "Hades" });
+  await expect(stopsOf(page)).toHaveCount(2);
+  await expect(page.getByRole("group", { name: "Versiones de «Hades»" })).toContainText("Celeste");
+  await page.getByRole("button", { name: "Opciones de «Celeste»" }).click();
+  await page.getByRole("combobox", { name: "Es versión de" }).selectOption({ label: "Parada propia" });
+  await expect(stopsOf(page)).toHaveCount(3);
+});
+
+test("qué es versión de qué lo pregunta a IGDB, solo por lo que aún no se sabe", async ({ page }) => {
+  await loadDemo(page);
+  await seed(
+    page,
+    { Hades: { saga: "Prueba", igdbId: 10, releaseDate: "2020-09-17" }, Celeste: { saga: "Prueba", igdbId: 20, versionOf: 0, releaseDate: "2018-01-25" } },
+    { extras: [extra({ saga: "Prueba", title: "Hades Remastered", igdbId: 11, gameType: "remaster", releaseDate: "2024-01-01" })] },
+  );
+  let asked: number[] = [];
+  await page.route("**/api/catalogo/versiones", async (route) => {
+    asked = (route.request().postDataJSON() as { igdbIds: number[] }).igdbIds;
+    await route.fulfill({ json: { ok: true, originals: { "10": 0, "11": 10 } } });
+  });
+  await openApp(page, "/sagas?saga=Prueba");
+  await expect(stopsOf(page)).toHaveCount(2);
+  await expect(page.getByRole("group", { name: "Versiones de «Hades»" })).toContainText("Hades Remastered");
+  expect(asked.sort()).toEqual([10, 11]);
+});
+

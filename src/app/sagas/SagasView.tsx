@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, DownloadCloud, GripVertical, Heart, Pencil, Plus, Search, SearchCheck, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, DownloadCloud, GripVertical, Hash, Heart, Pencil, Plus, Puzzle, Search, SearchCheck, SlidersHorizontal, Star, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -11,13 +11,15 @@ import { StatusMark } from "@/components/ui/StatusMark";
 import type { CatalogGame, SeriesGamesResponse, SeriesResponse } from "@/lib/catalog";
 import { useLocalChoice } from "@/lib/local-choice";
 import { gameTypeLabel } from "@/lib/game-type";
-import type { Game, GameType, SagaExtra } from "@/lib/model";
+import type { Game, GameType, SagaExtra, SagaRole } from "@/lib/model";
 import { timesFinished } from "@/lib/runs";
 import {
   NO_STORY,
   isNoStory,
   type Placement,
   type Proposal,
+  type Stop,
+  type StopGroup,
   type Story,
   type StoryOrder,
   buildStories,
@@ -25,17 +27,19 @@ import {
   groupByBrand,
   hiddenStories,
   isWished,
+  groupDone,
+  groupMarks,
   missingFrom,
   moveInStory,
-  nextInStory,
-  orderStory,
+  nextInGroups,
   placeInStory,
   proposeStories,
-  storyStops,
+  storyGroups,
 } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
 import { IgdbSearch } from "./IgdbSearch";
 import { useSagaCleanup } from "./useSagaCleanup";
+import { useVersionLinks } from "./useVersionLinks";
 import styles from "./sagas.module.css";
 
 const ORDERS: { value: StoryOrder; label: string }[] = [
@@ -46,8 +50,14 @@ const BATCH = 50;
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const yearOf = (date: string | null | undefined) => date?.slice(0, 4) ?? "—";
-/** En el mapa, el tipo solo si no es juego base (casi todos lo son). */
-const kindOf = (type: GameType | null | undefined) => (type && type !== "main" ? `${gameTypeLabel(type)} · ` : "");
+/** En el mapa, el tipo de cada juego (si se sabe). */
+const kindOf = (type: GameType | null | undefined) => (type ? `${gameTypeLabel(type)} · ` : "");
+/** Las marcas de una parada: principal (número), opcional (estrella) o DLC (pieza de puzle). */
+const ROLES: { value: SagaRole; label: string; Icon: typeof Star }[] = [
+  { value: "main", label: "Principal", Icon: Hash },
+  { value: "optional", label: "Opcional", Icon: Star },
+  { value: "dlc", label: "DLC", Icon: Puzzle },
+];
 const superado = (g: Game) => timesFinished(g) > 0 || g.status === "completado";
 
 /**
@@ -82,6 +92,7 @@ export function SagasView() {
   // Sin elegir, la primera: el mapa siempre enseña una saga. Los enlaces de antes decían «historia».
   const asked = params.get("saga") ?? params.get("historia");
   const open = stories.find((s) => s.name === asked) ?? visible[0] ?? null;
+  useVersionLinks(open);
   const unsorted = library.games.filter((g) => g.igdbId != null && !g.saga?.trim());
   // Los que se dejaron sin saga a propósito: si no hay nada nuevo, Traer los vuelve a ofrecer.
   const discarded = library.games.filter((g) => g.igdbId != null && isNoStory(g.saga));
@@ -377,6 +388,9 @@ export function SagasView() {
               }}
               onDropGame={dropGame}
               onDropExtra={(x) => actions.deleteExtra(x.id)}
+              onPatch={(stop, patch) =>
+                stop.kind === "juego" ? actions.updateGames([{ id: stop.id, patch }]) : actions.updateExtras([{ id: stop.id, patch }])
+              }
               onRename={(name) => {
                 // Si ya hay una saga con ese nombre, se unen: sus órdenes no casan, así que vuelven al de lanzamiento.
                 // Los de la otra que estaban quitados del apartado vuelven a verse.
@@ -629,6 +643,7 @@ function StoryMap({
   onWish,
   onDropGame,
   onDropExtra,
+  onPatch,
 }: {
   story: Story;
   order: StoryOrder;
@@ -646,15 +661,108 @@ function StoryMap({
   onWish: (x: SagaExtra) => void;
   onDropGame: (g: Game) => void;
   onDropExtra: (x: SagaExtra) => void;
+  /** Su marca o de qué juego es versión. */
+  onPatch: (stop: Stop, patch: { sagaRole?: SagaRole; versionOf?: number }) => void;
 }) {
-  const stops = storyStops(story, order, showExtras);
-  const next = nextInStory(orderStory(story, order));
+  const groups = storyGroups(story, order, showExtras);
+  const marks = groupMarks(groups);
+  const next = nextInGroups(storyGroups(story, order));
+  const [options, setOptions] = useState<string | null>(null);
+  // A qué parada se puede unir una como versión: las que tienen número de IGDB.
+  const leads = storyGroups(story, order).flatMap((g) => {
+    const lead = infoOf(g.lead);
+    return lead.igdbId != null ? [{ id: g.lead.id, igdbId: lead.igdbId, title: lead.title }] : [];
+  });
   const [renaming, setRenaming] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const editable = order === "historia";
-  let ownPosition = 0;
+
+  const metaOf = (s: Stop) =>
+    s.kind === "juego" ? (
+      <>
+        {yearOf(s.game.releaseDate)} · {kindOf(s.game.gameType)}
+        <StatusMark status={s.game.status} />
+      </>
+    ) : (
+      <span className={styles.missingTag}>
+        {yearOf(s.extra.releaseDate)} · {kindOf(s.extra.gameType)}No lo tienes
+      </span>
+    );
+
+  const toggleOptions = (id: string) => setOptions((o) => (o === id ? null : id));
+  const optionsButton = (s: Stop) => (
+    <button
+      type="button"
+      className="btn btn-quiet btn-icon"
+      aria-label={`Opciones de «${infoOf(s).title}»`}
+      aria-expanded={options === s.id}
+      onClick={() => toggleOptions(s.id)}
+    >
+      <SlidersHorizontal aria-hidden />
+    </button>
+  );
+  const dropButton = (s: Stop) => (
+    <button
+      type="button"
+      className="btn btn-quiet btn-icon"
+      aria-label={`Quitar «${infoOf(s).title}» de la saga`}
+      onClick={() => (s.kind === "juego" ? onDropGame(s.game) : onDropExtra(s.extra))}
+    >
+      <X aria-hidden />
+    </button>
+  );
+  /** Su marca (solo la parada) y de qué juego es versión. */
+  const optionsPanel = (s: Stop, group: StopGroup) => {
+    const title = infoOf(s).title;
+    const isLead = group.lead.id === s.id;
+    return (
+      <div className={styles.stopOptions}>
+        {isLead && (
+          <div className={styles.orders} role="radiogroup" aria-label={`Marca de «${title}»`}>
+            {ROLES.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={group.role === value}
+                className="chip"
+                onClick={() => {
+                  onPatch(s, { sagaRole: value });
+                  setOptions(null);
+                }}
+              >
+                <Icon aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <label className={styles.versionOf}>
+          <span>Es versión de</span>
+          <select
+            className={styles.versionSelect}
+            aria-label="Es versión de"
+            value={String(isLead ? 0 : (infoOf(group.lead).igdbId ?? 0))}
+            onChange={(e) => {
+              onPatch(s, { versionOf: Number(e.target.value) });
+              setOptions(null);
+            }}
+          >
+            <option value="0">Parada propia</option>
+            {leads
+              .filter((l) => l.id !== s.id)
+              .map((l) => (
+                <option key={l.id} value={l.igdbId}>
+                  {l.title}
+                </option>
+              ))}
+          </select>
+        </label>
+      </div>
+    );
+  };
 
   return (
     <section className={`window ${styles.story}`} aria-labelledby="saga-abierta">
@@ -709,26 +817,29 @@ function StoryMap({
       </p>
 
       <ol className={styles.map} aria-label="Juegos de la saga">
-        {stops.map((stop, i) => {
-          const isGame = stop.kind === "juego";
-          const title = isGame ? stop.game.title : stop.extra.title;
-          const done = isGame && superado(stop.game);
-          const isNext = isGame && next?.id === stop.id;
-          if (isGame) ownPosition++;
+        {groups.map((group, i) => {
+          const lead = group.lead;
+          const isGame = lead.kind === "juego";
+          const title = infoOf(lead).title;
+          const members = [lead, ...group.versions];
+          const owned = members.some((m) => m.kind === "juego");
+          const done = groupDone(group);
+          const isNext = next != null && members.some((m) => m.id === next.id);
+          const mark = marks[i];
           return (
             <li
-              key={stop.id}
+              key={lead.id}
               className={styles.stop}
-              data-hueca={isGame ? undefined : ""}
+              data-hueca={owned ? undefined : ""}
               data-superado={done || undefined}
               data-siguiente={isNext || undefined}
-              data-arrastrando={dragging === stop.id || undefined}
-              data-encima={over === i && dragging !== stop.id ? "" : undefined}
+              data-arrastrando={dragging === lead.id || undefined}
+              data-encima={over === i && dragging !== lead.id ? "" : undefined}
               draggable={editable}
               onDragStart={(e) => {
-                setDragging(stop.id);
+                setDragging(lead.id);
                 e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", stop.id);
+                e.dataTransfer.setData("text/plain", lead.id);
               }}
               onDragOver={(e) => {
                 if (!editable) return;
@@ -741,45 +852,35 @@ function StoryMap({
                 const id = e.dataTransfer.getData("text/plain") || dragging;
                 setDragging(null);
                 setOver(null);
-                if (id && id !== stop.id) onPlace(id, i);
+                if (id && id !== lead.id) onPlace(id, i);
               }}
               onDragEnd={() => {
                 setDragging(null);
                 setOver(null);
               }}
             >
-              <span className={styles.pin} aria-hidden>
-                {isGame ? (done ? "✓" : ownPosition) : "?"}
+              <span className={styles.pin} data-marca={mark === "optional" ? "opcional" : mark === "dlc" ? "dlc" : "principal"} aria-hidden>
+                {mark === "optional" ? <Star /> : mark === "dlc" ? <Puzzle /> : mark}
               </span>
-              <Cover src={isGame ? stop.game.coverUrl : stop.extra.coverUrl} title={title} caption="" className={styles.thumb} />
+              <Cover src={infoOf(lead).coverUrl} title={title} caption="" className={styles.thumb} />
               <span className={styles.stopText}>
+                <span className="sr-only">{typeof mark === "number" ? `Parada ${mark}:` : mark === "optional" ? "Opcional:" : "DLC:"}</span>
                 {isGame ? (
-                  <Link href={`/juego/${stop.id}`} draggable={false}>
+                  <Link href={`/juego/${lead.id}`} draggable={false}>
                     {title}
                   </Link>
                 ) : (
                   <strong>{title}</strong>
                 )}
-                <span className={styles.stopMeta}>
-                  {isGame ? (
-                    <>
-                      {yearOf(stop.game.releaseDate)} · {kindOf(stop.game.gameType)}
-                      <StatusMark status={stop.game.status} />
-                    </>
-                  ) : (
-                    <span className={styles.missingTag}>
-                      {yearOf(stop.extra.releaseDate)} · {kindOf(stop.extra.gameType)}No lo tienes
-                    </span>
-                  )}
-                </span>
-                {isNext && <span className={styles.nextTag}>▶ Siguiente</span>}
-                {!isGame &&
-                  (wished(stop.extra) ? (
+                <span className={styles.stopMeta}>{metaOf(lead)}</span>
+                {isNext && <span className={styles.nextTag}>▶ Siguiente{next && next.id !== lead.id ? `: ${next.title}` : ""}</span>}
+                {lead.kind === "falta" &&
+                  (wished(lead.extra) ? (
                     <span className={styles.inWish}>
                       <Heart aria-hidden /> En deseos
                     </span>
                   ) : (
-                    <button type="button" className={`btn btn-sm ${styles.wishBtn}`} aria-label={`Añadir «${title}» a deseos`} onClick={() => onWish(stop.extra)}>
+                    <button type="button" className={`btn btn-sm ${styles.wishBtn}`} aria-label={`Añadir «${title}» a deseos`} onClick={() => onWish(lead.extra)}>
                       <Heart aria-hidden /> Añadir a deseos
                     </button>
                   ))}
@@ -788,23 +889,54 @@ function StoryMap({
                 {editable && (
                   <>
                     <GripVertical aria-hidden className={styles.grip} />
-                    <button type="button" className="btn btn-quiet btn-icon" aria-label={`Subir «${title}»`} disabled={i === 0} onClick={() => onMove(stop.id, -1)}>
+                    <button type="button" className="btn btn-quiet btn-icon" aria-label={`Subir «${title}»`} disabled={i === 0} onClick={() => onMove(lead.id, -1)}>
                       <ArrowUp aria-hidden />
                     </button>
-                    <button type="button" className="btn btn-quiet btn-icon" aria-label={`Bajar «${title}»`} disabled={i === stops.length - 1} onClick={() => onMove(stop.id, 1)}>
+                    <button type="button" className="btn btn-quiet btn-icon" aria-label={`Bajar «${title}»`} disabled={i === groups.length - 1} onClick={() => onMove(lead.id, 1)}>
                       <ArrowDown aria-hidden />
                     </button>
                   </>
                 )}
-                <button
-                  type="button"
-                  className="btn btn-quiet btn-icon"
-                  aria-label={`Quitar «${title}» de la saga`}
-                  onClick={() => (isGame ? onDropGame(stop.game) : onDropExtra(stop.extra))}
-                >
-                  <X aria-hidden />
-                </button>
+                {optionsButton(lead)}
+                {dropButton(lead)}
               </span>
+              {(options === lead.id || group.versions.length > 0) && (
+                <div className={styles.below}>
+                {options === lead.id && optionsPanel(lead, group)}
+                {group.versions.length > 0 && (
+                  <span role="group" aria-label={`Versiones de «${title}»`} className={styles.versions}>
+                    {group.versions.map((v) => {
+                      const vTitle = infoOf(v).title;
+                      return (
+                        <span key={v.id} className={styles.version}>
+                          <span className={styles.versionLine}>
+                            <span aria-hidden>→</span>
+                            {v.kind === "juego" ? (
+                              <Link href={`/juego/${v.id}`} draggable={false}>
+                                {vTitle}
+                              </Link>
+                            ) : (
+                              <strong>{vTitle}</strong>
+                            )}
+                            <span className={styles.stopMeta}>{metaOf(v)}</span>
+                            <span className={styles.versionActions}>
+                              {v.kind === "falta" && !wished(v.extra) && (
+                                <button type="button" className="btn btn-quiet btn-icon" aria-label={`Añadir «${vTitle}» a deseos`} onClick={() => onWish(v.extra)}>
+                                  <Heart aria-hidden />
+                                </button>
+                              )}
+                              {optionsButton(v)}
+                              {dropButton(v)}
+                            </span>
+                          </span>
+                          {options === v.id && optionsPanel(v, group)}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
+                </div>
+              )}
             </li>
           );
         })}
@@ -853,3 +985,5 @@ function StoryMap({
     </section>
   );
 }
+
+const infoOf = (s: Stop) => (s.kind === "juego" ? s.game : s.extra);

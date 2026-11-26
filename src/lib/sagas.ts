@@ -1,4 +1,4 @@
-import { type Game, type SagaExtra, normalizeTitle } from "./model";
+import { type Game, type GameType, type SagaExtra, type SagaRole, normalizeTitle } from "./model";
 import { timesFinished } from "./runs";
 
 /*
@@ -95,32 +95,117 @@ export function storyStops(story: Story, order: StoryOrder, withExtras = true): 
   return [...placed, ...release.filter((s) => info(s).sagaOrder == null)];
 }
 
+/** Las que llevan la pieza de puzle si ella no dice otra cosa. */
+const DLC_TYPES = new Set<GameType>(["dlc", "expansion", "pack", "season", "update"]);
+
+/** La marca de una parada: la que ella puso o, si no, según su tipo (los DLC y expansiones, pieza de puzle). */
+export function roleOf(x: { sagaRole?: SagaRole | null; gameType?: GameType | null }): SagaRole {
+  return x.sagaRole ?? (x.gameType && DLC_TYPES.has(x.gameType) ? "dlc" : "main");
+}
+
+/** Una parada del mapa: un juego y, dentro, sus versiones (remaster, remake, edición…), por fecha. */
+export type StopGroup = { lead: Stop; versions: Stop[]; role: SagaRole };
+const memberOf = (s: Stop) => (s.kind === "juego" ? s.game : s.extra);
+const membersOf = (g: StopGroup) => [g.lead, ...g.versions];
+const ownedIn = (g: StopGroup) => membersOf(g).flatMap((s) => (s.kind === "juego" ? [s.game] : []));
+
+/** Las paradas en grupos: cada versión, dentro de la de su original (si está en la saga). */
+function groupStops(stops: Stop[]): StopGroup[] {
+  const byIgdb = new Map<number, Stop>();
+  for (const s of stops) {
+    const id = memberOf(s).igdbId;
+    if (id != null && !byIgdb.has(id)) byIgdb.set(id, s);
+  }
+  // Su original, y el de este, hasta uno que no sea versión de nadie (un círculo no agrupa).
+  const rootOf = (s: Stop): Stop => {
+    const seen = new Set([s.id]);
+    let at = s;
+    for (;;) {
+      const v = memberOf(at).versionOf;
+      const up = v ? byIgdb.get(v) : undefined;
+      if (!up) return at;
+      if (seen.has(up.id)) return s;
+      seen.add(up.id);
+      at = up;
+    }
+  };
+  const groups = new Map<string, StopGroup>();
+  for (const s of stops) if (rootOf(s) === s) groups.set(s.id, { lead: s, versions: [], role: roleOf(memberOf(s)) });
+  for (const s of stops) {
+    const root = rootOf(s);
+    if (root !== s) groups.get(root.id)!.versions.push(s);
+  }
+  for (const g of groups.values()) g.versions.sort((a, b) => byRelease(memberOf(a), memberOf(b)));
+  return [...groups.values()];
+}
+
+/**
+ * Las paradas del mapa, en grupos (ver `groupStops`), en el orden de la saga. Sin `withExtras`, solo las que tienen
+ * algún juego tuyo, y solo con los tuyos (si el original no lo tienes, encabeza tu primera versión).
+ */
+export function storyGroups(story: Story, order: StoryOrder, withExtras = true): StopGroup[] {
+  const all = groupStops(storyStops(story, order));
+  if (withExtras) return all;
+  return all.flatMap((g) => {
+    const own = membersOf(g).filter((s) => s.kind === "juego");
+    return own.length ? [{ lead: own[0], versions: own.slice(1), role: g.role }] : [];
+  });
+}
+
+/** La marca de cada parada: las principales, numeradas por orden; las demás, «optional» o «dlc». */
+export function groupMarks(groups: StopGroup[]): (number | "optional" | "dlc")[] {
+  let n = 0;
+  return groups.map((g) => (g.role === "main" ? ++n : g.role));
+}
+
+/** Si alguna de sus versiones está superada. */
+export function groupDone(g: StopGroup): boolean {
+  return ownedIn(g).some((game) => timesFinished(game) > 0 || game.status === "completado");
+}
+
+/** El siguiente que toca: de las principales (si hay), la primera sin superar con un juego tuyo sin abandonar. */
+export function nextInGroups(groups: StopGroup[]): Game | null {
+  const mains = groups.filter((g) => g.role === "main");
+  for (const g of mains.length ? mains : groups) {
+    if (groupDone(g)) continue;
+    const game = ownedIn(g).find((x) => x.status !== "abandonado");
+    if (game) return game;
+  }
+  return null;
+}
+
 /** Tus juegos en la cronología de la saga (el de todas sus paradas): para el puesto y «Siguiente». */
 export function orderStory(story: Story, order: StoryOrder): Game[] {
   return storyStops(story, order).flatMap((s) => (s.kind === "juego" ? [s.game] : []));
 }
 
+/** Las paradas que se pueden mover: todas, o (sin los que faltan) las que tienen algún juego tuyo. */
+function placeable(story: Story, withExtras: boolean) {
+  const full = groupStops(storyStops(story, "historia"));
+  return { full, visible: withExtras ? full : full.filter((g) => ownedIn(g).length > 0) };
+}
+
 /**
- * Coloca una parada en un puesto (desde 0) de la cronología y devuelve el puesto de todas (1…n). Con los que faltan
- * ocultos, el puesto es entre tus juegos y los que faltan no se mueven de su sitio. Si no está, nada.
+ * Coloca una parada (con sus versiones) en un puesto (desde 0) de la cronología y devuelve el puesto de todas (1…n);
+ * las versiones, el de su parada. Con los que faltan ocultos, el puesto es entre las que tienen algún juego tuyo y
+ * las demás no se mueven de su sitio. Si no está, nada.
  */
 export function placeInStory(story: Story, id: string, toIndex: number, withExtras = true): Placement[] {
-  const full = storyStops(story, "historia");
-  const visible = withExtras ? full : full.filter((s) => s.kind === "juego");
-  const from = visible.findIndex((s) => s.id === id);
+  const { full, visible } = placeable(story, withExtras);
+  const from = visible.findIndex((g) => membersOf(g).some((s) => s.id === id));
   if (from < 0) return [];
   const moved = [...visible];
-  const [stop] = moved.splice(from, 1);
-  moved.splice(Math.max(0, Math.min(toIndex, moved.length)), 0, stop);
+  const [group] = moved.splice(from, 1);
+  moved.splice(Math.max(0, Math.min(toIndex, moved.length)), 0, group);
   let next = 0;
-  const result = withExtras ? moved : full.map((s) => (s.kind === "juego" ? moved[next++] : s));
-  return result.map((s, i) => ({ kind: s.kind, id: s.id, sagaOrder: i + 1 }));
+  const result = withExtras ? moved : full.map((g) => (visible.includes(g) ? moved[next++] : g));
+  return result.flatMap((g, i) => membersOf(g).map((s) => ({ kind: s.kind, id: s.id, sagaOrder: i + 1 })));
 }
 
 /** Mueve una parada un puesto en la cronología (entre las que se ven); si no se puede, nada. */
 export function moveInStory(story: Story, id: string, dir: -1 | 1, withExtras = true): Placement[] {
-  const visible = storyStops(story, "historia", withExtras);
-  const from = visible.findIndex((s) => s.id === id);
+  const { visible } = placeable(story, withExtras);
+  const from = visible.findIndex((g) => membersOf(g).some((s) => s.id === id));
   const to = from + dir;
   if (from < 0 || to < 0 || to >= visible.length) return [];
   return placeInStory(story, id, to, withExtras);

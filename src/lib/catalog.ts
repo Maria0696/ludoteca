@@ -50,6 +50,11 @@ export type TypesResponse =
   | { ok: true; types: Record<string, { gameType: GameType | null; baseGame: string | null }> }
   | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
 
+/** Respuesta de /api/catalogo/versiones: de qué juego es versión cada uno (su número de IGDB; 0, de ninguno). */
+export type VersionsResponse =
+  | { ok: true; originals: Record<string, number> }
+  | { ok: false; reason: "no-autorizado" | "no-configurado" | "error"; message: string };
+
 /** Respuesta de /api/catalogo/serie: los juegos de una serie de IGDB. */
 export type SeriesGamesResponse =
   | { ok: true; games: CatalogGame[] }

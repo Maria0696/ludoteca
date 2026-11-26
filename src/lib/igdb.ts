@@ -159,6 +159,32 @@ export async function seriesByIgdbIds(ids: number[]): Promise<{ sagas: Record<st
   return { sagas: sagas(games) };
 }
 
+/**
+ * De qué juego es versión cada uno, por su número de IGDB (0 si de ninguno): una edición, el de su `version_parent`;
+ * un remake, remaster, port o versión ampliada, el juego que lo tiene en `remakes`, `remasters`, `ports` o
+ * `expanded_games`. Para agrupar las versiones del mismo juego en el mapa de su saga.
+ */
+export async function originalsByIgdbIds(ids: number[]): Promise<Record<string, number>> {
+  const list = ids.join(",");
+  type Parent = { id: number; remakes?: number[]; remasters?: number[]; ports?: number[]; expanded_games?: number[] };
+  const [own, parents] = await Promise.all([
+    igdb<{ id: number; version_parent?: number }[]>("games", `fields version_parent; where id = (${list}); limit ${ids.length};`),
+    igdb<Parent[]>(
+      "games",
+      `fields remakes,remasters,ports,expanded_games; where remakes = (${list}) | remasters = (${list}) | ports = (${list}) | expanded_games = (${list}); limit 500;`,
+    ),
+  ]);
+  const wanted = new Set(ids);
+  const out: Record<string, number> = Object.fromEntries(ids.map((id) => [String(id), 0]));
+  for (const p of parents) {
+    for (const v of [...(p.remakes ?? []), ...(p.remasters ?? []), ...(p.ports ?? []), ...(p.expanded_games ?? [])]) {
+      if (wanted.has(v) && v !== p.id) out[String(v)] = p.id;
+    }
+  }
+  for (const g of own) if (g.version_parent) out[String(g.id)] = g.version_parent;
+  return out;
+}
+
 /** Qué es cada juego de IGDB y de cuál, por su número: para completar el tipo de los que ya tienes. */
 export async function typesByIgdbIds(ids: number[]): Promise<Record<string, { gameType: GameType | null; baseGame: string | null }>> {
   const games = await igdb<IgdbGame[]>("games", `fields ${TYPE_FIELDS}; where id = (${ids.join(",")}); limit ${ids.length};`);
