@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: { default: "Ludoteca", template: "%s · Ludoteca" },
   description: "Tu biblioteca personal de videojuegos.",
   robots: { index: false, follow: false },
+  // En iPhone, «Añadir a pantalla de inicio» la abre a pantalla completa. La barra va en negro y no translúcida: la
+  // cabecera no deja hueco para la muesca.
+  appleWebApp: { capable: true, title: "Ludoteca", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {
