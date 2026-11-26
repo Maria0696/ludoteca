@@ -78,8 +78,21 @@ test.describe("búsqueda por nombre cuando IGDB no trae el título exacto", () =
     expect(results.map((g) => g.title)).toEqual(["Assassin's Creed Valhalla"]);
   });
 
-  test("la consulta por nombre busca el texto dentro del nombre, sin filtrar por tipo", () => {
-    expect(catalogNameQuery('God of War "Ragnarök": Valhalla', "name")).toBe('fields name; where name ~ *"God of War  Ragnarök : Valhalla"*; limit 10;');
+  test("escrito sin tilde ni signos, también lo encuentra; lo que no tiene todas las palabras, no", async () => {
+    const results = await searchCatalog(
+      "God of War Ragnarok Valhalla",
+      async () => [],
+      async () => [game(1, "Assassin's Creed Valhalla"), game(3, "God of War Ragnarök: Valhalla")],
+    );
+    expect(results.map((g) => g.title)).toEqual(["God of War Ragnarök: Valhalla"]);
+  });
+
+  test("la consulta por nombre busca cada palabra larga (también sin tilde) dentro del nombre, sin filtrar por tipo", () => {
+    expect(catalogNameQuery('God of War "Ragnarök": Valhalla', "name")).toBe(
+      'fields name; where name ~ *"ragnarök"* | name ~ *"ragnarok"* | name ~ *"valhalla"*; limit 200;',
+    );
+    // Sin palabras largas, el texto entero.
+    expect(catalogNameQuery("Ico", "name")).toBe('fields name; where name ~ *"ico"*; limit 200;');
   });
 });
 
