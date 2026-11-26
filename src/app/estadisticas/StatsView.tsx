@@ -65,6 +65,7 @@ export function StatsView() {
           .join(" · ")
       : undefined;
   const maxMonth = Math.max(1, ...s.finishedByMonth);
+  const thisYear = new Date().getFullYear();
   const maxScore = Math.max(1, ...s.metacritic.buckets.map((b) => b.titles));
   const maxDecade = Math.max(1, ...s.decades.map((d) => d.titles));
 
@@ -76,6 +77,9 @@ export function StatsView() {
           Calculadas con lo que has registrado,{hasDemo ? " incluidos los datos de demostración," : ""} contando cada juego como un título y cada
           ejemplar como una copia.
         </p>
+        <Link href={`/anuario/${thisYear}`} className={styles.anuario}>
+          Tu {thisYear} en el Anuario <span aria-hidden>→</span>
+        </Link>
       </header>
 
       <section className="window" aria-labelledby="h-marcador">

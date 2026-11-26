@@ -285,3 +285,31 @@ test("un año sin nada lo dice y no ofrece guardarlo", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Guardar este año|Cerrar el año/ })).toHaveCount(0);
 });
 
+test("desde Estadísticas se llega al año en curso del Anuario", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" } });
+  await openApp(page, "/estadisticas");
+  await page.getByRole("link", { name: "Tu 2026 en el Anuario" }).click();
+  await expect(page).toHaveURL(/\/anuario\/2026$/);
+});
+
+test("del 15 de diciembre al 31 de enero, Inicio avisa de que ya puedes ver tu año", async ({ page }) => {
+  await openYear(page, { Hades: { finishedAt: "2026-05-01" } });
+  const notice = page.getByRole("link", { name: "Ya puedes ver tu 2026" });
+  for (const [day, visible] of [
+    ["2026-12-20T10:00:00", true],
+    ["2027-01-15T10:00:00", true],
+    ["2027-02-10T10:00:00", false],
+    ["2026-11-26T10:00:00", false],
+  ] as const) {
+    await page.clock.setFixedTime(new Date(day));
+    await page.evaluate(() => localStorage.setItem("ludoteca:titulo-visto", new Date().toISOString().slice(0, 10)));
+    await openApp(page, "/");
+    await expect(notice, day).toHaveCount(visible ? 1 : 0);
+  }
+  await page.clock.setFixedTime(new Date("2026-12-20T10:00:00"));
+  await page.evaluate(() => localStorage.setItem("ludoteca:titulo-visto", new Date().toISOString().slice(0, 10)));
+  await openApp(page, "/");
+  await notice.click();
+  await expect(page).toHaveURL(/\/anuario\/2026$/);
+});
+
