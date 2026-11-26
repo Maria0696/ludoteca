@@ -921,6 +921,36 @@ dialog.sheet:not([open]) {
   }
 }
 
+/* El Anuario a pantalla completa, por encima de la cabecera también mientras dura la transición. */
+::view-transition-group(anuario) {
+  z-index: 150;
+}
+/*
+ * Anuario: cada pantalla del año barre la anterior en bloques, como una cortina de recreativa, desde el lado hacia el que
+ * vas (con movimiento reducido, solo fundido). Solo recorta: nada se desplaza.
+ */
+.anuario-pantalla {
+  animation: 360ms steps(10, end) both anuario-entra;
+}
+.anuario-pantalla[data-dir="atras"] {
+  animation-name: anuario-entra-atras;
+}
+@keyframes anuario-entra {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+@keyframes anuario-entra-atras {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+@keyframes anuario-fundido {
+  from {
+    opacity: 0;
+  }
+}
+
 .rise {
   animation: rise 520ms var(--ease-out) backwards;
   animation-delay: calc(min(var(--i, 0), 14) * 35ms);
@@ -935,6 +965,10 @@ dialog.sheet:not([open]) {
 /* Reducción de movimiento -------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+  .anuario-pantalla,
+  .anuario-pantalla[data-dir="atras"] {
+    animation: 220ms ease both anuario-fundido;
+  }
   /* Al cambiar de pantalla, solo el fundido: sin desplazamiento. */
   ::view-transition-new(.pantalla-entra) {
     animation: 160ms ease both pantalla-fundido;

@@ -50,8 +50,9 @@ export function BackupImport() {
     copies: changes.copies.filter((c) => !library.copies.some((x) => x.id === c.id)),
     wishlist: changes.wishlist.filter((w) => library.wishlist.find((x) => x.id === w.id)?.updatedAt !== w.updatedAt),
     extras: changes.extras,
+    wraps: changes.wraps,
   };
-  const incoming = fresh ? fresh.games.length + fresh.copies.length + fresh.wishlist.length + fresh.extras.length : 0;
+  const incoming = fresh ? fresh.games.length + fresh.copies.length + fresh.wishlist.length + fresh.extras.length + fresh.wraps.length : 0;
 
   async function readFile(file: File | undefined) {
     if (!file) return;

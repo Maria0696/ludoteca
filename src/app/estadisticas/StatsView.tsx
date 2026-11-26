@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useMemo } from "react";
+import { AnuarioBanner } from "@/app/anuario/AnuarioBanner";
 import { familyColor } from "@/app/biblioteca/arcade";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
@@ -77,6 +78,8 @@ export function StatsView() {
           ejemplar como una copia.
         </p>
       </header>
+
+      <AnuarioBanner library={library} />
 
       <section className="window" aria-labelledby="h-marcador">
         <h2 id="h-marcador">Marcador</h2>

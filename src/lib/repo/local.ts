@@ -1,4 +1,4 @@
-import { type Game, type Library, type SagaExtra, emptyLibrary, upgradeExtraV1, upgradeGameV1 } from "../model";
+import { type Game, type Library, type SagaExtra, type YearWrap, emptyLibrary, upgradeExtraV1, upgradeGameV1 } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -44,6 +44,14 @@ function write(db: IDBDatabase, value: Library): Promise<void> {
   });
 }
 
+/** Un año del Anuario por año: el que llega sustituye al que había. */
+function upsertYears(list: YearWrap[], items: YearWrap[] | undefined): YearWrap[] {
+  if (!items?.length) return list;
+  const byYear = new Map(list.map((w) => [w.year, w]));
+  for (const w of items) byYear.set(w.year, w);
+  return [...byYear.values()];
+}
+
 function upsert<T extends { id: string }>(list: T[], items: T[] | undefined): T[] {
   if (!items?.length) return list;
   const byId = new Map(list.map((i) => [i.id, i]));
@@ -72,7 +80,7 @@ export class LocalRepository implements Repository {
       .map((g) => (old ? upgradeGameV1(g) : g) as Game)
       .map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null }));
     const extras = (stored?.extras ?? []).map((x) => (old ? upgradeExtraV1(x) : x) as SagaExtra);
-    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras };
+    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras, wraps: stored?.wraps ?? [] };
     return structuredClone(this.data);
   }
 
@@ -91,6 +99,7 @@ export class LocalRepository implements Repository {
       copies: upsert(d.copies, changes.copies),
       wishlist: upsert(d.wishlist, changes.wishlist),
       extras: upsert(d.extras, changes.extras),
+      wraps: upsertYears(d.wraps, changes.wraps),
     }));
   }
 
@@ -126,6 +135,7 @@ export class LocalRepository implements Repository {
         copies: d.copies.filter((c) => !c.demo && !demoGames.has(c.gameId)),
         wishlist: d.wishlist.filter((w) => !w.demo),
         extras: d.extras.filter((x) => !x.demo),
+        wraps: d.wraps,
       };
     });
   }

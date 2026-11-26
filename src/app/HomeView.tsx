@@ -1,13 +1,15 @@
 "use client";
 
-import { HardDrive, X } from "lucide-react";
+import { BookMarked, HardDrive, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
 import { BackupReminder, useBackupReminderDue } from "@/components/home/BackupReminder";
 import { MainMenu } from "@/components/home/MainMenu";
 import { CHEST_CLOSED_URL } from "@/components/pixel/sprites";
+import { computeYear, hasActivity } from "@/lib/anuario";
 import { buildEntries } from "@/lib/filters";
+import type { Library } from "@/lib/model";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
 import styles from "./home.module.css";
@@ -32,6 +34,26 @@ function useLocalNoticeClosed(): [boolean, () => void] {
     }
   };
   return [closed, close];
+}
+
+/**
+ * Del 15 de diciembre al 31 de enero, el aviso de que ya puedes ver tu año en el Anuario (el que acaba o acaba de
+ * acabar), si tiene algo que contar.
+ */
+function AnuarioNotice({ library }: { library: Library }) {
+  const today = new Date();
+  const year = today.getMonth() === 11 && today.getDate() >= 15 ? today.getFullYear() : today.getMonth() === 0 ? today.getFullYear() - 1 : null;
+  if (year == null) return null;
+  const data = library.wraps.find((w) => w.year === year)?.data ?? computeYear(library, year);
+  if (!hasActivity(data)) return null;
+  return (
+    <p className={`notice ${styles.localNotice}`}>
+      <BookMarked aria-hidden />
+      <span>
+        <Link href={`/anuario/${year}`}>Ya puedes ver tu {year}</Link>: tu año de juego, en el Anuario.
+      </span>
+    </p>
+  );
 }
 
 export function HomeView() {
@@ -140,6 +162,7 @@ export function HomeView() {
         }}
         notices={
           <>
+            <AnuarioNotice library={library} />
             {/* Un solo aviso a la vez: si toca la copia, ese ya dice que todo está en este navegador. */}
             <BackupReminder library={library} local={mode === "local"} />
             {mode === "local" && !noticeClosed && !reminding && localNotice(styles.localNotice, closeNotice)}

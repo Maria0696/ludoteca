@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Copy, Game, Library, SagaExtra, WishItem } from "../model";
+import type { Copy, Game, Library, SagaExtra, WishItem, YearWrap } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -38,9 +38,13 @@ const extraCols: [keyof SagaExtra, string][] = [
   ["releaseDate", "release_date"], ["sagaOrder", "saga_order"], ["hidden", "hidden"], ["gameType", "game_type"], ["sagaRole", "saga_role"], ["versionOf", "version_of"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
-/** Sin la tabla de los juegos de saga que no tienes (migración 0012 sin aplicar), la biblioteca carga igual. */
+const wrapCols: [keyof YearWrap, string][] = [
+  ["id", "id"], ["year", "year"], ["data", "data"], ["frozenAt", "frozen_at"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+];
+
+/** Sin una tabla nueva (juegos de saga que no tienes, 0012; años del Anuario, 0017), la biblioteca carga igual. */
 const missingTable = (error: { code?: string; message?: string } | null) =>
-  Boolean(error && (error.code === "42P01" || error.code === "PGRST205" || /saga_extras/.test(error.message ?? "")));
+  Boolean(error && (error.code === "42P01" || error.code === "PGRST205" || /saga_extras|year_wraps/.test(error.message ?? "")));
 
 const NUMERIC = new Set(["rating", "hours_played", "length_hours", "price_paid", "target_price"]);
 
@@ -69,20 +73,23 @@ export class SupabaseRepository implements Repository {
   constructor(private readonly db: SupabaseClient) {}
 
   async load(): Promise<Library> {
-    const [games, copies, wishlist, extras] = await Promise.all([
+    const [games, copies, wishlist, extras, wraps] = await Promise.all([
       this.db.from("games").select("*"),
       this.db.from("copies").select("*"),
       this.db.from("wishlist").select("*"),
       this.db.from("saga_extras").select("*"),
+      this.db.from("year_wraps").select("*"),
     ]);
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
+    if (wraps.error && !missingTable(wraps.error)) throw new Error(wraps.error.message);
     return {
       // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
       games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null })),
       copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
       wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
       extras: extras.error ? [] : (extras.data ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),
+      wraps: wraps.error ? [] : (wraps.data ?? []).map((r) => fromRow<YearWrap>(r, wrapCols)),
     };
   }
 
@@ -93,11 +100,12 @@ export class SupabaseRepository implements Repository {
       changes.copies?.length ? this.upsert("copies", changes.copies.map((c) => toRow(c, copyCols))) : null,
       changes.wishlist?.length ? this.upsert("wishlist", changes.wishlist.map((w) => toRow(w, wishCols))) : null,
       changes.extras?.length ? this.upsert("saga_extras", changes.extras.map((x) => toRow(x, extraCols))) : null,
+      changes.wraps?.length ? this.upsert("year_wraps", changes.wraps.map((w) => toRow(w, wrapCols)), "owner_id,year") : null,
     ]);
   }
 
-  private async upsert(table: string, rows: Row[]) {
-    const { error } = await this.db.from(table).upsert(rows, { onConflict: "id" });
+  private async upsert(table: string, rows: Row[], onConflict = "id") {
+    const { error } = await this.db.from(table).upsert(rows, { onConflict });
     if (error) throw new Error(error.message);
   }
 

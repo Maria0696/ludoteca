@@ -1,0 +1,1243 @@
+/*
+ * Anuario: el año como un Wrapped con alma de recreativa. Cada pantalla tiene su color (--bg, --ink, --accent, desde
+ * YearStory) y su propia escena: el año cae en piezas, una cinta de carátulas, columnas de meses, un podio, un «VS», una
+ * ficha de jugadora y la tabla de récords. Se ve una vez al año: aquí sí se gasta en animación, un momento por pantalla.
+ * Con «Reducir movimiento», solo fundidos.
+ */
+
+/* La página normal (año vacío y lista de años). */
+.page {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px var(--gutter) 40px;
+  font-family: var(--font-term);
+}
+.note {
+  color: var(--muted);
+  font-size: var(--size-meta);
+}
+.status {
+  color: var(--faint);
+  font-size: var(--size-note);
+}
+.emptyYear {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* El escenario: toda la pantalla, por encima de la cabecera y el menú. Debajo, el color de la pantalla de la que se viene. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  background: var(--under, var(--bg));
+  color: var(--ink);
+  font-family: var(--font-term);
+  view-transition-name: anuario;
+}
+.stage ::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* Líneas de pantalla de recreativa, quietas, por encima de todo lo que se ve. */
+.scan {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-image: linear-gradient(rgb(0 0 0 / 0.07) 50%, transparent 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+/* Arriba: la barra de cada pantalla (la actual se llena), pausa y cerrar. */
+.topLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: max(14px, env(safe-area-inset-top)) 16px 10px;
+}
+.dots {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+}
+.dots li {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.dots li[data-hecha] {
+  background: var(--ink);
+}
+.fill {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform-origin: left;
+  animation-name: fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+.fill[data-quieta] {
+  animation: none;
+  transform: scaleX(1);
+}
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+.round {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+}
+.round svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .round:hover {
+    background: color-mix(in srgb, var(--ink) 24%, transparent);
+  }
+}
+.round:focus-visible,
+.tap:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+/*
+ * Una pantalla: tapa toda la anterior con su color. Entra barriendo en bloques (globals.css, .anuario-pantalla).
+ * Lo tocable de dentro queda por encima de las zonas de toque.
+ */
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 84px 32px 56px;
+  background: var(--bg);
+  pointer-events: none;
+}
+.screen :is(a, button, [role="alert"]) {
+  pointer-events: auto;
+}
+/* Sin posición propia: la cinta, las columnas y la diagonal se colocan respecto a la pantalla entera. */
+.body {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: 1120px;
+  text-align: center;
+}
+
+/* Letras comunes. */
+.line {
+  font-family: var(--font-pixel);
+  font-size: clamp(16px, 2.6vw, 28px);
+  font-weight: 400;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.big {
+  font-family: var(--font-pixel);
+  font-size: clamp(28px, 6.4vw, 84px);
+  font-weight: 400;
+  line-height: 1.15;
+  text-wrap: balance;
+  text-shadow: 0.08em 0.08em 0 var(--accent);
+}
+.lead {
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.2;
+}
+.small {
+  font-size: var(--size-meta);
+  opacity: 0.85;
+}
+.sentence {
+  display: grid;
+  gap: 8px;
+  font-weight: 400;
+}
+.giantRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4em;
+}
+.giant {
+  font-family: var(--font-pixel);
+  /* Press Start mide 1 em por carácter: así nunca se sale del ancho. */
+  font-size: min(300px, 30vw, calc(84vw / var(--chars, 2)));
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0.04em 0.04em 0 var(--accent);
+  white-space: nowrap;
+}
+.unit {
+  font-family: var(--font-pixel);
+  font-size: clamp(24px, 5vw, 60px);
+}
+
+/* Portada: «Tu» y el año, que cae cifra a cifra como piezas; debajo, el abanico y «Pulsa para empezar». */
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: clamp(14px, 2.4vw, 36px);
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  line-height: 1;
+}
+.titleTu {
+  font-size: clamp(36px, 7vw, 96px);
+}
+.digits {
+  display: inline-flex;
+  font-size: min(220px, 19vw);
+  text-shadow: 0.05em 0.05em 0 var(--accent);
+}
+.digit {
+  display: inline-block;
+  animation: drop 560ms steps(7, end) both;
+  animation-delay: calc(120ms + var(--i) * 130ms);
+}
+@keyframes drop {
+  from {
+    transform: translateY(-120vh);
+  }
+}
+.blink {
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 1.6vw, 16px);
+  animation: blink 1.1s steps(2, jump-none) 1.4s infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.fan {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+.fanItem {
+  flex: none;
+  margin-left: -28px;
+  transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 7deg)) translateY(calc(var(--i) * -2px));
+  animation: fan 620ms var(--ease-out) both;
+  animation-delay: calc(760ms + var(--i) * 80ms);
+}
+.fanItem:first-child {
+  margin-left: 0;
+}
+@keyframes fan {
+  from {
+    opacity: 0;
+    transform: translateY(80px) rotate(0deg) scale(0.92);
+  }
+}
+.fanCover {
+  width: clamp(76px, 12vw, 132px);
+  aspect-ratio: 3 / 4;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+/* Terminados: la frase a la izquierda, con la cifra enorme, y una cinta de carátulas que cruza la pantalla. */
+.screen[data-pantalla="terminados"],
+.screen[data-pantalla="ludoteca"] {
+  place-items: center start;
+  padding-left: max(32px, 8vw);
+}
+.screen[data-pantalla="terminados"] .body,
+.screen[data-pantalla="ludoteca"] .body {
+  justify-items: start;
+  text-align: left;
+}
+.screen[data-pantalla="terminados"] .body {
+  padding-bottom: clamp(120px, 20vh, 220px);
+}
+.aside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+}
+.sticker {
+  padding: 8px 14px;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 1.8vw, 18px);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: rotate(-3deg);
+  animation: stamp 380ms steps(4, end) 1s both;
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-3deg) scale(1.8);
+  }
+}
+.belt {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: clamp(24px, 6vh, 64px);
+  padding: 14px 0;
+  background: var(--ink);
+  transform: rotate(-4deg);
+  animation: belt-in 520ms var(--ease-out) 300ms both;
+}
+@keyframes belt-in {
+  from {
+    transform: rotate(-4deg) translateX(30%);
+    opacity: 0;
+  }
+}
+.beltTrack {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: belt 24s linear infinite;
+}
+@keyframes belt {
+  to {
+    /* La mitad: la segunda tanda ocupa el sitio de la primera y la vuelta no se nota. */
+    transform: translateX(-50%);
+  }
+}
+.beltCover {
+  width: clamp(72px, 9vw, 112px);
+  aspect-ratio: 3 / 4;
+}
+
+/* Tu mes: la frase arriba y doce columnas que suben desde el suelo, de lado a lado. */
+.screen[data-pantalla="mes"] {
+  place-items: start center;
+  padding-top: clamp(84px, 14vh, 140px);
+}
+.months {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(3px, 0.6vw, 8px);
+  height: 44vh;
+  padding: 0 clamp(8px, 2vw, 32px);
+}
+.months li {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+}
+/* La columna: su altura es la parte del máximo, medida sobre todo el hueco; la cifra va encima de la columna. */
+.barWrap {
+  position: relative;
+}
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: block;
+  height: max(6px, calc(var(--h) * 100%));
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  transform-origin: bottom;
+  animation: grow 640ms steps(8, end) both;
+  animation-delay: calc(260ms + var(--i) * 50ms);
+}
+.months li[data-fuerte] .bar {
+  background: var(--ink);
+  box-shadow: inset 0 8px 0 var(--accent);
+  animation-name: grow, flash;
+  animation-duration: 640ms, 300ms;
+  animation-timing-function: steps(8, end), steps(2, jump-none);
+  animation-delay: calc(260ms + var(--i) * 50ms), 1.1s;
+  animation-iteration-count: 1, 3;
+}
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes flash {
+  50% {
+    background: var(--accent);
+  }
+}
+.barCount {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--h) * 100%);
+  padding-bottom: 6px;
+  font-family: var(--font-pixel);
+  font-size: clamp(14px, 2vw, 22px);
+  text-align: center;
+  animation: fade 200ms ease 1s both;
+}
+.monthLabel {
+  padding: 8px 0 12px;
+  font-size: var(--size-note);
+  text-align: center;
+}
+.monthShort {
+  display: none;
+}
+
+/* Favoritos: un podio de verdad. Se lee del 1 al 3; se ve con el 1 en el centro. Sube el 3, luego el 2 y al final el 1. */
+.screen[data-pantalla="favoritos"] {
+  place-items: end center;
+  padding-bottom: 0;
+}
+.podium {
+  margin-top: clamp(40px, 5vw, 60px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 28px);
+  width: 100%;
+}
+.podium li {
+  --delay: 200ms;
+  display: grid;
+  justify-items: center;
+  width: clamp(104px, 18vw, 230px);
+}
+.podium li[data-puesto="1"] {
+  --delay: 900ms;
+  --step: clamp(130px, 26vh, 240px);
+}
+.podium li[data-puesto="2"] {
+  --delay: 560ms;
+  --step: clamp(90px, 18vh, 170px);
+  order: -1;
+}
+.podium li[data-puesto="3"] {
+  --step: clamp(60px, 12vh, 112px);
+}
+.podiumGame {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  animation: land 460ms var(--ease-out) both;
+  animation-delay: calc(var(--delay) + 320ms);
+}
+@keyframes land {
+  from {
+    opacity: 0;
+    transform: translateY(-60px);
+  }
+}
+.podiumCover {
+  width: clamp(84px, 13vw, 168px);
+  aspect-ratio: 3 / 4;
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 0.35);
+}
+.podium li[data-puesto="1"] .podiumCover {
+  width: clamp(96px, 16vw, 200px);
+}
+.podiumName {
+  display: grid;
+  gap: 2px;
+}
+.podiumName strong {
+  font-weight: 400;
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.podiumName span {
+  font-size: var(--size-note);
+  opacity: 0.9;
+}
+.step {
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  height: var(--step);
+  padding-top: 14px;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: var(--bg);
+  font-family: var(--font-pixel);
+  font-size: clamp(28px, 5vw, 64px);
+  box-shadow: inset 0 8px 0 rgb(255 255 255 / 0.5), inset 0 -10px 0 rgb(0 0 0 / 0.12);
+  transform-origin: bottom;
+  animation: grow 420ms steps(6, end) both;
+  animation-delay: var(--delay);
+}
+.podium li[data-puesto="1"] .step {
+  background: var(--accent);
+  color: #1b1400;
+}
+.crown {
+  position: absolute;
+  top: clamp(-44px, -4vw, -30px);
+  width: clamp(40px, 5vw, 64px);
+  animation: crown 520ms var(--ease-out) both;
+  animation-delay: calc(var(--delay) + 820ms);
+}
+@keyframes crown {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) rotate(-12deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(4px) rotate(4deg);
+  }
+}
+
+/* Primero y último: un «VS» de lucha. La pantalla se parte en diagonal y cada juego entra por su lado. */
+.versus {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: clamp(12px, 3vw, 48px);
+  width: 100%;
+}
+.versus[data-solo] {
+  grid-template-columns: 1fr;
+}
+.versusSplit {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%);
+  animation: split 420ms steps(6, end) 120ms both;
+}
+@keyframes split {
+  from {
+    clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
+  }
+}
+.fighter {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  animation: from-left 520ms var(--ease-out) 260ms both;
+}
+.fighter[data-lado="2"] {
+  color: #ffffff;
+  animation-name: from-right;
+}
+@keyframes from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-40vw);
+  }
+}
+@keyframes from-right {
+  from {
+    opacity: 0;
+    transform: translateX(40vw);
+  }
+}
+.fighterCover {
+  width: clamp(110px, 16vw, 210px);
+  aspect-ratio: 3 / 4;
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 0.35);
+}
+.fighter figcaption {
+  display: grid;
+  gap: 4px;
+  max-width: 300px;
+}
+.fighter strong {
+  font-weight: 400;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.fighterLabel {
+  font-family: var(--font-pixel);
+  font-size: clamp(11px, 1.1vw, 13px);
+  line-height: 1.5;
+}
+.fighterDate {
+  font-size: var(--size-note);
+  opacity: 0.9;
+}
+.vs {
+  font-family: var(--font-pixel);
+  font-size: clamp(36px, 6vw, 88px);
+  color: #ffd76a;
+  text-shadow: 0.06em 0.06em 0 #1b1400, -0.03em -0.03em 0 #1b1400;
+  animation: stamp-vs 360ms steps(4, end) 800ms both;
+}
+@keyframes stamp-vs {
+  from {
+    opacity: 0;
+    transform: scale(2.4) rotate(-8deg);
+  }
+}
+
+/* Tu perfil: una ficha de personaje, con su retrato y los datos que aparecen fila a fila como en una pantalla de estado. */
+.sheet {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-width: 720px;
+  width: 100%;
+  background: var(--raised);
+  color: var(--paper);
+  text-align: left;
+  box-shadow: 0 -4px 0 var(--paper), 0 4px 0 var(--paper), -4px 0 0 var(--paper), 4px 0 0 var(--paper), 10px 10px 0 rgb(0 0 0 / 0.3);
+  animation: fade 240ms ease 200ms both;
+}
+.sheetAvatar {
+  flex: none;
+  width: clamp(110px, 18vw, 200px);
+  aspect-ratio: 3 / 4;
+  align-self: start;
+}
+.sheetBody {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 22px;
+}
+.sheetTitle {
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.sheetRows {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+.sheetRows div {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 2px solid var(--line);
+  animation: type 360ms steps(8, end) both;
+  animation-delay: calc(500ms + var(--i) * 260ms);
+}
+@keyframes type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+.sheetRows dt {
+  color: var(--muted);
+  font-size: var(--size-label);
+}
+.sheetRows dd {
+  color: var(--white);
+  font-size: var(--size-lead);
+}
+
+/* Tu ludoteca creció: la cifra salta como los puntos de un enemigo y caen las etiquetas del botín. */
+.popup {
+  display: inline-block;
+  animation: popup 700ms var(--ease-out) 150ms both;
+}
+@keyframes popup {
+  0% {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6%);
+  }
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tags li {
+  padding: 8px 14px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--size-lead);
+  box-shadow: 4px 4px 0 var(--accent);
+  transform: rotate(calc((var(--i) - 1.5) * 1.5deg));
+  animation: loot 420ms var(--ease-out) both;
+  animation-delay: calc(900ms + var(--i) * 110ms);
+}
+@keyframes loot {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+}
+
+/* El resumen: la tabla de récords. Cada fila, del color de su pantalla, se escribe una detrás de otra. */
+.records {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 5vw, 64px);
+  width: 100%;
+  text-align: left;
+}
+.poster {
+  flex: none;
+  transform: rotate(-3deg);
+  animation: fan 620ms var(--ease-out) 200ms both;
+}
+.posterCover {
+  width: clamp(150px, 20vw, 260px);
+  aspect-ratio: 3 / 4;
+  box-shadow: 0 -4px 0 var(--paper), 0 4px 0 var(--paper), -4px 0 0 var(--paper), 4px 0 0 var(--paper), 12px 12px 0 var(--gold);
+}
+.recordsBody {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  max-width: 560px;
+  flex: 1;
+}
+.recordsTitle {
+  font-family: var(--font-pixel);
+  font-size: clamp(32px, 5.4vw, 72px);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--gold);
+  text-shadow: 0.06em 0.06em 0 var(--black);
+}
+.recordsSub {
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 1.3vw, 14px);
+  color: var(--muted);
+}
+.scores {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+.scores div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--mark);
+  font-size: var(--size-lead);
+  animation: type 320ms steps(8, end) both;
+  animation-delay: calc(450ms + var(--i) * 200ms);
+}
+.scores dt {
+  flex: none;
+}
+/* Puntos suspensivos entre el nombre y la marca, como en las clasificaciones de recreativa. */
+.scores div::after {
+  content: "";
+  order: 1;
+  flex: 1;
+  min-width: 16px;
+  border-bottom: 4px dotted currentColor;
+  opacity: 0.6;
+}
+.scores dd {
+  order: 2;
+  max-width: 60%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.confirm {
+  display: grid;
+  gap: 10px;
+  max-width: 480px;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  background: var(--raised);
+  color: var(--text);
+}
+
+/* Zonas de toque: el tercio izquierdo vuelve, el resto sigue. Transparentes, a toda la altura, debajo de la pantalla. */
+.tap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+  user-select: none;
+}
+.tap:disabled {
+  cursor: default;
+}
+.tapBack {
+  left: 0;
+  width: 33%;
+}
+.tapNext {
+  right: 0;
+  width: 67%;
+}
+
+@media (max-width: 899px) {
+  .screen {
+    padding: 76px 18px 40px;
+  }
+  .screen[data-pantalla="terminados"],
+  .screen[data-pantalla="ludoteca"] {
+    padding-left: 22px;
+  }
+  .monthLong {
+    display: none;
+  }
+  .monthShort {
+    display: inline;
+  }
+  .months {
+    height: 40vh;
+  }
+  .podium li {
+    width: 31%;
+  }
+  .podiumName strong {
+    font-size: var(--size-note);
+  }
+  /* En el móvil, un juego arriba y otro abajo: la pantalla se parte en diagonal de lado a lado. */
+  .versus {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .versusSplit {
+    clip-path: polygon(0 58%, 100% 50%, 100% 100%, 0 100%);
+  }
+  @keyframes split {
+    from {
+      clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0 100%);
+    }
+  }
+  .fighter {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    text-align: left;
+    gap: 14px;
+  }
+  .fighter[data-lado="2"] {
+    grid-template-columns: 1fr auto;
+    text-align: right;
+  }
+  .fighter[data-lado="2"] figcaption {
+    grid-row: 1;
+    justify-items: end;
+  }
+  .fighterCover {
+    width: 104px;
+  }
+  .vs {
+    justify-self: center;
+  }
+  .sheet {
+    flex-direction: column;
+  }
+  .sheetAvatar {
+    display: none;
+  }
+  .records {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .posterCover {
+    width: 112px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digit,
+  .fanItem,
+  .sticker,
+  .belt,
+  .bar,
+  .podiumGame,
+  .step,
+  .crown,
+  .fighter,
+  .vs,
+  .popup,
+  .tags li,
+  .poster,
+  .versusSplit,
+  .sheetRows div,
+  .scores div {
+    animation-name: fade;
+    animation-timing-function: ease;
+    animation-delay: 0ms;
+  }
+  .months li[data-fuerte] .bar {
+    animation: fade 200ms ease both;
+  }
+  .beltTrack,
+  .blink {
+    animation: none;
+  }
+  /* La barra de tiempo no es movimiento: sigue marcando los 6 s de cada pantalla. */
+  .fill {
+    animation-duration: 6000ms !important;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Todos los años: cada año, un cartucho de su color (--bg, --ink, desde colors.ts) con esquinas de píxel. El más
+ * reciente ocupa toda la fila. Debajo, la tabla para compararlos, con barras del color de cada año.
+ */
+.yearsPage {
+  max-width: 1120px;
+}
+.head {
+  display: grid;
+  gap: 6px;
+}
+.years {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+/* Esquinas mordidas de 10 px: la silueta de un cartucho o de una ventana de píxeles. */
+.cartridge,
+.banner {
+  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 10px calc(100% - 10px), 0 calc(100% - 10px));
+}
+.cartridge {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "year"
+    "status"
+    "fan"
+    "figures"
+    "play";
+  align-content: start;
+  align-items: start;
+  gap: 12px;
+  padding: 22px 22px 20px;
+  background: var(--bg);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 160ms var(--ease-out);
+  animation: cartridge-in 420ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes cartridge-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+/* Líneas de pantalla, como en el Wrapped. */
+.cartridge::after,
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgb(0 0 0 / 0.06) 50%, transparent 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cartridge:hover {
+    transform: translateY(-4px);
+  }
+  .cartridge:hover .cartridgePlay {
+    background: var(--white);
+    color: #12101f;
+  }
+}
+.cartridge:focus-visible,
+.bannerPlay:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: -6px;
+}
+.cartridgeYear {
+  grid-area: year;
+  font-family: var(--font-pixel);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 400;
+  line-height: 1;
+  text-shadow: 0.06em 0.06em 0 rgb(0 0 0 / 0.25);
+}
+.cartridgeStatus {
+  grid-area: status;
+  justify-self: start;
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--size-note);
+  white-space: nowrap;
+}
+.cartridgeFan {
+  grid-area: fan;
+  justify-self: start;
+  min-height: 92px;
+}
+.cartridgeFigures {
+  grid-area: figures;
+  font-size: var(--size-body);
+  line-height: 1.2;
+}
+.cartridgePlay,
+.bannerPlay {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  min-height: 44px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.cartridgePlay {
+  grid-area: play;
+  justify-self: start;
+}
+.cartridgePlay svg,
+.bannerPlay svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* El más reciente: toda la fila, el año enorme a la izquierda y el abanico grande a la derecha. */
+.cartridge[data-grande] {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "year fan"
+    "status fan"
+    "figures fan"
+    "play fan";
+  align-items: center;
+  row-gap: 14px;
+  padding: 32px 36px;
+}
+.cartridge[data-grande] .cartridgeYear {
+  font-size: clamp(56px, 8vw, 104px);
+}
+.cartridge[data-grande] .cartridgeFan {
+  align-self: center;
+  justify-self: end;
+}
+.cartridge[data-grande] .coverFanCover {
+  width: clamp(72px, 8vw, 104px);
+}
+
+/* Las carátulas en abanico. */
+.coverFan {
+  display: flex;
+  padding: 6px 4px 4px;
+}
+.coverFanItem {
+  flex: none;
+  margin-left: -18px;
+  transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 6deg));
+}
+.coverFanItem:first-child {
+  margin-left: 0;
+}
+.coverFanCover {
+  width: 60px;
+  aspect-ratio: 3 / 4;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.3);
+}
+
+/* Comparar: una fila por año, cada cifra con su barra del color del año. */
+.tableBox {
+  padding: 18px 20px;
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-body);
+}
+.table caption {
+  padding-bottom: 10px;
+  color: var(--gold);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+}
+.table th,
+.table td {
+  padding: 8px 16px 8px 0;
+  text-align: left;
+  white-space: nowrap;
+}
+.table :is(th, td):last-child {
+  padding-right: 0;
+}
+.table thead th {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: var(--size-label);
+}
+.table tbody tr + tr :is(th, td) {
+  border-top: 2px solid var(--line);
+}
+.table tbody th {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--paper);
+}
+.barCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+.miniBar {
+  flex: none;
+  width: calc(var(--w) * 120px);
+  min-width: 4px;
+  height: 14px;
+  background: var(--bg);
+}
+.barValue {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La banda de Estadísticas: lleva al Wrapped del año en curso. */
+.banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 30px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.bannerText {
+  display: grid;
+  gap: 6px;
+}
+.bannerYear {
+  font-family: var(--font-pixel);
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.1;
+  text-shadow: 0.06em 0.06em 0 rgb(0 0 0 / 0.25);
+}
+.bannerFigures {
+  font-size: var(--size-body);
+}
+.bannerFan .coverFanCover {
+  width: 64px;
+}
+.bannerPlay {
+  position: relative;
+  z-index: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .bannerPlay:hover {
+    background: var(--white);
+    color: #12101f;
+  }
+}
+
+@media (max-width: 899px) {
+  .cartridge[data-grande] {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "year"
+      "status"
+      "fan"
+      "figures"
+      "play";
+    padding: 24px 22px;
+  }
+  .cartridge[data-grande] .cartridgeFan {
+    justify-self: start;
+  }
+  .cartridge[data-grande] .coverFanCover {
+    width: 64px;
+  }
+  .banner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px 22px;
+  }
+  .bannerFan {
+    display: none;
+  }
+  .bannerPlay {
+    justify-self: start;
+  }
+  /* En el móvil, las cuatro columnas caben: barras más cortas y menos aire. */
+  .tableBox {
+    padding: 16px 14px;
+  }
+  .table th,
+  .table td {
+    padding-right: 10px;
+  }
+  .barCell {
+    gap: 6px;
+    min-width: 0;
+  }
+  .miniBar {
+    width: calc(var(--w) * 40px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartridge {
+    animation-name: fade;
+    transition: none;
+  }
+}

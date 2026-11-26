@@ -217,5 +217,5 @@ export function createDemoLibrary(today = new Date()): Library {
     demo: true,
   }));
 
-  return { games, copies, wishlist, extras: [] };
+  return { games, copies, wishlist, extras: [], wraps: [] };
 }

@@ -48,7 +48,7 @@ test("una copia antigua, sin vueltas, se sigue leyendo", () => {
 
 test("Estadísticas cuenta cada vuelta terminada en su año y su mes", () => {
   const replayed = game({ status: "completado", pastRuns: [{ start: null, end: "2026-01-10" }], startedAt: "2026-11-01", finishedAt: "2026-11-23" });
-  const stats = computeStats({ games: [replayed], copies: [], wishlist: [], extras: [] }, new Date("2026-11-25T12:00:00"));
+  const stats = computeStats({ games: [replayed], copies: [], wishlist: [], extras: [], wraps: [] }, new Date("2026-11-25T12:00:00"));
   expect(stats.finishedThisYear).toBe(2);
   expect(stats.finishedByMonth[0]).toBe(1);
   expect(stats.finishedByMonth[10]).toBe(1);
