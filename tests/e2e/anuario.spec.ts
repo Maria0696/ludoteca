@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import { activeYears, compareLine, computeYear } from "../../src/lib/anuario";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Copy, type Game, type Library, type YearWrap, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
-import { loadDemo, openApp } from "./helpers";
+import { loadDemo, openApp, seedDemo } from "./helpers";
 
 /* Anuario: el resumen de cada año, calculado de las fechas que hay y congelado al cerrarlo. */
 
@@ -170,12 +170,15 @@ async function seedGames(page: Page, patches: Record<string, Record<string, unkn
       new Promise<void>((resolve) => {
         const open = indexedDB.open("ludoteca", 1);
         open.onsuccess = () => {
-          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const tx = open.result.transaction("library", "readwrite");
+          // Hasta que la transacción no termina, lo escrito no está guardado.
+          tx.oncomplete = () => resolve();
+          const store = tx.objectStore("library");
           const req = store.get("data");
           req.onsuccess = () => {
             const value = req.result;
             for (const g of value.games) if (patches[g.title]) Object.assign(g, { demo: false, pastRuns: [] }, patches[g.title]);
-            store.put(value, "data").onsuccess = () => resolve();
+            store.put(value, "data");
           };
         };
       }),
@@ -201,7 +204,8 @@ async function pause(page: Page) {
  */
 async function openYear(page: Page, patches: Record<string, Record<string, unknown>>, year = 2026, { play = false } = {}) {
   await page.clock.setFixedTime(new Date("2026-11-26T10:00:00"));
-  await loadDemo(page);
+  // Directo en el navegador: con el botón, la app se cargaría dos veces (una para pulsarlo y otra para abrir el año).
+  await seedDemo(page);
   await seedGames(page, patches);
   await openApp(page, `/anuario/${year}`);
   if (!play) await pause(page);

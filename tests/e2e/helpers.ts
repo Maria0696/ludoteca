@@ -66,12 +66,12 @@ export async function openAjustes(page: Page, apartado: string) {
 }
 
 /**
- * Deja la Biblioteca abierta con los datos de demostración. Los escribe directamente en el navegador (seedDemo): pulsar
- * «Probar con datos de demostración» costaba otra carga de la app en cada prueba. El botón se prueba en flujos.spec.
+ * Deja la Biblioteca abierta con los datos de demostración, con el botón de verdad. Si después se van a retocar los
+ * datos en el navegador y abrir otra pantalla, seedDemo ahorra una carga de la app.
  */
 export async function loadDemo(page: Page) {
-  await seedDemo(page);
   await openApp(page, "/biblioteca");
+  await page.getByRole("button", { name: "Probar con datos de demostración" }).click();
   await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
 }
 

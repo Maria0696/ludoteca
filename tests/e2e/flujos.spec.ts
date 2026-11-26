@@ -155,10 +155,7 @@ test("una copia de antes, con listas, se sigue importando y las listas se ignora
 });
 
 test("datos de demostración separados y retirables", async ({ page }) => {
-  // El botón de verdad: las demás pruebas cargan la demostración directamente en el navegador (loadDemo).
-  await openApp(page, "/biblioteca");
-  await page.getByRole("button", { name: "Probar con datos de demostración" }).click();
-  await expect(page.getByText("22 títulos · 24 copias")).toBeVisible();
+  await loadDemo(page);
   // Sin juegos propios no se habla de «0 juegos tuyos».
   await page.goto("/ajustes?apartado=demostracion");
   await expect(page.getByText(/^Ahora hay \d+ elementos de demostración y ningún juego tuyo\.$/)).toBeVisible();
