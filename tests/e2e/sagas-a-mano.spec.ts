@@ -16,7 +16,7 @@ import {
   storyGroups,
   storyStops,
 } from "../../src/lib/sagas";
-import { loadDemo, openApp } from "./helpers";
+import { openApp, reloadApp, seedDemo } from "./helpers";
 
 /* Sagas a mano: juegos de una saga que no tienes (guardados aparte), buscados en IGDB, con «Añadir a deseos». */
 
@@ -42,11 +42,14 @@ async function seed(page: Page, patches: Record<string, Record<string, unknown>>
         const open = indexedDB.open("ludoteca", 1);
         open.onerror = () => reject(open.error);
         open.onsuccess = () => {
-          const store = open.result.transaction("library", "readwrite").objectStore("library");
-          const cursor = store.openCursor();
+          const tx = open.result.transaction("library", "readwrite");
+          // Hasta que la transacción no termina, lo escrito no está guardado: ir a otra página antes lo perdería.
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          const cursor = tx.objectStore("library").openCursor();
           cursor.onsuccess = () => {
             const c = cursor.result;
-            if (!c) return resolve();
+            if (!c) return;
             const value = c.value as { games?: Record<string, unknown>[]; extras?: unknown[]; wishlist?: unknown[] };
             for (const g of value.games ?? []) Object.assign(g, patches[g.title as string] ?? {});
             if (add.extras) value.extras = [...(value.extras ?? []), ...add.extras];
@@ -76,7 +79,7 @@ test("las copias de seguridad guardan los juegos de saga que no tienes; las anti
 });
 
 test("un juego que faltaba en una saga llega desde Deseos y ocupa su sitio", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     { Hades: { saga: "Prueba" } },
@@ -135,6 +138,10 @@ const catalogGame = (igdbId: number, title: string, releaseDate: string | null =
   igdbId, title, year: releaseDate ? Number(releaseDate.slice(0, 4)) : null, coverUrl: null, backdropUrl: null, genres: [], platforms: ["PC"],
   modes: [], moods: [], lengthHours: null, criticRating: null, summary: null, developer: null, franchise: null, saga: null, gameType: null, baseGame: null, releaseDate, ageRating: null,
 });
+/** Pulsa «Deshacer» en el aviso que dice `text`. */
+const toastUndo = (page: Page, text: string) =>
+  page.getByRole("region", { name: /^Notifications/ }).getByRole("listitem").filter({ hasText: text }).getByRole("button", { name: "Deshacer" }).click();
+
 const stopsOf = (page: Page) => page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem");
 
 async function searchAndPick(page: Page, dialogName: RegExp, query: string, title: string) {
@@ -144,7 +151,7 @@ async function searchAndPick(page: Page, dialogName: RegExp, query: string, titl
 }
 
 test("sin historias, la pantalla es el mapa en blanco", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await openApp(page, "/sagas");
   await expect(page.getByText("Tu primer mapa está por dibujar")).toBeVisible();
   await expect(page.getByRole("button", { name: "Traer sagas de IGDB" })).toBeVisible();
@@ -152,7 +159,7 @@ test("sin historias, la pantalla es el mapa en blanco", async ({ page }) => {
 });
 
 test("añadir a una saga un juego que no tienes lo pone en el camino; uno que tienes entra como tuyo", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { igdbId: 888 } });
   await page.route("**/api/catalogo?*", (route) => {
     const q = new URL(route.request().url()).searchParams.get("q") ?? "";
@@ -166,12 +173,12 @@ test("añadir a una saga un juego que no tienes lo pone en el camino; uno que ti
   await searchAndPick(page, /^Añadir a «Prueba»/, "hollow", "Hollow Knight");
   await expect(stopsOf(page)).toHaveCount(4);
   await expect(stopsOf(page).filter({ hasText: "Hollow Knight" })).not.toContainText("No lo tienes");
-  await page.reload();
+  await reloadApp(page);
   await expect(stopsOf(page)).toHaveCount(4);
 });
 
 test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de la saga", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
   await openApp(page, "/sagas?saga=Prueba");
   const toggle = page.getByRole("switch", { name: "Los que me faltan" });
@@ -188,23 +195,24 @@ test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de l
   // El corazón rojo lo quita de deseos (y se puede deshacer).
   await page.getByRole("button", { name: "Quitar «Hades II» de deseos" }).click();
   await expect(page.getByRole("button", { name: "Añadir «Hades II» a deseos" })).toBeVisible();
-  await page.getByRole("button", { name: "Deshacer" }).click();
+  // Cada «Deshacer», el de su aviso: el anterior puede seguir saliendo de la pantalla cuando llega el siguiente.
+  await toastUndo(page, "quitado de la lista de deseos");
   await expect(page.getByRole("button", { name: "Quitar «Hades II» de deseos" })).toBeVisible();
   await page.getByRole("button", { name: "Quitar «Hades II» de la saga" }).click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Deshacer" }).click();
+  await toastUndo(page, "quitado de la saga");
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(1);
   await openApp(page, "/deseos");
   await expect(page.getByRole("region", { name: "Deseos" })).toContainText("Hades II");
 });
 
 test("quitar de la saga un juego tuyo lo saca del mapa, pero su ficha conserva la saga", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Prueba" } });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar «Hollow Knight» de la saga" }).click();
   await expect(stopsOf(page)).toHaveCount(2);
-  await page.reload();
+  await reloadApp(page);
   await expect(stopsOf(page)).toHaveCount(2);
   await openApp(page, "/biblioteca?agrupar=ninguno");
   await page.getByRole("link", { name: /^Hollow Knight/ }).first().click();
@@ -212,7 +220,7 @@ test("quitar de la saga un juego tuyo lo saca del mapa, pero su ficha conserva l
 });
 
 test("buscar los que faltan: IGDB propone y tú eliges", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba", igdbId: 1 }, Celeste: { saga: "Prueba" } });
   await page.route("**/api/catalogo/serie", (route) =>
     route.fulfill({ json: { ok: true, games: [catalogGame(1, "Hades", "2020-09-17"), catalogGame(901, "Hades II", "2025-09-25"), catalogGame(902, "Hades III", "2030-01-01")] } }),
@@ -227,7 +235,7 @@ test("buscar los que faltan: IGDB propone y tú eliges", async ({ page }) => {
 });
 
 test("nueva saga: nombre y sus primeros juegos, buscándolos", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { igdbId: 1 } });
   await page.route("**/api/catalogo?*", (route) => {
     const q = new URL(route.request().url()).searchParams.get("q") ?? "";
@@ -275,7 +283,7 @@ test("«Ya lo tienes» y «En deseos» no confunden un remake con el original", 
 });
 
 test("añadir desde el catálogo un juego que estaba como parada hueca lo pone en su sitio", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555, releaseDate: "2025-09-25" })] });
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), saga: "Supergiant" }] } }));
   await openApp(page, "/biblioteca");
@@ -291,7 +299,7 @@ test("añadir desde el catálogo un juego que estaba como parada hueca lo pone e
 });
 
 test("una copia de seguridad que solo trae juegos que no tienes se puede importar", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   // Una copia del formato 1: la saga del que no tienes era «series».
   const { saga, sagaOrder, ...rest } = extra({ saga: "Prueba", title: "Hades II", igdbId: 555 });
@@ -306,7 +314,7 @@ test("una copia de seguridad que solo trae juegos que no tienes se puede importa
 });
 
 test("al unir dos sagas con «Cambiar nombre», los que faltan de la otra también vuelven al orden de lanzamiento", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     {
@@ -326,7 +334,7 @@ test("al unir dos sagas con «Cambiar nombre», los que faltan de la otra tambi�
 });
 
 test("un juego que no tienes solo está en una saga: añadirlo a otra lo mueve", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" }, "Hollow Knight": { saga: "Otra" }, Unpacking: { saga: "Otra" } },
@@ -345,7 +353,7 @@ test("un juego que no tienes solo está en una saga: añadirlo a otra lo mueve",
 });
 
 test("una saga no está completada si no tienes ninguno, o te faltan algunos", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     { Celeste: { saga: "Prueba" }, Unpacking: { saga: "Prueba" } },
@@ -361,7 +369,7 @@ test("una saga no está completada si no tienes ninguno, o te faltan algunos", a
 });
 
 test("quitar una saga guarda los que no tienes y vuelven con ella", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } }, { extras: [extra({ saga: "Prueba", title: "Hades II", igdbId: 555 })] });
   await openApp(page, "/sagas?saga=Prueba");
   await page.getByRole("button", { name: "Quitar saga" }).click();
@@ -375,7 +383,7 @@ test("quitar una saga guarda los que no tienes y vuelven con ella", async ({ pag
 });
 
 test("buscar los que faltan enseña que está buscando", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   let answer: () => void = () => {};
   const waiting = new Promise<void>((resolve) => (answer = resolve));
@@ -391,7 +399,7 @@ test("buscar los que faltan enseña que está buscando", async ({ page }) => {
 });
 
 test("el buscador de IGDB no deja a la vista el mensaje de una búsqueda anterior", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba" }, Celeste: { saga: "Prueba" } });
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [] } }));
   await openApp(page, "/sagas?saga=Prueba");
@@ -439,7 +447,7 @@ test("las copias de seguridad van en el formato 2, con franquicia y saga; las de
 
 
 test("en el mapa cada juego dice qué es, también al buscarlos para añadir", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { saga: "Prueba", gameType: "main" }, Celeste: { saga: "Prueba", gameType: "remake" } });
   await page.route("**/api/catalogo?*", (route) => route.fulfill({ json: { ok: true, results: [{ ...catalogGame(555, "Hades II", "2025-09-25"), gameType: "dlc" }] } }));
   await openApp(page, "/sagas?saga=Prueba");
@@ -454,7 +462,7 @@ test("en el mapa cada juego dice qué es, también al buscarlos para añadir", a
 });
 
 test("Ajustes completa desde IGDB el tipo de los juegos que no lo tienen", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(page, { Hades: { igdbId: 101 }, Celeste: { igdbId: 102 }, "Hollow Knight": { igdbId: 103, gameType: "remaster" } });
   let asked: number[] = [];
   await page.route("**/api/catalogo/tipos", async (route) => {
@@ -513,7 +521,7 @@ test("la marca de cada parada: según su tipo, o la que ponga ella; los números
 });
 
 test("en el mapa: cada juego dice qué es, las versiones van dentro y cada parada lleva su marca", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     {
@@ -543,7 +551,7 @@ test("en el mapa: cada juego dice qué es, las versiones van dentro y cada parad
   await page.getByRole("radiogroup", { name: "Marca de «Celeste»" }).getByRole("radio", { name: "Opcional" }).click();
   await expect(celeste.locator("[data-marca='opcional']")).toHaveCount(1);
   await expect(hades.locator("[data-marca='principal']")).toHaveText("1");
-  await page.reload();
+  await reloadApp(page);
   await expect(stopsOf(page).filter({ hasText: "Celeste" }).locator("[data-marca='opcional']")).toHaveCount(1);
 
   // A mano: Celeste, versión de Hades; y luego, parada propia otra vez.
@@ -557,7 +565,7 @@ test("en el mapa: cada juego dice qué es, las versiones van dentro y cada parad
 });
 
 test("de qué es versión y qué es cada juego lo pregunta a IGDB, solo por lo que aún no se sabe", async ({ page }) => {
-  await loadDemo(page);
+  await seedDemo(page);
   await seed(
     page,
     {
