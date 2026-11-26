@@ -348,6 +348,9 @@ test("quitar una saga solo la quita de este apartado: la ficha la conserva, se p
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Deshacer" }).click();
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toBeVisible();
+  // «Deshacer» vuelve a abrirla: se espera a que esté abierta antes de seguir.
+  await expect(page).toHaveURL(/saga=Prueba$/);
+  await expect(page.getByRole("heading", { level: 2, name: "Prueba" })).toBeVisible();
   await page.getByRole("button", { name: "Quitar saga" }).click();
   await page.getByRole("region", { name: "Prueba" }).getByRole("alert").getByRole("button", { name: "Quitar saga" }).click();
   await expect(sagas.getByRole("link", { name: /^Prueba/ })).toHaveCount(0);

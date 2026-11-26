@@ -185,6 +185,11 @@ test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de l
   await wish.click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toContainText("En deseos");
   await expect(stopsOf(page).filter({ hasText: "Hades II" }).locator("[data-en-deseos]")).toHaveCount(1);
+  // El corazón rojo lo quita de deseos (y se puede deshacer).
+  await page.getByRole("button", { name: "Quitar «Hades II» de deseos" }).click();
+  await expect(page.getByRole("button", { name: "Añadir «Hades II» a deseos" })).toBeVisible();
+  await page.getByRole("button", { name: "Deshacer" }).click();
+  await expect(page.getByRole("button", { name: "Quitar «Hades II» de deseos" })).toBeVisible();
   await page.getByRole("button", { name: "Quitar «Hades II» de la saga" }).click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
   await page.getByRole("button", { name: "Deshacer" }).click();
