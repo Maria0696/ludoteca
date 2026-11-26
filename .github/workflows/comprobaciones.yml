@@ -21,14 +21,15 @@ concurrency:
 
 jobs:
   comprobar:
-    # Las pruebas, repartidas en dos máquinas a la vez: tardan la mitad.
-    name: comprobar (${{ matrix.parte }}/2)
+    # Las pruebas, repartidas en cuatro máquinas a la vez: cada una hace una cuarta parte. Cada máquina solo añade
+    # ~1 min de arranque (instalar y compilar), así que se gastan casi los mismos minutos y se espera la mitad.
+    name: comprobar (${{ matrix.parte }}/4)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        parte: [1, 2]
+        parte: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
 
@@ -52,7 +53,7 @@ jobs:
 
       # Las pruebas usan el Chrome que ya trae la máquina de GitHub.
       - name: Pruebas de extremo a extremo
-        run: npx playwright test --shard=${{ matrix.parte }}/2 --reporter=line
+        run: npx playwright test --shard=${{ matrix.parte }}/4 --reporter=line
 
       - name: Guardar el informe si algo falla
         if: failure()
