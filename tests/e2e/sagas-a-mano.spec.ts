@@ -179,8 +179,12 @@ test("los que faltan se enseñan u ocultan, se añaden a deseos y se quitan de l
   await toggle.click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
   await toggle.click();
-  await page.getByRole("button", { name: "Añadir «Hades II» a deseos" }).click();
+  // Un corazón, sin texto: así las sagas no van tan cargadas.
+  const wish = page.getByRole("button", { name: "Añadir «Hades II» a deseos" });
+  await expect(wish).toHaveText("");
+  await wish.click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toContainText("En deseos");
+  await expect(stopsOf(page).filter({ hasText: "Hades II" }).locator("[data-en-deseos]")).toHaveCount(1);
   await page.getByRole("button", { name: "Quitar «Hades II» de la saga" }).click();
   await expect(stopsOf(page).filter({ hasText: "Hades II" })).toHaveCount(0);
   await page.getByRole("button", { name: "Deshacer" }).click();
