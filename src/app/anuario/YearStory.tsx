@@ -14,19 +14,23 @@ import styles from "./anuario.module.css";
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const monthName = (m: number) => new Date(2000, m, 1).toLocaleString("es-ES", { month: "long" });
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}` : (items[0] ?? ""));
 /** Lo que dura cada pantalla antes de pasar sola a la siguiente. */
 const SCREEN_MS = 6000;
 
-/** Cada pantalla, su color: un Wrapped con el alma arcade de la Ludoteca. */
-const PALETTE: Record<string, { bg: string; ink: string; accent: string }> = {
-  portada: { bg: "#ffd76a", ink: "#1b1400", accent: "#ff3d8b" },
-  terminados: { bg: "#ff3d8b", ink: "#1a0610", accent: "#ffd76a" },
-  mes: { bg: "#29e3ff", ink: "#04161b", accent: "#ff3d8b" },
-  favoritos: { bg: "#7b5cff", ink: "#ffffff", accent: "#ffd76a" },
-  primero: { bg: "#5dff8b", ink: "#03170a", accent: "#7b5cff" },
-  perfil: { bg: "#ff9f1c", ink: "#1f0e00", accent: "#ffffff" },
-  ludoteca: { bg: "#3d7bff", ink: "#ffffff", accent: "#ffd76a" },
-  resumen: { bg: "#12101f", ink: "#f3ead2", accent: "#ffd76a" },
+/**
+ * Cada pantalla, su color: un Wrapped con el alma arcade de la Ludoteca. `mark` es el color de su fila en la tabla de
+ * récords del final, legible sobre el fondo oscuro, para que el resumen recuerde cada pantalla.
+ */
+const PALETTE: Record<string, { bg: string; ink: string; accent: string; mark: string }> = {
+  portada: { bg: "#ffd76a", ink: "#1b1400", accent: "#ff3d8b", mark: "#ffd76a" },
+  terminados: { bg: "#ff3d8b", ink: "#1a0610", accent: "#ffd76a", mark: "#ff6ea8" },
+  mes: { bg: "#29e3ff", ink: "#04161b", accent: "#ff3d8b", mark: "#29e3ff" },
+  favoritos: { bg: "#7b5cff", ink: "#ffffff", accent: "#ffd76a", mark: "#a993ff" },
+  primero: { bg: "#5dff8b", ink: "#03170a", accent: "#7b5cff", mark: "#5dff8b" },
+  perfil: { bg: "#ff9f1c", ink: "#1f0e00", accent: "#ffffff", mark: "#ffb350" },
+  ludoteca: { bg: "#3d7bff", ink: "#ffffff", accent: "#ffd76a", mark: "#7fa6ff" },
+  resumen: { bg: "#12101f", ink: "#f3ead2", accent: "#ffd76a", mark: "#f3ead2" },
 };
 
 type Screen = { key: string; label: string; body: ReactNode };
@@ -46,7 +50,7 @@ function useReducedMotion() {
 }
 
 /** Una cifra que sube como una puntuación hasta su número (con movimiento reducido, directa). */
-function Score({ value, className }: { value: number; className?: string }) {
+function Score({ value }: { value: number }) {
   const reduce = useReducedMotion();
   const [counted, setCounted] = useState(0);
   const shown = reduce || value === 0 ? value : counted;
@@ -62,34 +66,90 @@ function Score({ value, className }: { value: number; className?: string }) {
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [value, reduce]);
+  return <span data-cifra={value}>{shown}</span>;
+}
+
+/** La cifra gigante: su tamaño se ajusta a cuántos caracteres tiene, para que «+124» quepa igual que «3» en el móvil. */
+function Giant({ children, chars }: { children: ReactNode; chars: number }) {
   return (
-    <span className={className} data-cifra={value}>
-      {shown}
+    <span className={styles.giant} style={{ "--chars": Math.max(2, chars) } as CSSProperties}>
+      {children}
     </span>
   );
 }
 
-/** Carátulas que entran volando, una detrás de otra. */
-function Flying({ games, size = "big" }: { games: WrapGame[]; size?: "big" | "small" }) {
+/** Cada cifra del año cae como una pieza, una detrás de otra. */
+function Digits({ text }: { text: string }) {
   return (
-    <span className={`${styles.flying} ${size === "small" ? styles.flyingSmall : ""}`} aria-hidden>
-      {games.map((g, i) => (
-        <span key={g.id} className={styles.flyer} style={{ "--i": i } as CSSProperties}>
-          <Cover src={g.coverUrl} title={g.title} caption="" className={styles.flyerCover} />
+    <span className={styles.digits}>
+      {[...text].map((d, i) => (
+        <span key={i} className={styles.digit} style={{ "--i": i } as CSSProperties}>
+          {d}
         </span>
       ))}
     </span>
   );
 }
 
-function GameCard({ game, label, note, i }: { game: WrapGame; label: string; note?: string; i: number }) {
+/** Carátulas que entran volando y quedan en abanico. */
+function Fan({ games }: { games: WrapGame[] }) {
   return (
-    <figure className={styles.gameCard} style={{ "--i": i } as CSSProperties}>
-      <Cover src={game.coverUrl} title={game.title} caption="" className={styles.cardCover} />
+    <span className={styles.fan} aria-hidden>
+      {games.map((g, i) => (
+        <span key={g.id} className={styles.fanItem} style={{ "--i": i, "--n": games.length } as CSSProperties}>
+          <Cover src={g.coverUrl} title={g.title} caption="" className={styles.fanCover} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Una cinta de carátulas que cruza la pantalla sin fin (con movimiento reducido, quieta). */
+function Belt({ games }: { games: WrapGame[] }) {
+  const loop = [...games, ...games];
+  return (
+    <div className={styles.belt} aria-hidden>
+      <div className={styles.beltTrack} style={{ "--n": games.length } as CSSProperties}>
+        {loop.map((g, i) => (
+          <Cover key={`${g.id}-${i}`} src={g.coverUrl} title={g.title} caption="" className={styles.beltCover} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Corona de píxeles para el primero del podio. */
+function Crown() {
+  return (
+    <svg className={styles.crown} viewBox="0 0 9 6" shapeRendering="crispEdges" aria-hidden>
+      <g fill="#ffd76a">
+        <rect x="0" y="0" width="1" height="1" />
+        <rect x="4" y="0" width="1" height="1" />
+        <rect x="8" y="0" width="1" height="1" />
+        <rect x="0" y="1" width="2" height="1" />
+        <rect x="3" y="1" width="3" height="1" />
+        <rect x="7" y="1" width="2" height="1" />
+        <rect x="0" y="2" width="9" height="4" />
+      </g>
+      <g fill="#ff3d8b">
+        <rect x="2" y="3" width="1" height="1" />
+        <rect x="4" y="3" width="1" height="1" />
+        <rect x="6" y="3" width="1" height="1" />
+      </g>
+      <rect x="0" y="5" width="9" height="1" fill="#c99a2e" />
+    </svg>
+  );
+}
+
+/** Un juego con su carátula y su nombre (primero y último). */
+function Fighter({ game, label, side }: { game: WrapGame; label: string; side: 1 | 2 }) {
+  return (
+    <figure className={styles.fighter} data-lado={side}>
+      <Cover src={game.coverUrl} title={game.title} caption="" className={styles.fighterCover} />
       <figcaption>
-        <span className={styles.cardLabel}>{label}</span>
+        <span className={styles.fighterLabel}>{label}</span>
         <strong>{game.title}</strong>
-        <span className={styles.cardMeta}>{[note, game.date && formatDate(game.date)].filter(Boolean).join(" · ")}</span>
+        {game.date && <span className={styles.fighterDate}>{formatDate(game.date)}</span>}
       </figcaption>
     </figure>
   );
@@ -104,30 +164,40 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
       label: `Tu ${year}`,
       body: (
         <>
-          <p className={styles.kicker}>Ludoteca presenta</p>
-          <h2 className={styles.mega}>
-            Tu <Score value={year} />
+          <h2 className={styles.title}>
+            <span className={styles.titleTu}>Tu</span> <Digits text={String(year)} />
           </h2>
-          {data.finishedCovers.length > 0 && <Flying games={data.finishedCovers.slice(0, 5)} />}
-          <p className={styles.lead}>Un año de partidas. Pulsa para empezar.</p>
+          {data.finishedCovers.length > 0 && <Fan games={data.finishedCovers.slice(0, 5)} />}
+          <p className={styles.lead}>Un año de partidas, pantalla a pantalla.</p>
+          <p className={styles.blink}>Pulsa para empezar</p>
         </>
       ),
     },
   ];
   if (data.finished.games > 0) {
-    const compare = compareLine(data.finished.games, before?.finished.games, year - 1);
+    const n = data.finished.games;
+    const compare = compareLine(n, before?.finished.games, year - 1);
     screens.push({
       key: "terminados",
       label: "Terminaste",
       body: (
         <>
-          <p className={styles.kicker}>En {year} terminaste</p>
-          <p className={styles.giant}>
-            <Score value={data.finished.games} />
-          </p>
-          <p className={styles.headline}>{data.finished.games === 1 ? "juego" : "juegos"}</p>
-          {data.finished.replays > 0 && <p className={styles.lead}>y rejugaste {count(data.finished.replays, "vez", "veces")}</p>}
-          {compare && <p className={styles.badge}>¡{compare}!</p>}
+          <h2 className={styles.sentence}>
+            <span className={styles.line}>Este año terminaste</span>
+            <span className={styles.giantRow}>
+              <Giant chars={String(n).length}>
+                <Score value={n} />
+              </Giant>{" "}
+              <span className={styles.unit}>{n === 1 ? "juego" : "juegos"}</span>
+            </span>
+          </h2>
+          {(compare || data.finished.replays > 0) && (
+            <p className={styles.aside}>
+              {compare && <span className={styles.sticker}>¡{compare}!</span>}
+              {data.finished.replays > 0 && <span className={styles.lead}>Y rejugaste {count(data.finished.replays, "vez", "veces")}.</span>}
+            </p>
+          )}
+          {data.finishedCovers.length > 0 && <Belt games={data.finishedCovers} />}
         </>
       ),
     });
@@ -136,15 +206,15 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
     const max = Math.max(...data.byMonth);
     // Si varios meses empatan, todos son tu mes.
     const best = data.byMonth.flatMap((n, m) => (n === max ? [m] : []));
-    const names = best.map(monthName);
-    const joined = names.length > 1 ? `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}` : names[0];
     screens.push({
       key: "mes",
       label: best.length > 1 ? "Tus meses" : "Tu mes",
       body: (
         <>
-          <p className={styles.kicker}>{best.length > 1 ? "Tus meses" : "Tu mes"} de vicio</p>
-          <h2 className={styles.headline}>{capital(joined)}</h2>
+          <h2 className={styles.sentence}>
+            <span className={styles.line}>{best.length > 1 ? "Tus meses de vicio" : "Tu mes de vicio"}</span>
+            <span className={styles.big}>{capital(listed(best.map(monthName)))}</span>
+          </h2>
           <p className={styles.lead}>
             {count(max, "juego terminado", "juegos terminados")}
             {best.length > 1 ? " en cada uno" : ""}
@@ -152,8 +222,18 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
           <ol className={styles.months} aria-label="Terminados por mes">
             {data.byMonth.map((n, m) => (
               <li key={m} data-fuerte={best.includes(m) || undefined} aria-label={`${capital(monthName(m))}: ${n}`} style={{ "--i": m } as CSSProperties}>
-                <span className={styles.bar} style={{ "--h": max ? n / max : 0 } as CSSProperties} />
-                <span className={styles.monthLabel}>{monthName(m).slice(0, 3)}</span>
+                <span className={styles.barWrap} style={{ "--h": max ? n / max : 0 } as CSSProperties}>
+                  <span className={styles.bar} />
+                  {best.includes(m) && (
+                    <span className={styles.barCount} aria-hidden>
+                      {n}
+                    </span>
+                  )}
+                </span>
+                <span className={styles.monthLabel} aria-hidden>
+                  <span className={styles.monthLong}>{monthName(m).slice(0, 3)}</span>
+                  <span className={styles.monthShort}>{monthName(m).charAt(0)}</span>
+                </span>
               </li>
             ))}
           </ol>
@@ -167,12 +247,25 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
       label: "Favoritos",
       body: (
         <>
-          <p className={styles.kicker}>Tu podio del año</p>
-          <div className={styles.cards}>
+          <h2 className={styles.line}>Tu podio del año</h2>
+          <ol className={styles.podium} aria-label="Tu podio del año">
             {data.favorites.map((g, i) => (
-              <GameCard key={g.id} game={g} label={`#${i + 1}`} note={`Tu nota: ${formatNumber(g.rating ?? 0)}`} i={i} />
+              <li key={g.id} data-puesto={i + 1}>
+                <div className={styles.podiumGame}>
+                  {i === 0 && <Crown />}
+                  <Cover src={g.coverUrl} title={g.title} caption="" className={styles.podiumCover} />
+                  <p className={styles.podiumName}>
+                    <strong>{g.title}</strong>
+                    <span>Tu nota: {formatNumber(g.rating ?? 0)}</span>
+                  </p>
+                </div>
+                <span className={styles.step}>
+                  <span className="sr-only">Puesto </span>
+                  {i + 1}
+                </span>
+              </li>
             ))}
-          </div>
+          </ol>
         </>
       ),
     });
@@ -184,58 +277,87 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
       label: "Primero y último",
       body: (
         <>
-          <p className={styles.kicker}>Primero y último</p>
-          <div className={styles.cards}>
-            <GameCard game={data.first} label="Abriste el año con" i={0} />
-            {!same && <GameCard game={data.last} label="Y lo cerraste con" i={1} />}
+          <h2 className={styles.line}>Primero y último</h2>
+          <div className={styles.versus} data-solo={same || undefined}>
+            {!same && <span className={styles.versusSplit} aria-hidden />}
+            <Fighter game={data.first} label="Abriste el año con" side={1} />
+            {!same && (
+              <>
+                <span className={styles.vs} aria-hidden>
+                  VS
+                </span>
+                <Fighter game={data.last} label="Y lo cerraste con" side={2} />
+              </>
+            )}
           </div>
         </>
       ),
     });
   }
   if (data.profile.genres.length > 0) {
+    const p = data.profile;
+    const avatar = data.favorites[0] ?? data.finishedCovers[0];
+    const rows: [string, string][] = [
+      ["Género estrella", p.genres[0]],
+      ...(p.genres.length > 1 ? [["También", listed(p.genres.slice(1))] as [string, string]] : []),
+      ...(p.family ? [["Plataforma", p.family] as [string, string]] : []),
+      ...(p.moods.length > 0 ? [["Lo que buscabas", listed(p.moods.map((m) => MOOD_LABEL[m]))] as [string, string]] : []),
+    ];
     screens.push({
       key: "perfil",
       label: "Tu perfil",
       body: (
         <>
-          <p className={styles.kicker}>Tu perfil de jugadora</p>
-          {data.profile.line && <h2 className={styles.headline}>{data.profile.line}</h2>}
-          <ul className={styles.chips}>
-            {data.profile.genres.map((g, i) => (
-              <li key={g} style={{ "--i": i } as CSSProperties}>
-                {g}
-              </li>
-            ))}
-            {data.profile.family && <li style={{ "--i": 3 } as CSSProperties}>{data.profile.family}</li>}
-            {data.profile.moods.map((m, i) => (
-              <li key={m} style={{ "--i": 4 + i } as CSSProperties}>
-                {MOOD_LABEL[m]}
-              </li>
-            ))}
-          </ul>
+          <h2 className={styles.big}>{p.line ?? "Tu perfil de jugadora"}</h2>
+          <div className={styles.sheet}>
+            {avatar && <Cover src={avatar.coverUrl} title={avatar.title} caption="" className={styles.sheetAvatar} />}
+            <div className={styles.sheetBody}>
+              <p className={styles.sheetTitle}>Ficha de jugadora</p>
+              <dl className={styles.sheetRows}>
+                {rows.map(([term, value], i) => (
+                  <div key={term} style={{ "--i": i } as CSSProperties}>
+                    <dt>{term}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
         </>
       ),
     });
   }
   if (data.library.copies > 0) {
     const l = data.library;
+    const tags = [
+      count(l.newGames, "juego nuevo", "juegos nuevos"),
+      ...(l.spent > 0 ? [`${formatMoney(l.spent)} gastados`] : []),
+      ...(l.gifts > 0 ? [count(l.gifts, "regalo", "regalos")] : []),
+      ...(l.free > 0 ? [`${l.free} gratis`] : []),
+    ];
     screens.push({
       key: "ludoteca",
       label: "Tu ludoteca creció",
       body: (
         <>
-          <p className={styles.kicker}>Tu ludoteca creció</p>
-          <p className={styles.giant}>
-            +<Score value={l.copies} />
-          </p>
-          <p className={styles.headline}>{l.copies === 1 ? "copia" : "copias"}</p>
-          <p className={styles.lead}>
-            {count(l.newGames, "juego nuevo", "juegos nuevos")}
-            {l.spent > 0 ? ` · ${formatMoney(l.spent)}` : ""}
-            {l.gifts > 0 ? ` · ${count(l.gifts, "regalo", "regalos")}` : ""}
-            {l.free > 0 ? ` · ${l.free} gratis` : ""}
-          </p>
+          <h2 className={styles.sentence}>
+            <span className={styles.line}>Tu ludoteca creció</span>
+            <span className={styles.giantRow}>
+              <Giant chars={String(l.copies).length + 1}>
+                <span className={styles.popup}>
+                  +<Score value={l.copies} />
+                </span>
+              </Giant>{" "}
+              <span className={styles.unit}>{l.copies === 1 ? "copia" : "copias"}</span>
+            </span>
+          </h2>
+          <ul className={styles.tags}>
+            {tags.map((t, i) => (
+              <li key={t} style={{ "--i": i } as CSSProperties}>
+                {t}
+              </li>
+            ))}
+          </ul>
           {l.undatedCopies > 0 && <p className={styles.small}>{count(l.undatedCopies, "copia no tiene", "copias no tienen")} fecha de compra y no cuenta.</p>}
         </>
       ),
@@ -246,14 +368,16 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
 }
 
 /**
- * El año del Anuario a pantalla completa, como un Wrapped: cada pantalla con su color, y pasan solas (6 s) con la
- * barra de arriba. Tocar a la izquierda vuelve, a la derecha sigue; mantener pulsado o «Pausar» para. También ←/→,
- * espacio y Esc. Si el año está congelado, se enseña tal cual se guardó; si no, se calcula en vivo.
+ * El año del Anuario a pantalla completa, como un Wrapped: cada pantalla con su color y su propia escena, y pasan solas
+ * (6 s) con la barra de arriba. Cada pantalla nueva barre la anterior en bloques, desde el lado hacia el que vas.
+ * Tocar a la izquierda vuelve, a la derecha sigue; mantener pulsado o «Pausar» para. También ←/→, espacio y Esc. Si el
+ * año está congelado, se enseña tal cual se guardó; si no, se calcula en vivo.
  */
 export function YearStory({ year }: { year: number }) {
   const { library, actions } = useLibrary();
   const router = useRouter();
-  const [index, setIndex] = useState(0);
+  // La pantalla actual y de la que se viene: su color queda debajo mientras la nueva la barre.
+  const [nav, setNav] = useState({ at: 0, from: 0 });
   const [paused, setPaused] = useState(false);
   const [holding, setHolding] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -273,32 +397,35 @@ export function YearStory({ year }: { year: number }) {
       ? `Se guarda tu ${year} tal como está hoy: lo que pase después no contará.`
       : `Se guarda tu ${year} tal como está: luego no cambiará aunque edites juegos.`;
 
+  const poster = data.favorites[0] ?? data.finishedCovers[0] ?? null;
+  const marks: { label: string; value: ReactNode; screen: string }[] = [
+    { label: "Terminados", value: data.finished.games, screen: "terminados" },
+    { label: "Empezados", value: data.started, screen: "mes" },
+    { label: "Copias nuevas", value: data.library.copies, screen: "ludoteca" },
+    ...(data.favorites[0] ? [{ label: "Tu favorito", value: data.favorites[0].title, screen: "favoritos" }] : []),
+    ...(data.profile.genres[0] ? [{ label: "Tu género", value: data.profile.genres[0], screen: "perfil" }] : []),
+  ];
   const summary = (
     <>
-      <p className={styles.kicker}>Tu {year} en una tarjeta</p>
-      <div className={styles.summaryCard}>
-        {data.finishedCovers.length > 0 && <Flying games={data.finishedCovers.slice(0, 4)} size="small" />}
-        <dl className={styles.summary}>
-          <dt>Terminados</dt>
-          <dd>{data.finished.games}</dd>
-          <dt>Empezados</dt>
-          <dd>{data.started}</dd>
-          <dt>Copias nuevas</dt>
-          <dd>{data.library.copies}</dd>
-          {data.favorites[0] && (
-            <>
-              <dt>Tu favorito</dt>
-              <dd>{data.favorites[0].title}</dd>
-            </>
-          )}
-          {data.profile.genres[0] && (
-            <>
-              <dt>Tu género</dt>
-              <dd>{data.profile.genres[0]}</dd>
-            </>
-          )}
-        </dl>
-        <p className={styles.status}>{frozen ? `Guardado el ${formatDate(frozen.frozenAt.slice(0, 10))}` : current ? "En curso" : "Sin guardar"}</p>
+      <div className={styles.records}>
+        {poster && (
+          <figure className={styles.poster} aria-hidden>
+            <Cover src={poster.coverUrl} title={poster.title} caption="" className={styles.posterCover} />
+          </figure>
+        )}
+        <div className={styles.recordsBody}>
+          <h2 className={styles.recordsTitle}>Tu {year}</h2>
+          <p className={styles.recordsSub}>Mejores marcas</p>
+          <dl className={styles.scores}>
+            {marks.map((m, i) => (
+              <div key={m.label} style={{ "--i": i, "--mark": PALETTE[m.screen].mark } as CSSProperties}>
+                <dt>{m.label}</dt>
+                <dd>{m.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className={styles.status}>{frozen ? `Guardado el ${formatDate(frozen.frozenAt.slice(0, 10))}` : current ? "En curso" : "Sin guardar"}</p>
+        </div>
       </div>
       <div className={styles.actions}>
         {!confirming && (
@@ -334,19 +461,30 @@ export function YearStory({ year }: { year: number }) {
   );
   const screens = buildScreens(data, before, summary);
   const last = screens.length - 1;
-  const at = Math.min(index, last);
+  const at = Math.min(nav.at, last);
+  const from = Math.min(nav.from, last);
   const screen = screens[at];
   const palette = PALETTE[screen.key];
+  const move = (to: (at: number) => number) =>
+    setNav((n) => {
+      const next = Math.max(0, Math.min(last, to(n.at)));
+      return next === n.at ? n : { at: next, from: n.at };
+    });
   const go = (i: number) => {
     setConfirming(false);
-    setIndex(Math.max(0, Math.min(last, i)));
+    move(() => i);
   };
 
   useEffect(() => {
+    const step = (to: (at: number) => number) =>
+      setNav((n) => {
+        const next = Math.max(0, Math.min(last, to(n.at)));
+        return next === n.at ? n : { at: next, from: n.at };
+      });
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
-      if (e.key === "ArrowRight") setIndex((i) => Math.min(last, i + 1));
-      else if (e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
+      if (e.key === "ArrowRight") step((i) => i + 1);
+      else if (e.key === "ArrowLeft") step((i) => i - 1);
       else if (e.key === " " && !(e.target instanceof HTMLButtonElement)) setPaused((p) => !p);
       else if (e.key === "Escape") router.push("/anuario");
       else return;
@@ -412,9 +550,27 @@ export function YearStory({ year }: { year: number }) {
     <div
       className={styles.stage}
       data-anuario=""
-      style={{ "--bg": palette.bg, "--ink": palette.ink, "--accent": palette.accent } as CSSProperties}
+      style={
+        {
+          "--bg": palette.bg,
+          "--ink": palette.ink,
+          "--accent": palette.accent,
+          "--under": PALETTE[screens[from].key].bg,
+        } as CSSProperties
+      }
     >
-      <div className={styles.pixels} aria-hidden />
+      <section
+        key={screen.key}
+        className={`anuario-pantalla ${styles.screen}`}
+        data-pantalla={screen.key}
+        data-dir={at < from ? "atras" : "adelante"}
+        aria-label={`Pantalla ${at + 1} de ${screens.length}`}
+      >
+        <h2 className="sr-only">{screen.label}</h2>
+        <div className={styles.body}>{screen.body}</div>
+      </section>
+      <div className={styles.scan} aria-hidden />
+
       <div className={styles.topLine}>
         <ol className={styles.dots} aria-hidden>
           {screens.map((s, i) => (
@@ -438,11 +594,6 @@ export function YearStory({ year }: { year: number }) {
           <X aria-hidden />
         </Link>
       </div>
-
-      <section key={screen.key} className={`anuario-pantalla ${styles.screen}`} aria-label={`Pantalla ${at + 1} de ${screens.length}`}>
-        <h2 className="sr-only">{screen.label}</h2>
-        <div className={styles.body}>{screen.body}</div>
-      </section>
 
       {/* Tocar: el tercio izquierdo vuelve, el resto sigue; mantener pulsado para, y deslizar también pasa. */}
       <button type="button" className={`${styles.tap} ${styles.tapBack}`} aria-label="Anterior" disabled={at === 0} onClick={() => go(at - 1)} {...tapGestures} />

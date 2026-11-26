@@ -226,6 +226,36 @@ test("las pantallas de un año se pasan con los botones y las flechas, y Esc vue
   await expect(page).toHaveURL(/\/anuario$/, { timeout: 20000 });
 });
 
+test("el podio se lee en orden, del primero al tercero, aunque se vea con el primero en el centro", async ({ page }) => {
+  await openYear(page, {
+    Hades: { finishedAt: "2026-05-01", rating: 8 },
+    Celeste: { finishedAt: "2026-03-01", rating: 10 },
+    "Hollow Knight": { finishedAt: "2026-06-01", rating: 9 },
+  });
+  while (!(await screen(page).textContent())?.includes("Tu podio del año")) await page.keyboard.press("ArrowRight");
+  const podium = screen(page).getByRole("list", { name: "Tu podio del año" });
+  await expect(podium.getByRole("listitem")).toHaveCount(3);
+  await expect(podium.getByRole("listitem").nth(0)).toContainText("Celeste");
+  await expect(podium.getByRole("listitem").nth(1)).toContainText("Hollow Knight");
+  await expect(podium.getByRole("listitem").nth(2)).toContainText("Hades");
+  // A la vista, el primero va en el centro y más alto.
+  const box = async (i: number) => (await podium.getByRole("listitem").nth(i).boundingBox())!;
+  const [first, second, third] = [await box(0), await box(1), await box(2)];
+  expect(second.x).toBeLessThan(first.x);
+  expect(third.x).toBeGreaterThan(first.x);
+});
+
+test("el perfil es una ficha de jugadora: tu género estrella, los demás y tu plataforma", async ({ page }) => {
+  await openYear(page, {
+    Hades: { finishedAt: "2026-05-01", genres: ["Rol", "Acción"] },
+    Celeste: { finishedAt: "2026-03-01", genres: ["Rol", "Plataformas"] },
+  });
+  while (!(await screen(page).textContent())?.includes("Tu año fue de rol")) await page.keyboard.press("ArrowRight");
+  const sheet = screen(page).getByRole("definition");
+  await expect(screen(page).getByRole("term").first()).toHaveText("Género estrella");
+  await expect(sheet.first()).toHaveText("Rol");
+});
+
 test("sin notas no hay pantalla de favoritos", async ({ page }) => {
   await openYear(page, { Hades: { finishedAt: "2026-05-01", rating: 9 }, Celeste: { finishedAt: "2026-03-01", rating: null } });
   const withRating = await total(page);
