@@ -1,4 +1,4 @@
-import type { Copy, Game, Library, SagaExtra, WishItem } from "../model";
+import type { Copy, Game, Library, SagaExtra, WishItem, YearWrap } from "../model";
 
 export type StorageMode = "local" | "supabase";
 
@@ -7,6 +7,8 @@ export interface Changes {
   copies?: Copy[];
   wishlist?: WishItem[];
   extras?: SagaExtra[];
+  /** Años del Anuario congelados: uno por año (si ya está, se sustituye). */
+  wraps?: YearWrap[];
 }
 
 /**

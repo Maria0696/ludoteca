@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { YearWrapData } from "./anuario";
 
 /*
  * Modelo de la colección.
@@ -228,11 +229,24 @@ export const sagaExtraSchema = z.object({
   demo: z.boolean().optional(),
 });
 
+/**
+ * Un año del Anuario congelado: el resumen tal como era al cerrarlo (ver `computeYear` en anuario.ts). Uno por año.
+ */
+export const yearWrapSchema = z.object({
+  id: z.string().min(1),
+  year: z.number().int().min(1970).max(2200),
+  data: z.custom<YearWrapData>((v) => typeof v === "object" && v !== null && (v as { version?: unknown }).version === 1),
+  frozenAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 export type Game = z.infer<typeof gameSchema>;
 export type Copy = z.infer<typeof copySchema>;
 export type PriceRecord = z.infer<typeof priceRecordSchema>;
 export type WishItem = z.infer<typeof wishSchema>;
 export type SagaExtra = z.infer<typeof sagaExtraSchema>;
+export type YearWrap = z.infer<typeof yearWrapSchema>;
 export type NewExtraInput = Omit<SagaExtra, "id" | "createdAt" | "updatedAt">;
 
 export interface Library {
@@ -241,9 +255,11 @@ export interface Library {
   wishlist: WishItem[];
   /** Juegos de saga que no tienes. */
   extras: SagaExtra[];
+  /** Los años del Anuario ya congelados. */
+  wraps: YearWrap[];
 }
 
-export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [] });
+export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [], wraps: [] });
 
 /*
  * Formato 1 de los datos guardados (hasta noviembre de 2026): «saga» era la franquicia, «series» la saga y

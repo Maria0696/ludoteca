@@ -405,7 +405,7 @@ test("el buscador de IGDB no deja a la vista el mensaje de una búsqueda anterio
 
 test("las copias de seguridad van en el formato 2, con franquicia y saga; las del 1 se siguen leyendo", () => {
   const jedi = game("Jedi: Survivor", { franchise: "Star Wars", saga: "Star Wars Jedi", sagaOrder: 2 });
-  const fresh = createBackup({ games: [jedi], copies: [], wishlist: [], extras: [extra({ saga: "Star Wars Jedi" })] });
+  const fresh = createBackup({ games: [jedi], copies: [], wishlist: [], extras: [extra({ saga: "Star Wars Jedi" })], wraps: [] });
   expect(fresh.version).toBe(2);
   const text = JSON.stringify(fresh);
   expect(text).toContain('"franchise":"Star Wars"');

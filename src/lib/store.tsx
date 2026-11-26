@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { computeYear, hasActivity } from "./anuario";
 import { createDemoLibrary } from "./demo";
 import {
   type Copy,
@@ -13,6 +14,7 @@ import {
   type NewExtraInput,
   type SagaExtra,
   type WishItem,
+  type YearWrap,
   STATUS_LABEL,
   createCopy,
   createGame,
@@ -70,6 +72,8 @@ interface Actions {
   /** Quita varios a la vez, sin aviso (lo da quien llama), y los devuelve para poder deshacer. */
   removeExtras(ids: string[]): SagaExtra[];
   restoreExtras(extras: SagaExtra[]): void;
+  /** Congela un año del Anuario: lo calcula ahora y lo guarda (si ya estaba, lo sustituye). */
+  freezeYear(year: number): YearWrap;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
   applyChanges(changes: Changes): Promise<void>;
@@ -469,6 +473,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       },
 
+      freezeYear(year) {
+        const stamp = nowIso();
+        const before = libRef.current.wraps.find((w) => w.year === year);
+        const wrap: YearWrap = { id: before?.id ?? newId(), year, data: computeYear(libRef.current, year), frozenAt: stamp, createdAt: before?.createdAt ?? stamp, updatedAt: stamp };
+        commit({ ...libRef.current, wraps: [...libRef.current.wraps.filter((w) => w.year !== year), wrap] });
+        void persist((r) => r.save({ wraps: [wrap] }));
+        return wrap;
+      },
+
       addExtras(items) {
         const stamp = nowIso();
         const extras = items.map((item) => ({ ...item, id: newId(), createdAt: stamp, updatedAt: stamp }));
@@ -653,6 +666,15 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
     return a;
   }, [commit, persist, reload]);
+
+  // El año que acaba de terminar se congela solo, una vez, si tiene algo que contar (ver el Anuario).
+  const frozeLastYear = useRef(false);
+  useEffect(() => {
+    if (state !== "ready" || frozeLastYear.current) return;
+    frozeLastYear.current = true;
+    const last = new Date().getFullYear() - 1;
+    if (!libRef.current.wraps.some((w) => w.year === last) && hasActivity(computeYear(libRef.current, last))) actions.freezeYear(last);
+  }, [state, actions]);
 
   const value = useMemo(() => ({ state, error, mode, library, actions }), [state, error, mode, library, actions]);
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;

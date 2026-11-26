@@ -1,6 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import { activeYears, compareLine, computeYear } from "../../src/lib/anuario";
-import { type Copy, type Game, type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
+import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
+import { type Copy, type Game, type Library, type YearWrap, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
+import { loadDemo, openApp } from "./helpers";
 
 /* Anuario: el resumen de cada año, calculado de las fechas que hay y congelado al cerrarlo. */
 
@@ -95,3 +97,69 @@ test("la comparación con el año anterior", () => {
   expect(compareLine(3, 3, 2025)).toBe("Igual que en 2025");
   expect(compareLine(5, undefined, 2025)).toBeNull();
 });
+
+const wrap = (year: number, patch: Partial<YearWrap> = {}): YearWrap => ({
+  id: crypto.randomUUID(),
+  year,
+  data: computeYear(lib([]), year),
+  frozenAt: "2027-01-03T10:00:00.000Z",
+  createdAt: "2027-01-03T10:00:00.000Z",
+  updatedAt: "2027-01-03T10:00:00.000Z",
+  ...patch,
+});
+
+test("los años guardados van en las copias de seguridad; al importar, solo entran los que no tienes", () => {
+  const mine = { ...lib([]), wraps: [wrap(2025)] };
+  const backup = createBackup({ ...lib([]), wraps: [wrap(2025), wrap(2024)] });
+  expect(backup.data.wraps.map((w) => w.year)).toEqual([2025, 2024]);
+  const plan = planImport(mine, backup);
+  expect(plan.newWraps.map((w) => w.year)).toEqual([2024]);
+  expect(resolveImport(plan, {}).wraps.map((w) => w.year)).toEqual([2024]);
+  // Una copia de antes, sin años guardados, se sigue leyendo.
+  const old = JSON.stringify({ ...backup, data: { ...backup.data, wraps: undefined } });
+  const parsed = parseBackup(old);
+  expect(parsed.ok && parsed.backup.data.wraps).toEqual([]);
+});
+
+/** Lo guardado en el navegador, tal cual. */
+const stored = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<{ wraps?: { year: number; data: { finished: { games: number } } }[] }>((resolve) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onsuccess = () => {
+          const req = open.result.transaction("library").objectStore("library").get("data");
+          req.onsuccess = () => resolve(req.result);
+        };
+      }),
+  );
+
+test("a partir del 1 de enero, el año anterior se congela solo, una sola vez", async ({ page }) => {
+  await loadDemo(page);
+  // Los juegos de demostración no cuentan: uno de verdad, terminado en 2026.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onsuccess = () => {
+          const store = open.result.transaction("library", "readwrite").objectStore("library");
+          const req = store.get("data");
+          req.onsuccess = () => {
+            const value = req.result;
+            const hades = value.games.find((g: { title: string }) => g.title === "Hades");
+            Object.assign(hades, { demo: false, finishedAt: "2026-05-01", pastRuns: [] });
+            store.put(value, "data").onsuccess = () => resolve();
+          };
+        };
+      }),
+  );
+  await page.clock.setFixedTime(new Date("2027-01-03T10:00:00"));
+  await openApp(page, "/");
+  await expect.poll(async () => (await stored(page)).wraps?.map((w) => w.year)).toEqual([2026]);
+  expect((await stored(page)).wraps?.[0].data.finished.games).toBe(1);
+  await openApp(page, "/biblioteca");
+  await openApp(page, "/");
+  await page.waitForTimeout(300);
+  expect((await stored(page)).wraps).toHaveLength(1);
+});
+

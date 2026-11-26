@@ -5,6 +5,7 @@ import {
   type Library,
   type SagaExtra,
   type WishItem,
+  type YearWrap,
   copySchema,
   gameSchema,
   sagaExtraSchema,
@@ -14,6 +15,7 @@ import {
   normalizeTitle,
   nowIso,
   wishSchema,
+  yearWrapSchema,
 } from "./model";
 
 /*
@@ -41,6 +43,8 @@ const backupSchema = z.object({
     wishlist: z.array(wishSchema),
     /** Juegos de saga que no tienes; las copias de antes no los traen. */
     extras: z.array(sagaExtraSchema).default([]),
+    /** Años del Anuario congelados; las copias de antes no los traen. */
+    wraps: z.array(yearWrapSchema).default([]),
     /** Las copias de cuando había «Mis listas» las traen: se aceptan y no se importan. */
     lists: z.array(z.unknown()).optional(),
   }),
@@ -60,6 +64,7 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
       copies: keep(library.copies),
       wishlist: keep(library.wishlist),
       extras: keep(library.extras),
+      wraps: library.wraps,
     },
   };
 }
@@ -140,6 +145,8 @@ export interface ImportPlan {
   newCounts: { games: number; copies: number; wishlist: number };
   /** Juegos de saga que no tienes y que aún no están: entran sin preguntar. */
   newExtras: SagaExtra[];
+  /** Años del Anuario que no tienes: entran sin preguntar (si ya tienes ese año, se queda el tuyo). */
+  newWraps: YearWrap[];
 }
 
 export function planImport(current: Library, backup: Backup): ImportPlan {
@@ -181,7 +188,10 @@ export function planImport(current: Library, backup: Backup): ImportPlan {
   const extraIds = new Set(current.extras.map((x) => x.id));
   const newExtras = backup.data.extras.filter((x) => !extraIds.has(x.id));
 
-  return { backup, conflicts, identical, newCounts, newExtras };
+  const wrapYears = new Set(current.wraps.map((w) => w.year));
+  const newWraps = backup.data.wraps.filter((w) => !wrapYears.has(w.year));
+
+  return { backup, conflicts, identical, newCounts, newExtras, newWraps };
 }
 
 function conflict(
@@ -200,11 +210,12 @@ export interface ImportChanges {
   copies: Copy[];
   wishlist: WishItem[];
   extras: SagaExtra[];
+  wraps: YearWrap[];
 }
 
 /** Calcula qué hay que guardar según las decisiones tomadas. Sin decisión, se mantiene lo tuyo. */
 export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolution>): ImportChanges {
-  const out: ImportChanges = { games: [], copies: [], wishlist: [], extras: plan.newExtras };
+  const out: ImportChanges = { games: [], copies: [], wishlist: [], extras: plan.newExtras, wraps: plan.newWraps };
   const byKey = new Map(plan.conflicts.map((c) => [c.key, c]));
   const decide = (kind: Conflict["kind"], id: string) => {
     const c = byKey.get(`${kind}:${id}`);
