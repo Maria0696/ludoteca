@@ -135,6 +135,9 @@ test("la pantalla Sagas enseña cada historia con el siguiente que toca", async 
   const sagas = page.getByRole("region", { name: "Sagas" });
   const row = sagas.getByRole("link", { name: /^Prueba/ });
   await expect(row).toContainText("2 juegos · 1 superados");
+  // Sus carátulas en abanico y la barra de superados (1 de 2).
+  await expect(row.locator("[data-abanico] > *")).toHaveCount(2);
+  await expect(row.locator("[data-progreso]")).toHaveAttribute("data-progreso", "50");
   // Sin elegir, se abre la primera. En el mapa, Celeste (2018) está superado y el siguiente es Hades (2020).
   const next = page.getByRole("list", { name: "Juegos de la saga" }).getByRole("listitem").filter({ hasText: "Siguiente" });
   await expect(next).toContainText("Hades");

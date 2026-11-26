@@ -59,6 +59,10 @@ const ROLES: { value: SagaRole; label: string; Icon: typeof Star }[] = [
   { value: "dlc", label: "DLC", Icon: Puzzle },
 ];
 const superado = (g: Game) => timesFinished(g) > 0 || g.status === "completado";
+/** Las carátulas de la lista: hasta 4, primero las de tus juegos. */
+const fanOf = (story: Story) => [...story.games, ...story.extras].filter((x) => x.coverUrl).slice(0, 4);
+/** Cuántos de tus juegos de la saga has superado, en %. */
+const progressOf = (story: Story) => (story.games.length ? Math.round((story.games.filter(superado).length / story.games.length) * 100) : 0);
 
 /**
  * Sagas, como el mapa de niveles de la ficha: a un lado las sagas; al otro, la abierta como un camino de
@@ -353,7 +357,15 @@ export function SagasView() {
                     {group.stories.map((story) => (
                       <li key={story.name}>
                         <Link href={`/sagas?saga=${encodeURIComponent(story.name)}`} scroll={false} className={styles.row} aria-current={open?.name === story.name ? "true" : undefined}>
+                          <span className={styles.fan} data-abanico="" aria-hidden>
+                            {fanOf(story).map((x) => (
+                              <Cover key={x.id} src={x.coverUrl} title={x.title} caption="" className={styles.fanCover} />
+                            ))}
+                          </span>
                           <strong>{story.name}</strong>
+                          <span className={styles.progress} data-progreso={progressOf(story)} aria-hidden>
+                            <span style={{ width: `${progressOf(story)}%` }} />
+                          </span>
                           <span className={styles.meta}>
                             {count(story.games.length, "juego", "juegos")} · {story.games.filter(superado).length} superados
                             {story.extras.length ? ` · ${story.extras.length} te faltan` : ""}
