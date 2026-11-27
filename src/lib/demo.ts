@@ -217,5 +217,5 @@ export function createDemoLibrary(today = new Date()): Library {
     demo: true,
   }));
 
-  return { games, copies, wishlist, extras: [], wraps: [] };
+  return { games, copies, wishlist, extras: [], wraps: [], achievements: [], settings: { steamId: null } };
 }
