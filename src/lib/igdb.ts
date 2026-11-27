@@ -236,3 +236,20 @@ export async function catalogBySteamIds(appIds: number[]): Promise<Record<number
   }
   return out;
 }
+
+/** El número de Steam de cada juego de IGDB que esté en Steam (para mirar su precio). Los que no, no vuelven. */
+export async function steamIdsByIgdbIds(igdbIds: number[]): Promise<Record<number, number>> {
+  const ids = [...new Set(igdbIds)].slice(0, 500);
+  if (!ids.length) return {};
+  const links = (field: string) => igdb<SteamLink[]>("external_games", `fields game,uid; where ${field} = 1 & game = (${ids.join(",")}); limit 500;`);
+  // `category` está en desuso, pero sigue siendo la referencia documentada de Steam (1).
+  let found = await links("external_game_source").catch((): SteamLink[] => []);
+  if (!found.length) found = await links("category");
+  const out: Record<number, number> = {};
+  for (const { game, uid } of found) {
+    const appId = Number(uid);
+    // Si un juego tiene varios números (ediciones), se queda el primero.
+    if (Number.isInteger(appId) && appId > 0 && !(game in out)) out[game] = appId;
+  }
+  return out;
+}

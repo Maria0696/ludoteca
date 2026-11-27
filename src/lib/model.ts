@@ -190,6 +190,10 @@ export const copySchema = z.object({
 export const priceRecordSchema = z.object({
   id: z.string().min(1),
   amount: z.number().min(0).max(100000),
+  /** El precio sin rebaja, si se sabe (lo dan el eShop y Steam): con él se ve si es una oferta. */
+  regular: z.number().min(0).max(100000).nullish(),
+  /** Hasta cuándo dura la oferta (fecha y hora), si la tienda lo dice (el eShop sí; Steam no). */
+  until: z.string().max(40).nullish(),
   store: optionalText,
   date: isoDate,
 });
@@ -205,6 +209,10 @@ export const wishSchema = z.object({
   notes: optionalText,
   genres: z.array(z.string().trim().min(1).max(60)).max(30).default([]),
   prices: z.array(priceRecordSchema).default([]),
+  /** Su código en el eShop de Nintendo España (14 cifras), para mirar el precio solo. */
+  eshopNsuid: z.string().regex(/^\d{14}$/).nullish(),
+  /** Su número en Steam, para mirar el precio solo. */
+  steamAppId: z.number().int().positive().nullish(),
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),

@@ -1,12 +1,16 @@
 "use client";
 
-import { PackageCheck, Pencil, Plus, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
+import { ListChecks, PackageCheck, Pencil, Plus, RefreshCw, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatDate, formatMoney } from "@/lib/format";
 import { type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, normalizeTitle } from "@/lib/model";
+import { type SyncResult, syncPrices, usePendingEshop } from "@/lib/price-sync";
+import { currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
+import { EshopChooser } from "./EshopChooser";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
 
@@ -20,6 +24,18 @@ const SORT_LABEL: Record<Sort, string> = {
 };
 const PRIORITY_RANK: Record<Priority, number> = { alta: 0, media: 1, baja: 2 };
 
+/** Lo que ha hecho «Buscar en las tiendas», en una frase. */
+function syncSummary(r: SyncResult): string {
+  const parts = [
+    r.linkedEshop && `${r.linkedEshop} ${r.linkedEshop === 1 ? "deseo enlazado" : "deseos enlazados"} con el eShop`,
+    r.linkedSteam && `${r.linkedSteam} con Steam`,
+    r.updated && `${r.updated} ${r.updated === 1 ? "precio nuevo" : "precios nuevos"}`,
+    r.pending && `${r.pending} por elegir en el eShop`,
+  ].filter(Boolean);
+  const done = parts.length ? `${parts.join(" · ")}.` : "Precios al día.";
+  return r.failed ? `${done} Alguna tienda no ha respondido: se volverá a intentar.` : done;
+}
+
 function latestPrice(w: WishItem) {
   return [...w.prices].sort((a, b) => b.date.localeCompare(a.date))[0];
 }
@@ -31,7 +47,16 @@ export function WishlistView() {
   const [platform, setPlatform] = useState("");
   const [sort, setSort] = useState<Sort>("titulo");
   const [sheet, setSheet] = useState(false);
-  const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert"; wish: WishItem } | null>(null);
+  const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert" | "eshop"; wish: WishItem } | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const pendingEshop = usePendingEshop();
+  const now = new Date();
+  const searchStores = () => {
+    setSyncing(true);
+    void syncPrices(library.wishlist, actions.updateWish, { force: true })
+      .then((r) => toast(syncSummary(r)))
+      .finally(() => setSyncing(false));
+  };
 
   const platforms = useMemo(() => [...new Set(library.wishlist.map((w) => w.platform).filter(Boolean) as string[])].sort(), [library.wishlist]);
 
@@ -112,6 +137,12 @@ export function WishlistView() {
         <p className={`${styles.count} num`}>
           {library.wishlist.length} {library.wishlist.length === 1 ? "juego" : "juegos"}
         </p>
+        {library.wishlist.length > 0 && (
+          <button type="button" className="btn" onClick={searchStores} disabled={syncing} aria-busy={syncing || undefined} title="Mira los precios en el eShop de Nintendo y en Steam">
+            <RefreshCw aria-hidden className={syncing ? styles.spinning : undefined} />
+            Buscar en las tiendas
+          </button>
+        )}
         <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
           <Plus aria-hidden />
           Añadir deseo
@@ -157,6 +188,7 @@ export function WishlistView() {
               {visible.map((w) => {
                 const p = latestPrice(w);
                 const diff = p && w.targetPrice != null ? p.amount - w.targetPrice : null;
+                const offer = currentOffer(w, now);
                 return (
                   <li key={w.id} className={styles.item}>
                     <Cover src={w.coverUrl} title={w.title} caption={w.platform ?? undefined} className={styles.cover} />
@@ -174,6 +206,11 @@ export function WishlistView() {
                             <span className={`${styles.amount} num`}>{formatMoney(p.amount)}</span>
                             {diff != null && <span className={styles.verdict}>{diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}</span>}
                           </p>
+                          {offer && (
+                            <span className={styles.offer}>
+                              −{offer.percent} %{offer.until ? ` ${untilLabel(offer.until, now)}` : ""}
+                            </span>
+                          )}
                           <span className={styles.priceMeta}>
                             {[p.store, formatDate(p.date), w.targetPrice != null ? `objetivo ${formatMoney(w.targetPrice)}` : null].filter(Boolean).join(" · ")}
                           </span>
@@ -192,6 +229,12 @@ export function WishlistView() {
                     </div>
                     {/* Las calladas, bajo el título (en el móvil, a lo ancho, tras «Ya lo tengo»). */}
                     <div className={styles.secondary}>
+                      {pendingEshop.has(w.id) && !w.eshopNsuid && (
+                        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "eshop", wish: w })}>
+                          <ListChecks aria-hidden />
+                          Elegir en el eShop
+                        </button>
+                      )}
                       <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
                         <Tag aria-hidden />
                         Precio
@@ -224,6 +267,7 @@ export function WishlistView() {
       {dialog?.kind === "new" && <WishEditor onClose={() => setDialog(null)} />}
       {dialog?.kind === "edit" && <WishEditor wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "price" && <PriceDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "eshop" && <EshopChooser wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "convert" && <ConvertDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
 
       <Dialog

@@ -1,6 +1,15 @@
 .localNotice {
   margin: 0 var(--gutter) 8px;
 }
+/* Ofertas de la lista de deseos: una por línea y, debajo, el enlace. */
+.offers ul {
+  display: grid;
+  gap: 2px;
+}
+.offers a {
+  display: inline-block;
+  margin-top: 4px;
+}
 .noticeClose {
   display: grid;
   place-items: center;
