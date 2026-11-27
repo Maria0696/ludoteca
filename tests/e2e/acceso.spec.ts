@@ -53,6 +53,13 @@ test("los avisos de ofertas solo se mandan con la clave, y nunca mandan a «Entr
   expect(test.status()).toBe(401);
 });
 
+test("sin sesión, los logros de Steam no se pueden pedir", async ({ request }) => {
+  const post = await request.post("/api/logros", { data: { steamId: "76561197960287930", appIds: [1] }, maxRedirects: 0 });
+  expect(post.status()).toBe(401);
+  const get = await request.get("/api/logros/recientes?steamId=76561197960287930", { maxRedirects: 0 });
+  expect(get.status()).toBe(401);
+});
+
 test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   const search = await request.get("/api/catalogo?q=hades");
   expect(search.status()).toBe(401);

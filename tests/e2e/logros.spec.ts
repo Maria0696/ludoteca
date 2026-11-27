@@ -12,6 +12,7 @@ import {
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Achievement, type GameAchievements, type Library, createGame, emptyLibrary } from "../../src/lib/model";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
+import { parsePercents, parsePlayer, parseSchema } from "../../src/lib/steam-achievements";
 import { openApp } from "./helpers";
 
 /* Logros de Steam: la ficha, la vista de todos, el Anuario y Estadísticas. */
@@ -188,4 +189,36 @@ test("al eliminar un juego se van también sus logros", async ({ page }) => {
   await page.getByRole("button", { name: "Eliminar «Inside»" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Eliminar juego" }).click();
   await expect.poll(async () => (await stored(page)).achievements.map((a) => a.gameId)).toEqual([tunic.id]);
+});
+
+test("se leen bien las respuestas de Steam: los tuyos, el esquema, la rareza, el perfil privado y el juego sin logros", () => {
+  expect(
+    parsePlayer({ playerstats: { steamID: "1", success: true, achievements: [{ apiname: "A", achieved: 1, unlocktime: 1767225600, name: "Uno", description: "D" }] } }),
+  ).toEqual({ ok: true, items: [{ apiname: "A", achieved: 1, unlocktime: 1767225600, name: "Uno", description: "D" }] });
+  expect(parsePlayer({ playerstats: { error: "Profile is not public", success: false } })).toEqual({ ok: false, reason: "privado" });
+  expect(parsePlayer({ playerstats: { error: "Requested app has no stats", success: false } })).toEqual({ ok: false, reason: "sin-logros" });
+  // Un juego con estadísticas pero sin logros responde bien, sin la lista.
+  expect(parsePlayer({ playerstats: { steamID: "1", success: true } })).toEqual({ ok: false, reason: "sin-logros" });
+  expect(parsePlayer(null)).toEqual({ ok: false, reason: "error" });
+
+  expect(
+    parseSchema({ game: { availableGameStats: { achievements: [{ name: "A", displayName: "Uno", hidden: 1, icon: "https://cdn/a.jpg", icongray: "x" }] } } }),
+  ).toEqual([{ name: "A", displayName: "Uno", hidden: 1, icon: "https://cdn/a.jpg" }]);
+  expect(parseSchema({ game: {} })).toEqual([]);
+
+  // Steam da el porcentaje como texto; a veces, como número.
+  expect(parsePercents({ achievementpercentages: { achievements: [{ name: "A", percent: "81.8" }, { name: "B", percent: 3.25 }, { name: "C", percent: "x" }] } })).toEqual({
+    A: 81.8,
+    B: 3.25,
+  });
+  expect(parsePercents({})).toEqual({});
+});
+
+test("la ruta de los logros comprueba lo que se le pide y, sin clave de Steam, lo dice", async ({ request }) => {
+  const ok = { steamId: STEAM_ID, appIds: [1145360] };
+  expect((await request.post("/api/logros", { data: { ...ok, steamId: "123" } })).status()).toBe(400);
+  expect((await request.post("/api/logros", { data: { ...ok, appIds: Array.from({ length: 11 }, (_, i) => i + 1) } })).status()).toBe(400);
+  expect(await (await request.post("/api/logros", { data: ok })).json()).toMatchObject({ ok: false, reason: "no-configurado" });
+  expect((await request.get("/api/logros/recientes?steamId=123")).status()).toBe(400);
+  expect(await (await request.get(`/api/logros/recientes?steamId=${STEAM_ID}`)).json()).toMatchObject({ ok: false, reason: "no-configurado" });
 });

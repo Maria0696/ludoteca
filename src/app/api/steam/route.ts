@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     }
     const games = toGames(owned.response.games ?? []);
     if (!games.length) return reply({ ok: false, reason: "vacio", message: "Esa cuenta de Steam no tiene juegos." });
-    return reply({ ok: true, games });
+    return reply({ ok: true, games, steamId });
   } catch (e) {
     const status = e instanceof SteamRefused ? e.status : 0;
     const message =
