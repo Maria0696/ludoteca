@@ -3,6 +3,7 @@ import { createBackup, parseBackup } from "../../src/lib/backup";
 import { type WishItem, emptyLibrary } from "../../src/lib/model";
 import { ESHOP, STEAM, currentOffer, newPriceRecords, offerAlerts, pickEshop } from "../../src/lib/price-watch";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
+import { parseEshopPrices, parseEshopSearch, parseSteamPrices } from "../../src/lib/store-prices";
 
 /* Precios de la lista de deseos: el eShop de Nintendo España y la tienda de Steam, mirados por la app. */
 
@@ -92,4 +93,67 @@ test("Inicio avisa de los deseos en oferta por debajo de su objetivo, o en ofert
     wish({ title: "De demostración", demo: true, prices: sale }),
   ];
   expect(offerAlerts(list, now).map((a) => a.wish.title)).toEqual(["Sin objetivo", "Por debajo"]);
+});
+
+// Respuestas reales de las tiendas (recortadas), para leerlas sin depender de la red.
+const ESHOP_PRICES = {
+  prices: [
+    { title_id: 70010000063715, sales_status: "onsale", regular_price: { amount: "69,99 €", currency: "EUR", raw_value: "69.99" } },
+    {
+      title_id: 70010000012345,
+      sales_status: "onsale",
+      regular_price: { amount: "7,99 €", currency: "EUR", raw_value: "7.99" },
+      discount_price: { amount: "1,59 €", currency: "EUR", raw_value: "1.59", start_datetime: "2026-11-17T14:00:00Z", end_datetime: "2026-11-29T22:59:59Z" },
+    },
+    { title_id: 70010000099999, sales_status: "not_found" },
+  ],
+};
+const STEAM_PRICES = {
+  "413150": { success: true, data: { price_overview: { currency: "EUR", initial: 1399, final: 1399, discount_percent: 0 } } },
+  "1145360": { success: true, data: { price_overview: { currency: "EUR", initial: 2450, final: 612, discount_percent: 75 } } },
+  "570": { success: true, data: [] },
+  "1": { success: false },
+};
+const ESHOP_SEARCH = {
+  response: {
+    docs: [
+      { title: "The Legend of Zelda: Tears of the Kingdom", system_names_txt: ["Nintendo Switch"], nsuid_txt: ["70010000063715"] },
+      { title: "The Legend of Zelda: Tears of the Kingdom – Nintendo Switch 2 Edition", system_names_txt: ["Nintendo Switch 2"], nsuid_txt: ["70050000056808", "70010000096822"] },
+      { title: "Sin código", system_names_txt: ["Nintendo Switch"] },
+    ],
+  },
+};
+
+test("se leen bien los precios del eShop y de Steam, con la oferta y su fin", () => {
+  expect(parseEshopPrices(ESHOP_PRICES)).toEqual({
+    "70010000063715": { amount: 69.99, regular: 69.99, until: null },
+    "70010000012345": { amount: 1.59, regular: 7.99, until: "2026-11-29T22:59:59Z" },
+  });
+  // Los gratuitos (sin precio) y los que no existen no vuelven.
+  expect(parseSteamPrices(STEAM_PRICES)).toEqual({
+    "413150": { amount: 13.99, regular: 13.99, until: null },
+    "1145360": { amount: 6.12, regular: 24.5, until: null },
+  });
+});
+
+test("del catálogo del eShop sale un candidato por producto y código, de la consola del deseo", () => {
+  const switch1 = parseEshopSearch(ESHOP_SEARCH, "Switch");
+  expect(switch1.map((c) => c.nsuid)).toEqual(["70010000063715"]);
+  // Switch 2 también juega a lo de Switch: salen los dos, y la Switch 2 Edition con sus dos códigos.
+  const switch2 = parseEshopSearch(ESHOP_SEARCH, "Switch 2");
+  expect(switch2.map((c) => [c.nsuid, c.platform])).toEqual([
+    ["70010000063715", "Switch"],
+    ["70050000056808", "Switch 2"],
+    ["70010000096822", "Switch 2"],
+  ]);
+});
+
+test("las rutas de precios comprueban lo que se les pide y, sin nada que mirar, no salen a las tiendas", async ({ request }) => {
+  expect((await request.post("/api/precios", { data: { eshop: ["no-es-un-codigo"] } })).status()).toBe(400);
+  const empty = await request.post("/api/precios", { data: { eshop: [], steam: [] } });
+  expect(await empty.json()).toEqual({ ok: true, eshop: {}, steam: {}, failed: [] });
+  expect((await request.get("/api/precios/eshop?q=a&plataforma=Switch")).status()).toBe(400);
+  expect((await request.get("/api/precios/eshop?q=zelda&plataforma=PS5")).status()).toBe(400);
+  // Sin claves de IGDB (como en las pruebas), no se puede saber el número de Steam.
+  expect(await (await request.post("/api/precios/steam", { data: { igdbIds: [1] } })).json()).toMatchObject({ ok: false, reason: "no-configurado" });
 });

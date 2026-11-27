@@ -16,6 +16,14 @@ export type Quote = { amount: number; regular: number; until: string | null };
 export type EshopCandidate = { nsuid: string; title: string; platform: string; amount: number | null };
 export type Offer = { store: string; amount: number; regular: number; percent: number; until: string | null };
 
+/** Las consolas del eShop en las que vale un deseo de cada plataforma: Switch 2 también juega a lo de Switch. */
+export const ESHOP_SYSTEMS: Record<string, string[]> = {
+  Switch: ["Nintendo Switch"],
+  "Switch 2": ["Nintendo Switch 2", "Nintendo Switch"],
+};
+/** Si un deseo de esta plataforma se puede vigilar en el eShop. */
+export const isEshopPlatform = (platform: string | null | undefined): platform is string => platform != null && platform in ESHOP_SYSTEMS;
+
 /** Días que vale un precio de Steam sin fecha de fin: pasado eso, la oferta puede haber acabado. */
 const STEAM_FRESH_DAYS = 2;
 
