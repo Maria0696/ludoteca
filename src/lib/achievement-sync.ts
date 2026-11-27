@@ -129,14 +129,18 @@ async function run(library: Library, actions: Actions, { force = false, gameId }
   for (let i = 0; i < appIds.length; i += BATCH) {
     const part = appIds.slice(i, i + BATCH);
     try {
-      const res = await call<{ ok: boolean; reason?: string; games?: Record<string, Done>; sinLogros?: number[]; failed?: number[] }>("/api/logros", { steamId, appIds: part });
+      const res = await call<{ ok: boolean; reason?: string; games?: Record<string, Done>; sinLogros?: number[]; noTuyos?: number[]; failed?: number[] }>(
+        "/api/logros",
+        { steamId, appIds: part },
+      );
       if (!res.ok) {
         if (res.reason === "privado") result.privado = true;
         else result.failed = true;
         break;
       }
       if (res.failed?.length) result.failed = true;
-      const none = new Set(res.sinLogros ?? []);
+      // Sin logros, o que no tienes en Steam: se apuntan con 0, y no se vuelven a pedir hasta dentro de un mes.
+      const none = new Set([...(res.sinLogros ?? []), ...(res.noTuyos ?? [])]);
       const save: GameAchievements[] = [];
       for (const g of due.filter((g) => part.includes(appOf.get(g.id)!))) {
         const appId = appOf.get(g.id)!;
@@ -168,9 +172,22 @@ async function run(library: Library, actions: Actions, { force = false, gameId }
 }
 
 let running: Promise<AchievementSyncResult> | null = null;
+const runningGame = new Map<string, Promise<AchievementSyncResult>>();
 
-/** Enlaza y mira los logros (todos con `force`, o solo un juego). Si ya hay una vuelta en marcha, devuelve esa. */
+/**
+ * Enlaza y mira los logros (todos con `force`, o solo un juego). Si ya hay una vuelta de toda la biblioteca en
+ * marcha, devuelve esa; mirar un juego no la espera, que la primera vuelta de una biblioteca grande tarda minutos.
+ */
 export function syncAchievements(library: Library, actions: Actions, options: { force?: boolean; gameId?: string } = {}): Promise<AchievementSyncResult> {
+  const { gameId } = options;
+  if (gameId) {
+    let one = runningGame.get(gameId);
+    if (!one) {
+      one = run(library, actions, options).finally(() => runningGame.delete(gameId));
+      runningGame.set(gameId, one);
+    }
+    return one;
+  }
   running ??= run(library, actions, options).finally(() => {
     running = null;
   });
