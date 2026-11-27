@@ -37,6 +37,22 @@ test("la copia automática solo se entrega con la clave, y nunca manda a «Entra
   expect(await res.json()).toMatchObject({ ok: false });
 });
 
+test("los avisos de ofertas solo se mandan con la clave, y nunca mandan a «Entrar»", async ({ request }) => {
+  const url = "/api/avisos-ofertas";
+  const bad: Record<string, string>[] = [{}, { Authorization: "Bearer corta" }, { Authorization: "Basic " + "x".repeat(64) }];
+  for (const headers of bad) {
+    const res = await request.post(url, { headers, maxRedirects: 0 });
+    expect(res.status(), JSON.stringify(headers)).toBe(401);
+  }
+  // Con una clave con buena pinta, pero sin las claves VAPID en el servidor: no puede mandar nada.
+  const res = await request.post(url, { headers: { Authorization: `Bearer ${"a".repeat(64)}` }, maxRedirects: 0 });
+  expect(res.status()).toBe(503);
+  expect((await res.json()).message).toContain("Faltan las claves de los avisos");
+  // La de prueba es de la propietaria: sin sesión, no.
+  const test = await request.post(`${url}/prueba`, { data: { endpoint: "https://example.com/x" }, maxRedirects: 0 });
+  expect(test.status()).toBe(401);
+});
+
 test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   const search = await request.get("/api/catalogo?q=hades");
   expect(search.status()).toBe(401);

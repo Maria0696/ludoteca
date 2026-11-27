@@ -96,3 +96,9 @@ test("el service worker se recoge nuevo cada vez y solo guarda la pantalla sin c
   expect(cached.keys).toEqual(["ludoteca-sin-conexion-v1"]);
   expect(cached.entries).toEqual([["/offline.html"]]);
 });
+
+test("el service worker enseña las notificaciones de ofertas y lleva a Deseos al tocarlas", async ({ request }) => {
+  const sw = await (await request.get("/sw.js")).text();
+  expect(sw).toContain('addEventListener("push"');
+  expect(sw).toContain('addEventListener("notificationclick"');
+});

@@ -12,6 +12,7 @@ import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
 import { groupWishes } from "@/lib/wish-groups";
 import { EshopChooser } from "./EshopChooser";
+import { OfferAlertsLine } from "./OfferAlertsLine";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
 
@@ -239,6 +240,7 @@ export function WishlistView() {
             )}
           </p>
         )}
+        {library.wishlist.length > 0 && <OfferAlertsLine />}
       </header>
 
       {library.wishlist.length === 0 ? (

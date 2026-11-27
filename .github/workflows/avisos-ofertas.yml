@@ -1,0 +1,47 @@
+name: Avisos de ofertas
+
+# Dos veces al día pide a la app que mire los precios de los deseos con precio objetivo (eShop de Nintendo y Steam) y
+# que avise al móvil si alguno ha bajado a su objetivo. Los avisos se activan en Deseos, en la app instalada.
+#
+# La app solo lo hace con la clave AVISOS_CLAVE: en Supabase solo está su huella (migración 0020). Si algo falla, la
+# tarea falla y GitHub te avisa por correo.
+
+on:
+  schedule:
+    # A las 10:00 y a las 20:00 en Madrid en invierno (11:00 y 21:00 en verano).
+    - cron: "0 9 * * *"
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Para reactivar la propia tarea (ver el último paso).
+  actions: write
+
+jobs:
+  avisos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Sin reintentos: si la app ya ha avisado y falla después, repetir avisaría dos veces.
+      - name: Mirar los precios y avisar
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          AVISOS_CLAVE: ${{ secrets.AVISOS_CLAVE }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -X POST "$APP_URL/api/avisos-ofertas" \
+            -H "Authorization: Bearer $AVISOS_CLAVE" \
+            -o resumen.json
+          node -e '
+            const r = JSON.parse(require("fs").readFileSync("resumen.json", "utf8"));
+            console.log(`Deseos mirados: ${r.watched} · precios nuevos: ${r.newPrices} · avisos: ${r.notified} · enviados: ${r.sent} · suscripciones quitadas: ${r.removed}`);
+            if (r.failed?.length) console.log(`::warning::No respondió: ${r.failed.join(", ")}. Se mirará en la próxima vuelta.`);
+          '
+
+      # GitHub desactiva las tareas programadas de los repositorios públicos
+      # tras 60 días sin actividad. Volver a activarla reinicia ese plazo.
+      - name: Mantener la tarea programada activa
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable avisos-ofertas.yml --repo "${{ github.repository }}"
