@@ -389,8 +389,23 @@ test("la ficha enseña los logros: el progreso, los que faltan del más raro al 
   await expect(got.nth(0)).toContainText("2 may 2026");
   await expect(got.nth(1)).toContainText("1 mar 2026");
   await expect(got.nth(1)).toContainText("Común");
-  await panel.getByRole("button", { name: "Mirar ahora" }).click();
+  // «Mirar ahora» va arriba, junto al progreso, y abajo ya no queda pie: a todos los logros se llega desde el menú.
+  const look = panel.getByRole("button", { name: "Mirar ahora" });
+  expect((await look.boundingBox())!.y).toBeLessThan((await panel.getByRole("list", { name: "Te faltan" }).boundingBox())!.y);
+  await expect(panel).toContainText("Mirados");
+  await expect(panel.getByRole("link", { name: "Todos tus logros" })).toHaveCount(0);
+  await look.click();
   await expect.poll(() => asked.logros).toEqual([[1145360]]);
+});
+
+test("los logros tienen su sitio en la barra de navegación del ordenador", async ({ page }) => {
+  const { hades, rec } = hadesWithAchievements();
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec], settings: { steamId: STEAM_ID } });
+  await openApp(page, "/");
+  const nav = page.getByRole("navigation", { name: "Principal" }).first();
+  await nav.getByRole("link", { name: "Logros" }).click();
+  await expect(page).toHaveURL(/\/logros$/, { timeout: 20000 });
+  await expect(nav.getByRole("link", { name: "Logros" })).toHaveAttribute("aria-current", "page");
 });
 
 test("en la ficha, sin perfil de Steam lo pide; con el perfil privado, explica cómo arreglarlo", async ({ page }) => {
@@ -537,4 +552,37 @@ test("en la ficha, un juego aún sin mirar invita a mirar sus logros", async ({ 
   await panel.getByRole("button", { name: "Mirar ahora" }).click();
   await expect.poll(() => asked.logros).toEqual([[1145360]]);
   await expect(panel).toContainText("1 de 2 · 50 %");
+});
+
+test("la ficha enseña todos los logros de una vez, sin «Ver los restantes»", async ({ page }) => {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  const items = Array.from({ length: 30 }, (_, i) => item(`l${i}`, i + 1, i < 15 ? "2026-03-01T10:00:00.000Z" : null));
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [record(hades.id, items)], settings: { steamId: STEAM_ID } });
+  await openApp(page, `/juego/${hades.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await expect(panel.getByRole("list", { name: "Te faltan" }).getByRole("listitem")).toHaveCount(15);
+  await expect(panel.getByRole("list", { name: "Conseguidos" }).getByRole("listitem")).toHaveCount(15);
+  await expect(panel.getByRole("button", { name: /restantes/ })).toHaveCount(0);
+});
+
+test("en la ficha se eligen los logros que se ven: todos, los que te faltan o los conseguidos", async ({ page }) => {
+  const { hades, rec } = hadesWithAchievements();
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec], settings: { steamId: STEAM_ID } });
+  await openApp(page, `/juego/${hades.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  const pick = panel.getByRole("radiogroup", { name: "Qué logros ver" });
+  const missing = panel.getByRole("list", { name: "Te faltan" });
+  const got = panel.getByRole("list", { name: "Conseguidos" });
+  // De entrada, todos.
+  await expect(pick.getByRole("radio", { name: /Todos/ })).toHaveAttribute("aria-checked", "true");
+  await expect(missing).toBeVisible();
+  await expect(got).toBeVisible();
+  await pick.getByRole("radio", { name: /Conseguidos/ }).click();
+  await expect(missing).toHaveCount(0);
+  await expect(got.getByRole("listitem")).toHaveCount(2);
+  await pick.getByRole("radio", { name: /Te faltan/ }).click();
+  await expect(got).toHaveCount(0);
+  await expect(missing.getByRole("listitem")).toHaveCount(2);
+  await pick.getByRole("radio", { name: /Todos/ }).click();
+  await expect(got).toBeVisible();
 });
