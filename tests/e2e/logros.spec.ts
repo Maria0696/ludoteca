@@ -9,6 +9,7 @@ import {
   missingSorted,
   nearlyDone,
 } from "../../src/lib/achievements";
+import { computeYear } from "../../src/lib/anuario";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Achievement, type GameAchievements, type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
@@ -397,4 +398,50 @@ test("la vista de todos ordena por lo cerca que está cada juego del 100 % y lle
   await expect(rows.nth(3)).toContainText("100 %");
   await rows.nth(0).getByRole("link").click();
   await expect(page).toHaveURL(new RegExp(`/juego/${casi.id}$`), { timeout: 20000 });
+});
+
+/** Una biblioteca de 2026 con un juego terminado y logros: Hades, completo en marzo, con uno rarísimo. */
+function yearWithAchievements() {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360, status: "completado", finishedAt: "2026-03-10" });
+  const celeste = createGame({ title: "Celeste", steamAppId: 504230 });
+  const achievements = [
+    record(hades.id, [item("a", 40, "2026-01-05T10:00:00Z"), { ...item("b", 0.8, "2026-03-01T10:00:00Z"), name: "Sin un rasguño" }]),
+    record(celeste.id, [item("a", 50, "2026-05-01T10:00:00Z"), item("b", 2)], { steamAppId: 504230 }),
+  ];
+  return { hades, celeste, lib: { ...emptyLibrary(), games: [hades, celeste], achievements, settings: { steamId: STEAM_ID } } as Library };
+}
+
+test("el Anuario guarda los logros del año: cuántos, los juegos completados y el más raro", () => {
+  const { hades, lib } = yearWithAchievements();
+  const data = computeYear(lib, 2026);
+  expect(data.achievements).toMatchObject({ count: 3, completed: [{ id: hades.id, title: "Hades" }], rarest: { title: "Hades", name: "Sin un rasguño", percent: 0.8 } });
+  expect(computeYear(lib, 2025).achievements).toBeUndefined();
+});
+
+test("el Anuario enseña la pantalla de logros del año", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-26T10:00:00"));
+  const { lib } = yearWithAchievements();
+  await seed(page, lib);
+  await openApp(page, "/anuario/2026");
+  const pausa = page.getByRole("button", { name: "Pausar" });
+  if (await pausa.count()) await pausa.click();
+  const screen = page.getByRole("region", { name: /^Pantalla \d+ de \d+$/ });
+  for (let i = 0; i < 12 && !(await screen.textContent())?.includes("logros"); i++) await page.keyboard.press("ArrowRight");
+  await expect(screen).toContainText("Este año conseguiste");
+  await expect(screen).toContainText("3");
+  await expect(screen).toContainText("Completaste al 100 %: Hades");
+  await expect(screen).toContainText("«Sin un rasguño»");
+  await expect(screen).toContainText(/0,8\s%/);
+});
+
+test("Estadísticas tiene un apartado de logros con los totales y lleva a la vista de todos", async ({ page }) => {
+  const { lib } = yearWithAchievements();
+  await seed(page, lib);
+  await openApp(page, "/estadisticas");
+  const section = page.getByRole("region", { name: "Logros" });
+  await expect(section).toContainText("3");
+  await expect(section).toContainText("Juegos al 100 %");
+  await expect(section).toContainText("Sin un rasguño");
+  await section.getByRole("link", { name: "Ver todos" }).click();
+  await expect(page).toHaveURL(/\/logros$/, { timeout: 20000 });
 });

@@ -435,3 +435,40 @@
     box-shadow: inset 0 0 0 2px var(--window);
   }
 }
+
+/* Logros: el marcador en tres y la lista de los más raros, con el % a la derecha. */
+.board.board3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.subhead {
+  font-size: var(--size-body);
+  font-weight: 400;
+  color: var(--gold);
+}
+.rare {
+  display: grid;
+}
+.rare li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 2px solid var(--line);
+}
+.rare li:first-child {
+  border-top: 0;
+}
+@media (max-width: 899px) {
+  .board.board3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .board.board3 > div {
+    padding: 8px 0;
+    border-left: 0;
+    border-top: 2px solid var(--line);
+  }
+  .board.board3 > div:first-child {
+    border-top: 0;
+  }
+}
