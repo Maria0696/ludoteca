@@ -31,6 +31,7 @@ const PALETTE: Record<string, { bg: string; ink: string; accent: string; mark: s
   perfil: { bg: "#ff9f1c", ink: "#1f0e00", accent: "#ffffff", mark: "#ffb350" },
   ludoteca: { bg: "#3d7bff", ink: "#ffffff", accent: "#ffd76a", mark: "#7fa6ff" },
   resumen: { bg: "#12101f", ink: "#f3ead2", accent: "#ffd76a", mark: "#f3ead2" },
+  logros: { bg: "#00c2a8", ink: "#021a16", accent: "#ffd76a", mark: "#3de0c8" },
 };
 
 type Screen = { key: string; label: string; body: ReactNode };
@@ -198,6 +199,36 @@ function buildScreens(data: YearWrapData, before: YearWrapData | null, summary: 
             </p>
           )}
           {data.finishedCovers.length > 0 && <Belt games={data.finishedCovers} />}
+        </>
+      ),
+    });
+  }
+  if (data.achievements) {
+    const { count: n, completed, rarest } = data.achievements;
+    screens.push({
+      key: "logros",
+      label: "Tus logros",
+      body: (
+        <>
+          <h2 className={styles.sentence}>
+            <span className={styles.line}>Este año conseguiste</span>
+            <span className={styles.giantRow}>
+              <Giant chars={String(n).length}>
+                <Score value={n} />
+              </Giant>{" "}
+              <span className={styles.unit}>{n === 1 ? "logro" : "logros"}</span>
+            </span>
+          </h2>
+          {(rarest || completed.length > 0) && (
+            <p className={styles.aside}>
+              {rarest && (
+                <span className={styles.sticker}>
+                  Tu más raro: «{rarest.name}» ({rarest.title}), {formatNumber(rarest.percent)} %
+                </span>
+              )}
+              {completed.length > 0 && <span className={styles.lead}>Completaste al 100 %: {listed(completed.map((g) => g.title))}.</span>}
+            </p>
+          )}
         </>
       ),
     });

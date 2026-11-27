@@ -13,7 +13,7 @@ export interface SteamGame {
 }
 
 export type SteamLibraryResponse =
-  | { ok: true; games: SteamGame[] }
+  | { ok: true; games: SteamGame[]; /** El perfil, en sus 17 cifras: se guarda para los logros. */ steamId: string }
   | { ok: false; reason: "no-configurado" | "no-autorizado" | "perfil" | "privado" | "vacio" | "error"; message: string };
 
 export type SteamSheetsResponse =

@@ -16,6 +16,7 @@ import { PISTAS, PISTA_PAGINA, type PistaId, marcarPista, pistasVistas } from "@
 import { runNumber } from "@/lib/runs";
 import { storyPosition } from "@/lib/sagas";
 import { useLibrary } from "@/lib/store";
+import { AchievementsPanel, hasAchievementsPanel } from "./AchievementsPanel";
 import styles from "./adventure.module.css";
 import { AdventureMap } from "./AdventureMap";
 import { Celebration } from "./Celebration";
@@ -253,6 +254,12 @@ export function GameDetail({ id }: { id: string }) {
             />
           </Foldable>
         </div>
+
+        {hasAchievementsPanel(game, copies, library.achievements.find((a) => a.gameId === game.id)?.total) && (
+          <Foldable label="Logros" labelledBy="logros">
+            <AchievementsPanel game={game} />
+          </Foldable>
+        )}
       </div>
 
       {celebrating && <Celebration title={game.title} onClose={() => setCelebrating(false)} />}

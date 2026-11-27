@@ -1,4 +1,5 @@
 import { type Copy, type Game, type Library, type Mood, PLATFORM_FAMILIES } from "./model";
+import { achievementsOfYear } from "./achievements";
 import { finishDates } from "./runs";
 
 /*
@@ -26,6 +27,11 @@ export type YearWrapData = {
   finishedCovers: WrapGame[];
   profile: { genres: string[]; family: string | null; moods: Mood[]; line: string | null };
   library: { copies: number; newGames: number; spent: number; gifts: number; free: number; undatedCopies: number };
+  /**
+   * Los logros de Steam del año: cuántos, los juegos que llegaron al 100 % y el más raro. Solo si hubo alguno; los años
+   * congelados antes de los logros no lo traen.
+   */
+  achievements?: { count: number; completed: WrapGame[]; rarest: { title: string; name: string; percent: number } | null };
 };
 
 const inYear = (date: string | null | undefined, year: number) => date != null && date.slice(0, 4) === String(year);
@@ -116,6 +122,7 @@ export function computeYear(library: Library, year: number): YearWrapData {
       moods: top(finished.flatMap((f) => f.game.moods), 2),
       line: profileLine(genres[0]),
     },
+    ...achievementsPart(library, games, year),
     library: {
       copies: ofYear.length,
       newGames: [...firstAcquired.values()].filter((d) => inYear(d, year)).length,
@@ -125,6 +132,14 @@ export function computeYear(library: Library, year: number): YearWrapData {
       undatedCopies: copies.filter((c) => !c.acquiredAt).length,
     },
   };
+}
+
+/** La parte de logros del año, solo si conseguiste alguno. */
+function achievementsPart(library: Library, games: Game[], year: number): Pick<YearWrapData, "achievements"> {
+  const y = achievementsOfYear(library.achievements ?? [], games, year);
+  if (!y.count) return {};
+  const byId = new Map(games.map((g) => [g.id, g]));
+  return { achievements: { count: y.count, completed: y.completed.map((c) => wrapGame(byId.get(c.gameId)!, c.date.slice(0, 10))), rarest: y.rarest } };
 }
 
 /** Si el año tiene algo que contar: algún terminado, empezado o copia. */

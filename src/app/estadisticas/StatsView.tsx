@@ -6,6 +6,7 @@ import { AnuarioBanner } from "@/app/anuario/AnuarioBanner";
 import { familyColor } from "@/app/biblioteca/arcade";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { achievementTotals } from "@/lib/achievements";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
 import styles from "./stats.module.css";
@@ -33,6 +34,8 @@ export function StatsView() {
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
   const hasDemo = library.games.some((g) => g.demo);
+  const titles = useMemo(() => new Map(library.games.map((g) => [g.id, g.title])), [library.games]);
+  const logros = useMemo(() => achievementTotals(library.achievements.filter((a) => titles.has(a.gameId))), [library.achievements, titles]);
 
   if (s.titles === 0) {
     return (
@@ -338,6 +341,47 @@ export function StatsView() {
           <p className={styles.note}>{s.oldest ? `El más antiguo: ${s.oldest.title} (${s.oldest.year}).` : "Ningún juego tiene fecha de salida todavía."}</p>
         </section>
       </div>
+
+      {logros.unlocked > 0 && (
+        <section className={`window ${styles.panel}`} aria-labelledby="h-logros">
+          <h2 id="h-logros">Logros</h2>
+          <dl className={`${styles.board} ${styles.board3}`}>
+            <div>
+              <dt>Logros de Steam</dt>
+              <dd className="num">{formatNumber(logros.unlocked)}</dd>
+            </div>
+            <div>
+              <dt>Juegos al 100 %</dt>
+              <dd className="num">{formatNumber(logros.complete)}</dd>
+            </div>
+            <div>
+              <dt>Completado de media</dt>
+              <dd className="num">{logros.average} %</dd>
+            </div>
+          </dl>
+          {logros.rarest.length > 0 && (
+            <>
+              <h3 className={styles.subhead}>Tus logros más raros</h3>
+              <ol className={styles.rare}>
+                {logros.rarest.map((r) => (
+                  <li key={`${r.gameId}:${r.item.api}`}>
+                    <span className={styles.gemTitle}>
+                      {r.item.name}
+                      <small>
+                        <Link href={`/juego/${r.gameId}`}>{titles.get(r.gameId)}</Link>
+                      </small>
+                    </span>
+                    <span className="num">{formatNumber(r.item.percent ?? 0)} %</span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+          <p className={styles.note}>
+            De tus juegos de Steam: la media cuenta los que tienen algún logro conseguido. <Link href="/logros">Ver todos</Link>
+          </p>
+        </section>
+      )}
 
       <section className={`window ${styles.panel}`} aria-labelledby="h-registro">
         <h2 id="h-registro">Horas y gasto</h2>

@@ -1,0 +1,122 @@
+/* Logros: título de pantalla, cuándo se miraron y una ventana con una fila por juego (carátula, barra y lo que falta). */
+.page {
+  padding: 36px var(--gutter) 0;
+  display: grid;
+  gap: 20px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.count {
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: var(--size-lead);
+}
+.status {
+  flex-basis: 100%;
+  margin-top: -8px;
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: var(--size-note);
+}
+.nowrap {
+  white-space: nowrap;
+}
+.status .lookNow {
+  width: 28px;
+  height: 28px;
+  margin: -6px 0 -6px 4px;
+  vertical-align: middle;
+  color: var(--muted);
+}
+.status .lookNow svg {
+  width: 15px;
+  height: 15px;
+}
+.alert {
+  padding: 10px 12px;
+  border: 2px solid var(--danger);
+  font-family: var(--font-term);
+  font-size: var(--size-label);
+}
+.list {
+  display: grid;
+}
+.row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1.2fr) minmax(120px, 1fr) 12em;
+  grid-template-areas: "cover title bar meta";
+  gap: 4px 20px;
+  align-items: center;
+  padding: 10px 4px;
+  border-top: 2px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-term);
+  text-decoration: none;
+}
+li:first-child > .row {
+  border-top: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--hover);
+  }
+}
+.row:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 2px;
+}
+.cover {
+  grid-area: cover;
+  width: 48px;
+  box-shadow: var(--pixel-frame-soft);
+}
+.cover :global(.cover-fallback strong),
+.cover :global(.cover-fallback span) {
+  display: none;
+}
+.title {
+  grid-area: title;
+  font-size: var(--size-body);
+  color: var(--white);
+  overflow-wrap: anywhere;
+}
+.bar {
+  grid-area: bar;
+  height: 12px;
+  background: var(--raised);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+.bar span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--gold) 0 10px, transparent 10px 12px);
+}
+.meta {
+  grid-area: meta;
+  font-size: var(--size-label);
+  color: var(--muted);
+  text-align: right;
+}
+/* Los completos, en verde: ya no les falta nada. */
+.row[data-completo] .meta {
+  color: var(--ok);
+}
+.row[data-completo] .bar span {
+  background: var(--ok);
+}
+@media (max-width: 899px) {
+  .page {
+    padding-top: 18px;
+  }
+  .row {
+    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-areas: "cover title" "cover bar" "cover meta";
+  }
+  .meta {
+    text-align: left;
+  }
+}

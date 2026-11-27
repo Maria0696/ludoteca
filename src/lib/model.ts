@@ -249,12 +249,46 @@ export const yearWrapSchema = z.object({
   updatedAt: z.string(),
 });
 
+/** Un logro de Steam de un juego: si lo tienes (y cuándo), lo raro que es y si el juego lo esconde. */
+export const achievementSchema = z.object({
+  /** Su nombre interno en Steam: no cambia, sirve para reconocerlo. */
+  api: z.string().min(1).max(200),
+  name: z.string().max(300),
+  description: z.string().max(1000).nullable(),
+  hidden: z.boolean(),
+  /** El % de jugadores que lo tienen, si Steam lo sabe. */
+  percent: z.number().min(0).max(100).nullable(),
+  /** Cuándo lo conseguiste (fecha y hora), o `null` si aún no. */
+  unlockedAt: z.string().nullable(),
+  icon: z.string().max(500).nullable(),
+});
+
+/** Los logros de Steam de un juego de la biblioteca, tal como se miraron la última vez. */
+export const gameAchievementsSchema = z.object({
+  id: z.string().min(1),
+  gameId: z.string().min(1),
+  steamAppId: z.number().int().positive(),
+  /** Cuántos tiene el juego (0: no tiene logros) y cuántos tienes. */
+  total: z.number().int().min(0),
+  unlocked: z.number().int().min(0),
+  items: z.array(achievementSchema).max(5000),
+  checkedAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+/** Ajustes que viajan con la biblioteca: de momento, el perfil de Steam (sus 17 cifras) para los logros. */
+export const settingsSchema = z.object({ steamId: z.string().regex(/^\d{17}$/).nullable() });
+
 export type Game = z.infer<typeof gameSchema>;
 export type Copy = z.infer<typeof copySchema>;
 export type PriceRecord = z.infer<typeof priceRecordSchema>;
 export type WishItem = z.infer<typeof wishSchema>;
 export type SagaExtra = z.infer<typeof sagaExtraSchema>;
 export type YearWrap = z.infer<typeof yearWrapSchema>;
+export type Achievement = z.infer<typeof achievementSchema>;
+export type GameAchievements = z.infer<typeof gameAchievementsSchema>;
+export type Settings = z.infer<typeof settingsSchema>;
 export type NewExtraInput = Omit<SagaExtra, "id" | "createdAt" | "updatedAt">;
 
 export interface Library {
@@ -265,9 +299,13 @@ export interface Library {
   extras: SagaExtra[];
   /** Los años del Anuario ya congelados. */
   wraps: YearWrap[];
+  /** Los logros de Steam de los juegos que los tienen: uno por juego. */
+  achievements: GameAchievements[];
+  settings: Settings;
 }
 
-export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [], wraps: [] });
+export const emptySettings = (): Settings => ({ steamId: null });
+export const emptyLibrary = (): Library => ({ games: [], copies: [], wishlist: [], extras: [], wraps: [], achievements: [], settings: emptySettings() });
 
 /*
  * Formato 1 de los datos guardados (hasta noviembre de 2026): «saga» era la franquicia, «series» la saga y

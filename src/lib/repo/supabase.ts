@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Copy, Game, Library, SagaExtra, WishItem, YearWrap } from "../model";
+import { type Copy, type Game, type GameAchievements, type Library, type SagaExtra, type WishItem, type YearWrap, emptySettings } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -43,9 +43,17 @@ const wrapCols: [keyof YearWrap, string][] = [
   ["id", "id"], ["year", "year"], ["data", "data"], ["frozenAt", "frozen_at"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
-/** Sin una tabla nueva (juegos de saga que no tienes, 0012; años del Anuario, 0017), la biblioteca carga igual. */
+const achievementCols: [keyof GameAchievements, string][] = [
+  ["id", "id"], ["gameId", "game_id"], ["steamAppId", "steam_app_id"], ["total", "total"], ["unlocked", "unlocked"], ["items", "items"],
+  ["checkedAt", "checked_at"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+];
+
+/**
+ * Sin una tabla nueva (juegos de saga que no tienes, 0012; años del Anuario, 0017; logros y ajustes, 0021), la
+ * biblioteca carga igual.
+ */
 const missingTable = (error: { code?: string; message?: string } | null) =>
-  Boolean(error && (error.code === "42P01" || error.code === "PGRST205" || /saga_extras|year_wraps/.test(error.message ?? "")));
+  Boolean(error && (error.code === "42P01" || error.code === "PGRST205" || /saga_extras|year_wraps|achievements|user_settings/.test(error.message ?? "")));
 
 const NUMERIC = new Set(["rating", "hours_played", "length_hours", "price_paid", "target_price"]);
 
@@ -74,22 +82,25 @@ export class SupabaseRepository implements Repository {
   constructor(private readonly db: SupabaseClient) {}
 
   async load(): Promise<Library> {
-    const [games, copies, wishlist, extras, wraps] = await Promise.all([
+    const [games, copies, wishlist, extras, wraps, achievements, settings] = await Promise.all([
       this.db.from("games").select("*"),
       this.db.from("copies").select("*"),
       this.db.from("wishlist").select("*"),
       this.db.from("saga_extras").select("*"),
       this.db.from("year_wraps").select("*"),
+      this.db.from("achievements").select("*"),
+      this.db.from("user_settings").select("*"),
     ]);
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
-    if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
-    if (wraps.error && !missingTable(wraps.error)) throw new Error(wraps.error.message);
+    for (const r of [extras, wraps, achievements, settings]) if (r.error && !missingTable(r.error)) throw new Error(r.error.message);
     return libraryFromRows({
       games: games.data ?? [],
       copies: copies.data ?? [],
       wishlist: wishlist.data ?? [],
       saga_extras: extras.error ? [] : (extras.data ?? []),
       year_wraps: wraps.error ? [] : (wraps.data ?? []),
+      achievements: achievements.error ? [] : (achievements.data ?? []),
+      user_settings: settings.error ? [] : (settings.data ?? []),
     });
   }
 
@@ -101,6 +112,8 @@ export class SupabaseRepository implements Repository {
       changes.wishlist?.length ? this.upsert("wishlist", changes.wishlist.map((w) => toRow(w, wishCols))) : null,
       changes.extras?.length ? this.upsert("saga_extras", changes.extras.map((x) => toRow(x, extraCols))) : null,
       changes.wraps?.length ? this.upsert("year_wraps", changes.wraps.map((w) => toRow(w, wrapCols)), "owner_id,year") : null,
+      changes.achievements?.length ? this.upsert("achievements", changes.achievements.map((a) => toRow(a, achievementCols)), "game_id") : null,
+      changes.settings ? this.upsert("user_settings", [{ steam_id: changes.settings.steamId, updated_at: new Date().toISOString() }], "owner_id") : null,
     ]);
   }
 
@@ -147,7 +160,15 @@ export class SupabaseRepository implements Repository {
 }
 
 /** Las filas de cada tabla, como las devuelve Supabase (también la función de las copias automáticas). */
-export type LibraryRows = { games?: Row[]; copies?: Row[]; wishlist?: Row[]; saga_extras?: Row[]; year_wraps?: Row[] };
+export type LibraryRows = {
+  games?: Row[];
+  copies?: Row[];
+  wishlist?: Row[];
+  saga_extras?: Row[];
+  year_wraps?: Row[];
+  achievements?: Row[];
+  user_settings?: Row[];
+};
 
 /** De filas de Supabase a la biblioteca de la app. Lo usan la carga normal y la copia automática. */
 export function libraryFromRows(rows: LibraryRows): Library {
@@ -158,6 +179,8 @@ export function libraryFromRows(rows: LibraryRows): Library {
     wishlist: (rows.wishlist ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
     extras: (rows.saga_extras ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),
     wraps: (rows.year_wraps ?? []).map((r) => fromRow<YearWrap>(r, wrapCols)),
+    achievements: (rows.achievements ?? []).map((r) => fromRow<GameAchievements>(r, achievementCols)),
+    settings: { ...emptySettings(), steamId: (rows.user_settings?.[0]?.steam_id as string | null | undefined) ?? null },
   };
 }
 
@@ -169,5 +192,7 @@ export function libraryToRows(library: Library): Required<LibraryRows> {
     wishlist: library.wishlist.map((w) => toRow(w, wishCols)),
     saga_extras: library.extras.map((x) => toRow(x, extraCols)),
     year_wraps: library.wraps.map((w) => toRow(w, wrapCols)),
+    achievements: library.achievements.map((a) => toRow(a, achievementCols)),
+    user_settings: [{ steam_id: library.settings.steamId }],
   };
 }
