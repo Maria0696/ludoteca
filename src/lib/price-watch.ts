@@ -122,3 +122,15 @@ export function rankEshop(title: string, candidates: EshopCandidate[]): EshopCan
     .slice(0, ESHOP_CHOICES)
     .map((x) => x.c);
 }
+
+/** Cuándo se miraron los precios, como en una conversación: «hace un momento», «hace 3 h», «ayer»… */
+export function checkedLabel(iso: string | null, now = new Date()): string {
+  if (!iso) return "aún sin mirar";
+  const then = new Date(iso);
+  const minutes = Math.max(0, Math.floor((now.getTime() - then.getTime()) / 60_000));
+  if (minutes < 1) return "hace un momento";
+  if (minutes < 60) return `hace ${minutes} min`;
+  if (minutes < 24 * 60 && then.getDate() === now.getDate()) return `hace ${Math.floor(minutes / 60)} h`;
+  const days = daysBetween(then, now);
+  return days <= 1 ? "ayer" : `hace ${days} días`;
+}

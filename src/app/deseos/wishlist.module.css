@@ -162,18 +162,17 @@
   line-height: 1.15;
   white-space: nowrap;
 }
-.spinning {
-  animation: girar 1s linear infinite;
+/* Cuándo se miraron los precios, bajo el título y a todo el ancho de la cabecera. */
+.priceStatus {
+  flex-basis: 100%;
+  margin-top: -8px;
+  color: var(--muted);
+  font-family: var(--font-term);
+  font-size: var(--size-note);
 }
-@keyframes girar {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .spinning {
-    animation: none;
-  }
+/* «hace 2 h · Mirar ahora» no se separa: en el móvil baja entero a la línea siguiente. */
+.nowrap {
+  white-space: nowrap;
 }
 /* Elegir en el eShop: una opción por fila, a lo ancho. */
 .chooserNote {
