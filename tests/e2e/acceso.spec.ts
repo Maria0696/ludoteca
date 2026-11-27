@@ -24,6 +24,19 @@ test("sin sesión, el móvil puede leer lo que necesita para instalar la app", a
   }
 });
 
+test("la copia automática solo se entrega con la clave, y nunca manda a «Entrar»", async ({ request }) => {
+  const url = "/api/copia-de-seguridad";
+  const bad: Record<string, string>[] = [{}, { Authorization: "Bearer corta" }, { Authorization: "Basic " + "x".repeat(64) }];
+  for (const headers of bad) {
+    const res = await request.post(url, { headers, maxRedirects: 0 });
+    expect(res.status(), JSON.stringify(headers)).toBe(401);
+  }
+  // Con una clave con buena pinta, la comprueba Supabase (aquí no responde): ni copia ni redirección.
+  const res = await request.post(url, { headers: { Authorization: `Bearer ${"a".repeat(64)}` }, maxRedirects: 0 });
+  expect(res.status()).toBe(502);
+  expect(await res.json()).toMatchObject({ ok: false });
+});
+
 test("sin sesión, la API del catálogo responde 401", async ({ request }) => {
   const search = await request.get("/api/catalogo?q=hades");
   expect(search.status()).toBe(401);

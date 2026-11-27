@@ -74,9 +74,16 @@ export function backupStatus(lastIso: string | null, snoozeIso: string | null, n
   return { daysSinceBackup: daysSince(lastIso, now), daysSinceSnooze: daysSince(snoozeIso, now), remindEvery: every };
 }
 
-/** Solo se avisa si hay algo propio que perder, toca según «cada cuánto» y no se ha pospuesto hace poco. */
-export function shouldRemind(status: BackupStatus, ownItems: number, every: number | null = REMIND_AFTER_DAYS): boolean {
+/** Días que puede tener la última copia automática para que el aviso de Inicio calle. */
+export const AUTO_FRESH_DAYS = 2;
+
+/**
+ * Solo se avisa si hay algo propio que perder, toca según «cada cuánto» y no se ha pospuesto hace poco. Con una copia
+ * automática reciente (`autoDays`, en la nube) no hace falta: si dejan de hacerse, vuelve a avisar.
+ */
+export function shouldRemind(status: BackupStatus, ownItems: number, every: number | null = REMIND_AFTER_DAYS, autoDays: number | null = null): boolean {
   if (ownItems === 0 || every === null) return false;
+  if (autoDays !== null && autoDays < AUTO_FRESH_DAYS) return false;
   const due = status.daysSinceBackup === null || status.daysSinceBackup >= every;
   const snoozed = status.daysSinceSnooze !== null && status.daysSinceSnooze < SNOOZE_DAYS;
   return due && !snoozed;

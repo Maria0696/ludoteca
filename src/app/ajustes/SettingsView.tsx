@@ -9,6 +9,7 @@ import { manualPageCount } from "@/app/manual/ManualView";
 import { Dialog } from "@/components/ui/Dialog";
 import { OptionRow } from "@/components/ui/OptionRow";
 import { downloadBackup } from "@/lib/backup-download";
+import { describeAutoBackup, useAutoBackupDays } from "@/lib/auto-backup";
 import { REMIND_CHOICES, REMIND_KEY, type RemindChoice, describeLastBackup, useBackupStatus } from "@/lib/backup-reminder";
 import { DEMO_ART } from "@/lib/demo-art";
 import { useLocalChoice } from "@/lib/local-choice";
@@ -49,6 +50,7 @@ export function SettingsView() {
   const router = useRouter();
   const params = useSearchParams();
   const { library, mode, actions } = useLibrary();
+  const autoDays = useAutoBackupDays(mode);
   const backup = useBackupStatus();
   const [titleMode, setTitleMode] = useLocalChoice<TitleMode>(TITLE_MODE_KEY, "diaria", TITLE_MODES);
   const [pistas, setPistas] = useLocalChoice<PistasMode>(PISTAS_MODE_KEY, "activadas", PISTAS_MODES);
@@ -152,6 +154,15 @@ export function SettingsView() {
                   Exportar copia
                 </button>
               </div>
+              {mode === "supabase" && (
+                <div className={styles.prow}>
+                  <p className={styles.name}>
+                    Copias automáticas
+                    <small>{autoDays === undefined ? "Mirando la última copia automática…" : describeAutoBackup(autoDays)}</small>
+                  </p>
+                  <p className={styles.autoNote}>Cada noche, en GitHub; se guardan 90 días.</p>
+                </div>
+              )}
               {demoCount > 0 && (
                 <label className={`check ${styles.check}`}>
                   <input type="checkbox" checked={includeDemo} onChange={(e) => setIncludeDemo(e.target.checked)} />

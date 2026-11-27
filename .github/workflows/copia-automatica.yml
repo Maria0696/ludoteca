@@ -1,0 +1,68 @@
+name: Copia automática
+
+# Cada noche guarda una copia de la biblioteca, el mismo archivo que «Exportar copia» en Ajustes, fuera de Supabase y
+# durante 90 días. Para recuperarla: pestaña Actions → «Copia automática» → la ejecución del día → «Artifacts»; se
+# descarga, se descomprime y se importa en «Copiar desde tu copia de seguridad».
+#
+# La app entrega la copia solo con la clave COPIA_CLAVE: en Supabase solo está su huella (migración 0018). Si algo
+# falla, la tarea falla y GitHub te avisa por correo.
+
+on:
+  schedule:
+    # Hacia las 4 de la madrugada en Madrid (las 5 en verano).
+    - cron: "7 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  copia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pedir la copia a la app
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 30 --retry-all-errors \
+            -X POST "$APP_URL/api/copia-de-seguridad" \
+            -H "Authorization: Bearer $COPIA_CLAVE" \
+            -o copia.json
+
+      - name: Comprobar que es una copia con juegos
+        run: |
+          node -e '
+            const c = JSON.parse(require("fs").readFileSync("copia.json", "utf8"));
+            if (c.app !== "ludoteca" || !c.data || !Array.isArray(c.data.games)) throw new Error("No es una copia de la Ludoteca.");
+            // Una copia sin juegos es más probable que sea un fallo que una biblioteca vacía: mejor avisar.
+            if (c.data.games.length === 0) throw new Error("La copia no trae ningún juego.");
+            console.log(`Copia con ${c.data.games.length} juegos, ${c.data.copies.length} copias y ${c.data.wishlist.length} deseos.`);
+          '
+          name="ludoteca-$(TZ=Europe/Madrid date +%F)"
+          mv copia.json "$name.json"
+          echo "COPIA=$name" >> "$GITHUB_ENV"
+
+      - name: Guardar la copia 90 días
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.COPIA }}
+          path: ${{ env.COPIA }}.json
+          retention-days: 90
+          if-no-files-found: error
+
+      # Para que Ajustes y el aviso de Inicio sepan que la de hoy ya está guardada.
+      - name: Apuntar la copia en Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 30 --retry-all-errors \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/copia_hecha" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"clave\": \"$COPIA_CLAVE\"}"
