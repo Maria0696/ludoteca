@@ -62,3 +62,18 @@ jobs:
           name: informe-de-pruebas-${{ matrix.parte }}
           path: test-results/
           retention-days: 7
+
+  # El resultado de todas las partes, con un nombre fijo: la regla de main («Proteger main: exigir Comprobaciones»)
+  # exige una comprobación llamada «comprobar». Sale en verde solo si todas las partes lo están, y el nombre no cambia
+  # aunque cambie el número de partes.
+  resultado:
+    name: comprobar
+    needs: comprobar
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Todas las partes en verde
+        run: |
+          echo "Resultado de las partes: ${{ needs.comprobar.result }}"
+          test "${{ needs.comprobar.result }}" = "success"
