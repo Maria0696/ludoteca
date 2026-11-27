@@ -69,8 +69,9 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
   };
 }
 
+/** «ludoteca-2026-11-27.json»: con el día de aquí (no el de UTC, que de madrugada aún es el anterior). */
 export function backupFileName(date = new Date()): string {
-  const stamp = date.toISOString().slice(0, 10);
+  const stamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   return `ludoteca-${stamp}.json`;
 }
 

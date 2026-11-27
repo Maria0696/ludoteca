@@ -1,9 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { backupFileName } from "../../src/lib/backup";
 import { backupStatus, daysBetween, describeLastBackup, shouldRemind } from "../../src/lib/backup-reminder";
 import { addGame, loadDemo, openApp } from "./helpers";
 
 const reminder = (page: import("@playwright/test").Page) =>
   page.getByRole("region", { name: "Recordatorio de copia de seguridad" });
+
+test("el archivo de la copia lleva la fecha de hoy aquí, no la de UTC", () => {
+  // Las 00:30 del 1 de enero en la hora del equipo: en Madrid, en UTC aún es 31 de diciembre.
+  expect(backupFileName(new Date(2026, 0, 1, 0, 30))).toBe("ludoteca-2026-01-01.json");
+  expect(backupFileName(new Date(2026, 10, 27, 23, 50))).toBe("ludoteca-2026-11-27.json");
+});
 
 test("cuándo toca recordar la copia de seguridad", () => {
   const now = new Date(2026, 10, 7, 12);

@@ -43,7 +43,7 @@ export function YearsView() {
   const rows = years.map((year) => {
     const frozen = library.wraps.find((w) => w.year === year) ?? null;
     const data: YearWrapData = frozen?.data ?? computeYear(library, year);
-    const status = frozen ? `Guardado el ${formatDate(frozen.frozenAt.slice(0, 10))}` : year === thisYear ? "En curso" : "Sin guardar";
+    const status = frozen ? `Guardado el ${formatDate(frozen.frozenAt)}` : year === thisYear ? "En curso" : "Sin guardar";
     return { year, data, status };
   });
   const max = METRICS.map(([, value]) => Math.max(1, ...rows.map((r) => value(r.data))));

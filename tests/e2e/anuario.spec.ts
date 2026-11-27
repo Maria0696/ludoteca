@@ -412,3 +412,12 @@ test("las cifras grandes suben como una puntuación hasta su número", async ({ 
   expect(await big.getAttribute("data-cifra")).toBe("2");
 });
 
+test("«Guardado el» dice el día de Madrid, aunque en UTC aún sea el día anterior", async ({ page }) => {
+  // Las 00:30 del 1 de enero en Madrid (en UTC, aún 31 de diciembre): al abrir la app, 2025 se guarda solo.
+  await page.clock.setFixedTime(new Date("2025-12-31T23:30:00Z"));
+  await seedDemo(page);
+  await seedGames(page, { Celeste: { finishedAt: "2025-03-01" } });
+  await openApp(page, "/anuario");
+  const years = page.getByRole("region", { name: "Tus años" });
+  await expect(years.getByRole("link", { name: /^2025/ })).toContainText("Guardado el 1 ene 2026");
+});
