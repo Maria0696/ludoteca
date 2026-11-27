@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { describeAutoBackup } from "../../src/lib/auto-backup";
 import { createBackup, parseBackup } from "../../src/lib/backup";
-import { backupStatus, shouldRemind } from "../../src/lib/backup-reminder";
+import { backupStatus, reminderText, shouldRemind } from "../../src/lib/backup-reminder";
 import { createDemoLibrary } from "../../src/lib/demo";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
 
@@ -24,15 +24,33 @@ test("la copia automática sale de las filas de Supabase con el mismo formato qu
   expect(parsed.backup.data.games).toHaveLength(library.games.length);
 });
 
-test("con una copia automática de hace menos de 2 días, Inicio no recuerda exportar", () => {
+test("en la nube, Inicio solo avisa si las copias automáticas se paran (no por la copia manual ni por «cada cuánto»)", () => {
   const now = new Date("2026-11-27T12:00:00");
-  // Sin copia manual nunca: tocaría avisar.
-  const status = backupStatus(null, null, now, 30);
-  expect(shouldRemind(status, 10, 30)).toBe(true);
-  expect(shouldRemind(status, 10, 30, 0)).toBe(false);
-  expect(shouldRemind(status, 10, 30, 1)).toBe(false);
-  // Si las automáticas se paran, vuelve a avisar.
-  expect(shouldRemind(status, 10, 30, 2)).toBe(true);
+  const never = backupStatus(null, null, now, 30);
+  const recentManual = backupStatus("2026-11-26T10:00:00", null, now, 30);
+  // En local, como siempre: según la copia manual.
+  expect(shouldRemind(never, 10, 30)).toBe(true);
+  expect(shouldRemind(recentManual, 10, 30)).toBe(false);
+  // En la nube, con la automática al día, nada; aunque nunca se haya exportado a mano.
+  expect(shouldRemind(never, 10, 30, { autoDays: 0 })).toBe(false);
+  expect(shouldRemind(never, 10, 30, { autoDays: 1 })).toBe(false);
+  // Si se paran, avisa; aunque la copia manual sea de ayer y aunque se haya elegido «nunca».
+  expect(shouldRemind(recentManual, 10, 30, { autoDays: 2 })).toBe(true);
+  expect(shouldRemind(recentManual, 10, null, { autoDays: 3 })).toBe(true);
+  expect(shouldRemind(never, 10, 30, { autoDays: null })).toBe(true);
+  // «Ahora no» lo esconde igual, y sin nada propio no hay nada que perder.
+  expect(shouldRemind(backupStatus(null, "2026-11-25T10:00:00", now, 30), 10, 30, { autoDays: 5 })).toBe(false);
+  expect(shouldRemind(never, 0, 30, { autoDays: 5 })).toBe(false);
+});
+
+test("el aviso de Inicio dice lo que pasa: en la nube, que las automáticas se pararon", () => {
+  expect(reminderText({ autoDays: 3 }, null)).toEqual({
+    headline: "Las copias automáticas se pararon hace 3 días.",
+    detail: "Mira el correo de GitHub o exporta una copia ahora.",
+  });
+  expect(reminderText({ autoDays: null }, null).headline).toBe("Aún no se ha hecho ninguna copia automática.");
+  expect(reminderText(undefined, 40).headline).toBe("Tu última copia es de hace 40 días.");
+  expect(reminderText(undefined, null).headline).toBe("Aún no has guardado ninguna copia de tu biblioteca.");
 });
 
 test("Ajustes dice cuándo fue la última copia automática", () => {
