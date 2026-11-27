@@ -1,4 +1,3 @@
-import { daysBetween } from "./backup-reminder";
 import { type PriceRecord, type WishItem, normalizeTitle } from "./model";
 
 /*
@@ -23,6 +22,12 @@ export const ESHOP_SYSTEMS: Record<string, string[]> = {
 };
 /** Si un deseo de esta plataforma se puede vigilar en el eShop. */
 export const isEshopPlatform = (platform: string | null | undefined): platform is string => platform != null && platform in ESHOP_SYSTEMS;
+
+/** Días naturales entre dos fechas (según la hora local). Aquí y no importado: este módulo lo usan también las rutas. */
+function daysBetween(from: Date, to: Date): number {
+  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86_400_000;
+  return Math.max(0, Math.round(day(to) - day(from)));
+}
 
 /** Días que vale un precio de Steam sin fecha de fin: pasado eso, la oferta puede haber acabado. */
 const STEAM_FRESH_DAYS = 2;
@@ -81,4 +86,39 @@ export function offerAlerts(wishlist: WishItem[], now: Date): { wish: WishItem; 
     if (!offer || (wish.targetPrice != null && offer.amount > wish.targetPrice)) return [];
     return [{ wish, offer }];
   });
+}
+
+/** «hasta el domingo 29» si acaba esta semana; si no, «hasta el 12 de diciembre». En hora de Madrid. */
+export function untilLabel(until: string, now = new Date()): string {
+  const date = new Date(until);
+  const part = (opts: Intl.DateTimeFormatOptions) => date.toLocaleDateString("es-ES", { ...opts, timeZone: "Europe/Madrid" });
+  const days = (date.getTime() - now.getTime()) / 86_400_000;
+  return days < 6 ? `hasta el ${part({ weekday: "long" })} ${part({ day: "numeric" })}` : `hasta el ${part({ day: "numeric", month: "long" })}`;
+}
+
+/** La tienda dicha en una frase: «en el eShop», «en Steam». */
+export const storeIn = (store: string) => (store === ESHOP ? "en el eShop" : `en ${store}`);
+
+/** Cuántas opciones del eShop enseñar para elegir. */
+const ESHOP_CHOICES = 8;
+
+/**
+ * Las opciones del eShop para elegir, de más a menos parecidas: primero las del mismo título y luego las que tienen más
+ * palabras del deseo (el catálogo devuelve también juegos parecidos que no son). Como mucho, 8.
+ */
+export function rankEshop(title: string, candidates: EshopCandidate[]): EshopCandidate[] {
+  const want = normalizeTitle(title);
+  const words = want.split(" ").filter(Boolean);
+  const score = (c: EshopCandidate) => {
+    const t = normalizeTitle(c.title);
+    if (t === want) return 0;
+    const has = new Set(t.split(" "));
+    // 1 si están todas las palabras; más cuantas más falten.
+    return 1 + words.filter((w) => !has.has(w)).length / Math.max(1, words.length);
+  };
+  return candidates
+    .map((c, i) => ({ c, i, s: score(c) }))
+    .sort((a, b) => a.s - b.s || a.i - b.i)
+    .slice(0, ESHOP_CHOICES)
+    .map((x) => x.c);
 }

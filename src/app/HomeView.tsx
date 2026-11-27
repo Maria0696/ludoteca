@@ -1,6 +1,6 @@
 "use client";
 
-import { BookMarked, HardDrive, X } from "lucide-react";
+import { BookMarked, HardDrive, Tag, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
@@ -9,7 +9,9 @@ import { MainMenu } from "@/components/home/MainMenu";
 import { CHEST_CLOSED_URL } from "@/components/pixel/sprites";
 import { computeYear, hasActivity } from "@/lib/anuario";
 import { buildEntries } from "@/lib/filters";
+import { formatMoney } from "@/lib/format";
 import type { Library } from "@/lib/model";
+import { offerAlerts, storeIn, untilLabel } from "@/lib/price-watch";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
 import styles from "./home.module.css";
@@ -53,6 +55,30 @@ function AnuarioNotice({ library }: { library: Library }) {
         <Link href={`/anuario/${year}`}>Ya puedes ver tu {year}</Link>: tu año de juego, en el Anuario.
       </span>
     </p>
+  );
+}
+
+/** Ofertas en la lista de deseos (eShop y Steam): las que están por debajo de su objetivo, o en oferta si no lo tienen. */
+function OffersNotice({ library }: { library: Library }) {
+  const now = new Date();
+  const alerts = offerAlerts(library.wishlist, now);
+  if (!alerts.length) return null;
+  const shown = alerts.slice(0, 3);
+  return (
+    <section className={`notice ${styles.localNotice} ${styles.offers}`} aria-label="Ofertas en tu lista de deseos">
+      <Tag aria-hidden />
+      <div>
+        <ul>
+          {shown.map(({ wish, offer }) => (
+            <li key={wish.id}>
+              {`${wish.title}: ${formatMoney(offer.amount)} ${storeIn(offer.store)} (−${offer.percent} %)${offer.until ? `, ${untilLabel(offer.until, now)}` : ""}`}
+            </li>
+          ))}
+        </ul>
+        {alerts.length > shown.length && <p>Y {alerts.length - shown.length} más.</p>}
+        <Link href="/deseos">Ver deseos</Link>
+      </div>
+    </section>
   );
 }
 
@@ -163,6 +189,7 @@ export function HomeView() {
         notices={
           <>
             <AnuarioNotice library={library} />
+            <OffersNotice library={library} />
             {/* Un solo aviso a la vez: si toca la copia, ese ya dice que todo está en este navegador. */}
             <BackupReminder library={library} local={mode === "local"} />
             {mode === "local" && !noticeClosed && !reminding && localNotice(styles.localNotice, closeNotice)}

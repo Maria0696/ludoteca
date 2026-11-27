@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
+import { PriceWatch } from "@/lib/price-sync";
 import { LibraryProvider } from "@/lib/store";
 import { AddGameProvider } from "../game/AddGameProvider";
 import { BottomNav } from "./BottomNav";
@@ -43,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <LibraryProvider>
       <AddGameProvider>
         <Shortcuts />
+        <PriceWatch />
         <a href="#contenido" className={styles.skip}>
           Saltar al contenido
         </a>

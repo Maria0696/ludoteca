@@ -32,6 +32,9 @@ const tituloVisto = {
         { name: "ludoteca:titulo-visto", value: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid" }).format(new Date()) },
         // Las pistas de la guardiana, ya vistas: cada prueba que las quiera las borra.
         { name: "ludoteca:pistas-vistas", value: JSON.stringify(["mapa", "moneda", "datos", "quejuego", "steam"]) },
+        // Los precios de los deseos, recién mirados: así ninguna prueba pregunta sola al eShop ni a Steam. Las de
+        // ofertas.spec lo borran.
+        { name: "ludoteca:precios-mirados", value: JSON.stringify(new Date().toISOString()) },
       ],
     },
   ],
