@@ -23,6 +23,18 @@ export function pushStatusFrom(env: PushEnv): PushStatus {
   return env.subscribed && env.permission === "granted" ? "on" : "off";
 }
 
+/** Lo que dice la campana de Deseos: si están activados y, si en este dispositivo no se puede, por qué. */
+export function bellState(status: PushStatus): { pressed: boolean; label: string; hint: string | null } {
+  const hint: Record<PushStatus, string | null> = {
+    on: null,
+    off: null,
+    "ios-browser": "Para recibir avisos de ofertas, abre la app desde su icono en la pantalla de inicio.",
+    denied: "Los avisos están bloqueados: permite las notificaciones de la Ludoteca en los ajustes del navegador o del móvil.",
+    unsupported: "Este navegador no puede recibir avisos de ofertas.",
+  };
+  return { pressed: status === "on", label: status === "on" ? "Avisos: sí" : "Avisos: no", hint: hint[status] };
+}
+
 function readEnv(subscribed: boolean): PushEnv {
   const nav = navigator as Navigator & { standalone?: boolean };
   return {

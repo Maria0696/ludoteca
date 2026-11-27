@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { PriceRecord, WishItem } from "../../src/lib/model";
 import { isGoneStatus, notificationFor, planAlerts } from "../../src/lib/offer-push";
 import { ESHOP, STEAM } from "../../src/lib/price-watch";
-import { pushStatusFrom } from "../../src/lib/push-client";
+import { bellState, pushStatusFrom } from "../../src/lib/push-client";
 import { openApp, seedDemo } from "./helpers";
 
 /* Notificaciones de ofertas: la tarea de GitHub mira los precios dos veces al día y avisa al móvil. */
@@ -150,9 +150,26 @@ test("en el iPhone, fuera de la app instalada, se pide abrirla desde su icono", 
   expect(pushStatusFrom(env)).toBe("off");
 });
 
-test("en modo local, Deseos no ofrece avisos", async ({ page }) => {
+test("la campana de Deseos dice si los avisos están activados y, si no se puede, por qué", () => {
+  expect(bellState("off")).toEqual({ pressed: false, label: "Avisos: no", hint: null });
+  expect(bellState("on")).toEqual({ pressed: true, label: "Avisos: sí", hint: null });
+  expect(bellState("ios-browser")).toEqual({
+    pressed: false,
+    label: "Avisos: no",
+    hint: "Para recibir avisos de ofertas, abre la app desde su icono en la pantalla de inicio.",
+  });
+  expect(bellState("denied").hint).toBe("Los avisos están bloqueados: permite las notificaciones de la Ludoteca en los ajustes del navegador o del móvil.");
+  expect(bellState("unsupported").hint).toBe("Este navegador no puede recibir avisos de ofertas.");
+});
+
+test("en modo local, Deseos no ofrece avisos, y los precios se miran con un botón de icono", async ({ page }) => {
   await seedDemo(page);
   await openApp(page, "/deseos");
   await expect(page.getByText("Precios del eShop y Steam")).toBeVisible();
   await expect(page.getByText("Avisos de ofertas")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Avisos/ })).toHaveCount(0);
+  // Sin enlaces subrayados en la cabecera: «Mirar ahora» es un botón callado con su icono.
+  const look = page.getByRole("button", { name: "Mirar ahora" });
+  await expect(look).toHaveClass(/(^|\s)btn(\s|$)/);
+  await expect(page.locator("header .link-btn")).toHaveCount(0);
 });
