@@ -1,4 +1,4 @@
-import { type Game, type Library, type SagaExtra, type YearWrap, emptyLibrary, upgradeExtraV1, upgradeGameV1 } from "../model";
+import { type Game, type GameAchievements, type Library, type SagaExtra, type YearWrap, emptyLibrary, emptySettings, upgradeExtraV1, upgradeGameV1 } from "../model";
 import type { Changes, Repository } from "./types";
 
 /*
@@ -52,6 +52,14 @@ function upsertYears(list: YearWrap[], items: YearWrap[] | undefined): YearWrap[
   return [...byYear.values()];
 }
 
+/** Los logros, uno por juego: los que llegan sustituyen a los de ese juego. */
+function upsertByGame(list: GameAchievements[], items: GameAchievements[] | undefined): GameAchievements[] {
+  if (!items?.length) return list;
+  const byGame = new Map(list.map((a) => [a.gameId, a]));
+  for (const a of items) byGame.set(a.gameId, a);
+  return [...byGame.values()];
+}
+
 function upsert<T extends { id: string }>(list: T[], items: T[] | undefined): T[] {
   if (!items?.length) return list;
   const byId = new Map(list.map((i) => [i.id, i]));
@@ -80,7 +88,16 @@ export class LocalRepository implements Repository {
       .map((g) => (old ? upgradeGameV1(g) : g) as Game)
       .map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null }));
     const extras = (stored?.extras ?? []).map((x) => (old ? upgradeExtraV1(x) : x) as SagaExtra);
-    this.data = { games, copies: stored?.copies ?? [], wishlist: stored?.wishlist ?? [], extras, wraps: stored?.wraps ?? [] };
+    // Lo guardado antes de los logros de Steam no los trae: sin logros y sin perfil.
+    this.data = {
+      games,
+      copies: stored?.copies ?? [],
+      wishlist: stored?.wishlist ?? [],
+      extras,
+      wraps: stored?.wraps ?? [],
+      achievements: stored?.achievements ?? [],
+      settings: stored?.settings ?? emptySettings(),
+    };
     return structuredClone(this.data);
   }
 
@@ -100,6 +117,8 @@ export class LocalRepository implements Repository {
       wishlist: upsert(d.wishlist, changes.wishlist),
       extras: upsert(d.extras, changes.extras),
       wraps: upsertYears(d.wraps, changes.wraps),
+      achievements: upsertByGame(d.achievements, changes.achievements),
+      settings: changes.settings ?? d.settings,
     }));
   }
 
@@ -108,6 +127,7 @@ export class LocalRepository implements Repository {
       ...d,
       games: d.games.filter((g) => g.id !== id),
       copies: d.copies.filter((c) => c.gameId !== id),
+      achievements: d.achievements.filter((a) => a.gameId !== id),
     }));
   }
 
@@ -124,7 +144,7 @@ export class LocalRepository implements Repository {
   }
 
   deleteAllGames() {
-    return this.commit((d) => ({ ...d, games: [], copies: [], extras: [] }));
+    return this.commit((d) => ({ ...d, games: [], copies: [], extras: [], achievements: [] }));
   }
 
   deleteDemo() {
@@ -136,6 +156,8 @@ export class LocalRepository implements Repository {
         wishlist: d.wishlist.filter((w) => !w.demo),
         extras: d.extras.filter((x) => !x.demo),
         wraps: d.wraps,
+        achievements: d.achievements.filter((a) => !demoGames.has(a.gameId)),
+        settings: d.settings,
       };
     });
   }

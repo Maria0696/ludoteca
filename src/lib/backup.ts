@@ -2,12 +2,17 @@ import { z } from "zod";
 import {
   type Copy,
   type Game,
+  type GameAchievements,
   type Library,
+  type Settings,
   type SagaExtra,
   type WishItem,
   type YearWrap,
   copySchema,
+  emptySettings,
+  gameAchievementsSchema,
   gameSchema,
+  settingsSchema,
   sagaExtraSchema,
   newId,
   upgradeExtraV1,
@@ -45,6 +50,9 @@ const backupSchema = z.object({
     extras: z.array(sagaExtraSchema).default([]),
     /** Años del Anuario congelados; las copias de antes no los traen. */
     wraps: z.array(yearWrapSchema).default([]),
+    /** Logros de Steam de los juegos y el perfil para mirarlos; las copias de antes no los traen. */
+    achievements: z.array(gameAchievementsSchema).default([]),
+    settings: settingsSchema.default(emptySettings),
     /** Las copias de cuando había «Mis listas» las traen: se aceptan y no se importan. */
     lists: z.array(z.unknown()).optional(),
   }),
@@ -65,6 +73,8 @@ export function createBackup(library: Library, options: { includeDemo?: boolean 
       wishlist: keep(library.wishlist),
       extras: keep(library.extras),
       wraps: library.wraps,
+      achievements: library.achievements,
+      settings: library.settings,
     },
   };
 }
@@ -148,6 +158,8 @@ export interface ImportPlan {
   newExtras: SagaExtra[];
   /** Años del Anuario que no tienes: entran sin preguntar (si ya tienes ese año, se queda el tuyo). */
   newWraps: YearWrap[];
+  /** El perfil de Steam del archivo, si tú aún no tienes uno (si ya lo tienes, se queda el tuyo). */
+  newSettings: Settings | null;
 }
 
 export function planImport(current: Library, backup: Backup): ImportPlan {
@@ -192,7 +204,9 @@ export function planImport(current: Library, backup: Backup): ImportPlan {
   const wrapYears = new Set(current.wraps.map((w) => w.year));
   const newWraps = backup.data.wraps.filter((w) => !wrapYears.has(w.year));
 
-  return { backup, conflicts, identical, newCounts, newExtras, newWraps };
+  const newSettings = !current.settings.steamId && backup.data.settings.steamId ? backup.data.settings : null;
+
+  return { backup, conflicts, identical, newCounts, newExtras, newWraps, newSettings };
 }
 
 function conflict(
@@ -212,11 +226,22 @@ export interface ImportChanges {
   wishlist: WishItem[];
   extras: SagaExtra[];
   wraps: YearWrap[];
+  /** Los logros de los juegos que se importan (con el id con que quedan guardados). */
+  achievements: GameAchievements[];
+  settings?: Settings;
 }
 
 /** Calcula qué hay que guardar según las decisiones tomadas. Sin decisión, se mantiene lo tuyo. */
 export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolution>): ImportChanges {
-  const out: ImportChanges = { games: [], copies: [], wishlist: [], extras: plan.newExtras, wraps: plan.newWraps };
+  const out: ImportChanges = {
+    games: [],
+    copies: [],
+    wishlist: [],
+    extras: plan.newExtras,
+    wraps: plan.newWraps,
+    achievements: [],
+    ...(plan.newSettings ? { settings: plan.newSettings } : {}),
+  };
   const byKey = new Map(plan.conflicts.map((c) => [c.key, c]));
   const decide = (kind: Conflict["kind"], id: string) => {
     const c = byKey.get(`${kind}:${id}`);
@@ -248,6 +273,12 @@ export function resolveImport(plan: ImportPlan, decisions: Record<string, Resolu
     if (!target) continue;
     const renamed = target !== c.gameId;
     out.copies.push(renamed ? { ...c, id: newId(), gameId: target, updatedAt: stamp } : c);
+  }
+
+  for (const a of plan.backup.data.achievements) {
+    const target = gameIdMap.get(a.gameId);
+    if (!target) continue;
+    out.achievements.push(target === a.gameId ? a : { ...a, id: newId(), gameId: target, updatedAt: stamp });
   }
 
   for (const w of plan.backup.data.wishlist) {

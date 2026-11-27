@@ -1,4 +1,4 @@
-import type { Copy, Game, Library, SagaExtra, WishItem, YearWrap } from "../model";
+import type { Copy, Game, GameAchievements, Library, SagaExtra, Settings, WishItem, YearWrap } from "../model";
 
 export type StorageMode = "local" | "supabase";
 
@@ -9,6 +9,10 @@ export interface Changes {
   extras?: SagaExtra[];
   /** Años del Anuario congelados: uno por año (si ya está, se sustituye). */
   wraps?: YearWrap[];
+  /** Logros de Steam: uno por juego (si ya está, se sustituye). */
+  achievements?: GameAchievements[];
+  /** Si viene, sustituye los ajustes (el perfil de Steam). */
+  settings?: Settings;
 }
 
 /**

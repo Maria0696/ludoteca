@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import {
   type SteamPlayerAchievement,
   type SteamSchemaAchievement,
@@ -9,7 +9,10 @@ import {
   missingSorted,
   nearlyDone,
 } from "../../src/lib/achievements";
-import { type Achievement, type GameAchievements, createGame } from "../../src/lib/model";
+import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
+import { type Achievement, type GameAchievements, type Library, createGame, emptyLibrary } from "../../src/lib/model";
+import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
+import { openApp } from "./helpers";
 
 /* Logros de Steam: la ficha, la vista de todos, el Anuario y Estadísticas. */
 
@@ -109,4 +112,80 @@ test("los totales: conseguidos, juegos al 100 %, la media de los empezados y los
   // (100 + 50 + 100) / 3: el que no tiene ninguno no cuenta.
   expect(t.average).toBe(83);
   expect(t.rarest.map((r) => r.item.percent)).toEqual([0.1, 0.5, 1, 2, 3]);
+});
+
+const STEAM_ID = "76561197960287930";
+
+test("los logros y el perfil de Steam se guardan en las copias y en la nube; las copias de antes se leen sin ellos", () => {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  const lib: Library = { ...emptyLibrary(), games: [hades], achievements: [record(hades.id, [item("a", 5, stamp), item("b", 0.8)])], settings: { steamId: STEAM_ID } };
+  const parsed = parseBackup(JSON.stringify(createBackup(lib)));
+  if (!parsed.ok) throw new Error(parsed.errors.join(", "));
+  expect(parsed.backup.data.achievements).toEqual(lib.achievements);
+  expect(parsed.backup.data.settings).toEqual({ steamId: STEAM_ID });
+  const back = libraryFromRows(libraryToRows(lib));
+  expect(back.achievements).toEqual(lib.achievements);
+  expect(back.settings).toEqual({ steamId: STEAM_ID });
+
+  // Una copia de antes, sin logros ni ajustes.
+  const old = createBackup(lib) as unknown as { data: Record<string, unknown> };
+  delete old.data.achievements;
+  delete old.data.settings;
+  const parsedOld = parseBackup(JSON.stringify(old));
+  if (!parsedOld.ok) throw new Error(parsedOld.errors.join(", "));
+  expect(parsedOld.backup.data.achievements).toEqual([]);
+  expect(parsedOld.backup.data.settings).toEqual({ steamId: null });
+  expect(libraryFromRows({ games: [] }).settings).toEqual({ steamId: null });
+
+  // Al importarla en una biblioteca vacía, entran los logros de sus juegos y el perfil.
+  const changes = resolveImport(planImport(emptyLibrary(), parsed.backup), {});
+  expect(changes.achievements).toEqual(lib.achievements);
+  expect(changes.settings).toEqual({ steamId: STEAM_ID });
+  // Si ya tienes perfil, se queda el tuyo; y los logros de un juego que no se importa no entran.
+  const mine = { ...emptyLibrary(), games: [{ ...hades, updatedAt: "otra" }], settings: { steamId: "76561197960287931" } };
+  const kept = resolveImport(planImport(mine, parsed.backup), {});
+  expect(kept.settings).toBeUndefined();
+  expect(kept.achievements).toEqual([]);
+});
+
+/** Una biblioteca escrita directamente en el navegador, sin abrir la app. */
+async function seed(page: Page, lib: Library) {
+  await page.goto("/offline.html");
+  await page.evaluate(
+    (value) =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onupgradeneeded = () => open.result.createObjectStore("library");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const tx = open.result.transaction("library", "readwrite");
+          tx.objectStore("library").put(value, "data");
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    { ...lib, format: 2 },
+  );
+}
+
+const stored = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise<Library>((resolve) => {
+        const open = indexedDB.open("ludoteca", 1);
+        open.onsuccess = () => {
+          const req = open.result.transaction("library", "readonly").objectStore("library").get("data");
+          req.onsuccess = () => resolve(req.result);
+        };
+      }),
+  );
+
+test("al eliminar un juego se van también sus logros", async ({ page }) => {
+  const inside = createGame({ title: "Inside", steamAppId: 304430 });
+  const tunic = createGame({ title: "Tunic", steamAppId: 553420 });
+  await seed(page, { ...emptyLibrary(), games: [inside, tunic], achievements: [record(inside.id, [item("a", 5, stamp)]), record(tunic.id, [item("a", 5)])] });
+  await openApp(page, `/juego/${inside.id}`);
+  await page.getByRole("button", { name: "Eliminar «Inside»" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Eliminar juego" }).click();
+  await expect.poll(async () => (await stored(page)).achievements.map((a) => a.gameId)).toEqual([tunic.id]);
 });

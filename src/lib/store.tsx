@@ -12,6 +12,7 @@ import {
   type NewCopyInput,
   type NewGameInput,
   type NewExtraInput,
+  type GameAchievements,
   type SagaExtra,
   type WishItem,
   type YearWrap,
@@ -74,6 +75,10 @@ interface Actions {
   restoreExtras(extras: SagaExtra[]): void;
   /** Congela un año del Anuario: lo calcula ahora y lo guarda (si ya estaba, lo sustituye). */
   freezeYear(year: number): YearWrap;
+  /** Guarda los logros de Steam mirados: uno por juego (sustituye a los que hubiera de ese juego). */
+  saveAchievements(items: GameAchievements[]): void;
+  /** El perfil de Steam para los logros (sus 17 cifras), o `null` para quitarlo. */
+  setSteamId(steamId: string | null): void;
   /** Pasa un deseo a la biblioteca: crea (o reutiliza) el juego y añade la copia. */
   convertWish(id: string, copy: NewCopyInput, existingGameId?: string): Game;
   applyChanges(changes: Changes): Promise<void>;
@@ -414,10 +419,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         const game = before.games.find((g) => g.id === id);
         if (!game) return;
         const copies = before.copies.filter((c) => c.gameId === id);
+        const achievements = before.achievements.filter((a) => a.gameId === id);
         commit({
           ...before,
           games: before.games.filter((g) => g.id !== id),
           copies: before.copies.filter((c) => c.gameId !== id),
+          achievements: before.achievements.filter((a) => a.gameId !== id),
         });
         void persist((r) => r.deleteGame(id));
         toast(`«${game.title}» eliminado de la biblioteca`, {
@@ -426,8 +433,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
             label: "Deshacer",
             onClick: () => {
               const now = libRef.current;
-              commit({ ...now, games: [...now.games, game], copies: [...now.copies, ...copies] });
-              void persist((r) => r.save({ games: [game], copies }));
+              commit({ ...now, games: [...now.games, game], copies: [...now.copies, ...copies], achievements: [...now.achievements, ...achievements] });
+              void persist((r) => r.save({ games: [game], copies, achievements }));
             },
           },
         });
@@ -490,6 +497,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         toast(`«${wish.title}» quitado de la lista de deseos`, {
           action: { label: "Deshacer", onClick: () => void saveWish(wish) },
         });
+      },
+
+      saveAchievements(items) {
+        if (!items.length) return;
+        const now = libRef.current;
+        const games = new Set(items.map((a) => a.gameId));
+        commit({ ...now, achievements: [...now.achievements.filter((a) => !games.has(a.gameId)), ...items] });
+        void persist((r) => r.save({ achievements: items }));
+      },
+
+      setSteamId(steamId) {
+        const settings = { ...libRef.current.settings, steamId };
+        commit({ ...libRef.current, settings });
+        void persist((r) => r.save({ settings }));
       },
 
       freezeYear(year) {
@@ -672,7 +693,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       async loadDemo() {
         const repo = repoRef.current;
         if (!repo) return;
-        await repo.save(createDemoLibrary());
+        // La demostración no trae logros ni perfil: no pisa los tuyos.
+        const { games, copies, wishlist, extras, wraps } = createDemoLibrary();
+        await repo.save({ games, copies, wishlist, extras, wraps });
         commit(await repo.load());
       },
 
