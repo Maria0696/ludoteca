@@ -424,7 +424,7 @@ export function YearStory({ year }: { year: number }) {
               </div>
             ))}
           </dl>
-          <p className={styles.status}>{frozen ? `Guardado el ${formatDate(frozen.frozenAt.slice(0, 10))}` : current ? "En curso" : "Sin guardar"}</p>
+          <p className={styles.status}>{frozen ? `Guardado el ${formatDate(frozen.frozenAt)}` : current ? "En curso" : "Sin guardar"}</p>
         </div>
       </div>
       <div className={styles.actions}>
