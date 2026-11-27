@@ -57,8 +57,13 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
       const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
-      if (open) return open.navigate(url).then((w) => (w || open).focus());
-      return self.clients.openWindow(url);
+      if (!open) return self.clients.openWindow(url);
+      // Primero se trae la app delante; luego, a Deseos. Si la ventana no admite cambiar de página (no la controla
+      // este service worker), al menos queda abierta donde estaba.
+      return open
+        .focus()
+        .then((w) => (w || open).navigate(url))
+        .catch(() => undefined);
     }),
   );
 });
