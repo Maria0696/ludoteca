@@ -25,7 +25,7 @@ export const TEST_PAYLOAD: PushPayload = {
 };
 
 /** El último precio apuntado de una tienda (por fecha; con la misma fecha, el que se apuntó después). */
-function lastOf(prices: PriceRecord[], store: string): PriceRecord | undefined {
+function lastOf(prices: PriceRecord[], store: PriceRecord["store"]): PriceRecord | undefined {
   let last: PriceRecord | undefined;
   for (const p of prices) if (p.store === store && (!last || p.date >= last.date)) last = p;
   return last;
@@ -79,7 +79,7 @@ export function notificationFor(items: AlertItem[], now: Date): PushPayload | nu
     body += ` · −${Math.round((1 - record.amount / record.regular) * 100)} %`;
     if (record.until) body += `, ${untilLabel(record.until, now)}`;
   }
-  return { title: `${wish.title}: ${formatMoney(record.amount)} ${storeIn(record.store)}`, body, url: URL };
+  return { title: `${wish.title}: ${formatMoney(record.amount)}${record.store ? ` ${storeIn(record.store)}` : ""}`, body, url: URL };
 }
 
 /** Si el servicio de notificaciones dice que la suscripción ya no existe (se desinstaló la app, se quitó el permiso). */

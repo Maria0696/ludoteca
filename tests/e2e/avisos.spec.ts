@@ -128,3 +128,11 @@ test("una suscripción caducada se quita; con otros errores, no", () => {
   expect(isGoneStatus(410)).toBe(true);
   for (const s of [500, 429, 0]) expect(isGoneStatus(s)).toBe(false);
 });
+
+test("en modo local no hay avisos que mandar", async ({ request }) => {
+  for (const url of ["/api/avisos-ofertas", "/api/avisos-ofertas/prueba"]) {
+    const res = await request.post(url, { headers: { Authorization: `Bearer ${"a".repeat(64)}` }, data: { endpoint: "https://example.com/x" } });
+    expect(res.status(), url).toBe(404);
+    expect(await res.json()).toMatchObject({ ok: false });
+  }
+});
