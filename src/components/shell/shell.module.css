@@ -100,6 +100,37 @@
   height: 14px;
   flex: none;
 }
+/* «Guardando…»: como el chip de modo, solo cuando un guardado tarda más de 1 s. */
+.saving {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  margin-right: 4px;
+  background: var(--raised);
+  color: var(--paper);
+  font-family: var(--font-term);
+  font-size: var(--size-note);
+  white-space: nowrap;
+}
+.saving svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  animation: girar 1s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .saving svg {
+    animation: none;
+  }
+}
 /* El matraz solo sale cuando el chip se queda en iconos. */
 .chipCompact {
   display: none;
@@ -303,6 +334,15 @@
 @media (max-width: 1400px) {
   .chipText {
     display: none;
+  }
+  /* Con poco sitio, solo el icono; el texto se sigue anunciando a los lectores de pantalla. */
+  .savingText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .chipCompact {
     display: block;
