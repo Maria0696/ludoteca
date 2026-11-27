@@ -8,12 +8,13 @@ import {
   mergeAchievements,
   missingSorted,
   nearlyDone,
+  rarityTier,
 } from "../../src/lib/achievements";
 import { computeYear } from "../../src/lib/anuario";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Achievement, type GameAchievements, type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
-import { gamesVisible, parsePercents, parsePlayer, parseSchema } from "../../src/lib/steam-achievements";
+import { gamesVisible, parsePercents, parsePlayer, parseSchema, parseSummary } from "../../src/lib/steam-achievements";
 import { openAjustes, openApp } from "./helpers";
 
 /* Logros de Steam: la ficha, la vista de todos, el Anuario y Estadísticas. */
@@ -219,6 +220,24 @@ test("se leen bien las respuestas de Steam: los tuyos, el esquema, la rareza, el
   expect(gamesVisible({ response: { game_count: 0 } })).toBe(true);
   expect(gamesVisible({ response: {} })).toBe(false);
   expect(gamesVisible(null)).toBe(false);
+
+  // Tu nombre y tu avatar, para la tarjeta de Ajustes.
+  expect(parseSummary({ response: { players: [{ steamid: "1", personaname: "Mindanao96", avatarfull: "https://avatars/x_full.jpg", avatarmedium: "https://avatars/x_medium.jpg" }] } })).toEqual({
+    name: "Mindanao96",
+    avatar: "https://avatars/x_full.jpg",
+  });
+  expect(parseSummary({ response: { players: [{ personaname: "Sin foto" }] } })).toEqual({ name: "Sin foto", avatar: null });
+  expect(parseSummary({ response: { players: [] } })).toBeNull();
+  expect(parseSummary(null)).toBeNull();
+});
+
+test("la rareza de cada logro: rarísimo por debajo del 5 %, raro por debajo del 20 % y común el resto", () => {
+  expect(rarityTier(0.9)).toBe("rarisimo");
+  expect(rarityTier(4.99)).toBe("rarisimo");
+  expect(rarityTier(5)).toBe("raro");
+  expect(rarityTier(19.9)).toBe("raro");
+  expect(rarityTier(20)).toBe("comun");
+  expect(rarityTier(null)).toBeNull();
 });
 
 test("la ruta de los logros comprueba lo que se le pide y, sin clave de Steam, lo dice", async ({ request }) => {
@@ -302,12 +321,26 @@ test("cada día solo se miran los nuevos, los jugados hace poco y los que llevan
 test("el perfil de Steam se guarda y se quita en Ajustes, y al importar de Steam también se guarda", async ({ page }) => {
   await seed(page, { ...emptyLibrary(), games: [createGame({ title: "Tunic" })] });
   await page.route("**/api/steam", (route) => route.fulfill({ json: { ok: true, games: [], steamId: STEAM_ID } }));
+  let visible = true;
+  await page.route("**/api/logros/perfil?*", (route) => route.fulfill({ json: { ok: true, name: "Alguien", avatar: null, gamesVisible: visible } }));
   await openAjustes(page, "traer");
   const form = page.getByRole("form", { name: "Tu perfil de Steam" });
   await form.getByRole("textbox", { name: "Perfil de Steam" }).fill("https://steamcommunity.com/id/alguien");
   await form.getByRole("button", { name: "Guardar" }).click();
-  await expect(form).toContainText(STEAM_ID);
+  // Guardado, una tarjeta con tu nombre de Steam; sin la pista de privacidad, que no hace falta.
+  await expect(form).toContainText("Alguien");
+  await expect(form).toContainText("Logros de Steam: activados");
+  await expect(form).not.toContainText("«Detalles de juego»");
   await expect.poll(async () => (await stored(page)).settings?.steamId).toBe(STEAM_ID);
+  // «Cambiar» vuelve a enseñar el campo; «Cancelar», la tarjeta.
+  await form.getByRole("button", { name: "Cambiar" }).click();
+  await expect(form.getByRole("textbox", { name: "Perfil de Steam" })).toBeVisible();
+  await form.getByRole("button", { name: "Cancelar" }).click();
+  await expect(form).toContainText("Alguien");
+  // Si Steam no deja ver tus juegos, la tarjeta lo dice.
+  visible = false;
+  await openAjustes(page, "traer");
+  await expect(form).toContainText("«Detalles de juego» en Público");
   await form.getByRole("button", { name: "Quitar" }).click();
   await expect.poll(async () => (await stored(page)).settings?.steamId).toBeNull();
   await expect(form).toContainText("«Detalles de juego»");
@@ -344,6 +377,8 @@ test("la ficha enseña los logros: el progreso, los que faltan del más raro al 
   // El oculto va primero (3,2 %), tapado; «Ver» lo destapa.
   await expect(missing.nth(0)).toContainText("Logro oculto");
   await expect(missing.nth(0)).toContainText(/3,2\s%/);
+  await expect(missing.nth(0)).toContainText("Rarísimo");
+  await expect(missing.nth(1)).toContainText("Raro");
   await expect(missing.nth(0)).not.toContainText("El verdadero final");
   await missing.nth(0).getByRole("button", { name: "Ver el logro oculto" }).click();
   await expect(missing.nth(0)).toContainText("El verdadero final");
@@ -353,6 +388,7 @@ test("la ficha enseña los logros: el progreso, los que faltan del más raro al 
   await expect(got.nth(0)).toContainText("Logro rasguno");
   await expect(got.nth(0)).toContainText("2 may 2026");
   await expect(got.nth(1)).toContainText("1 mar 2026");
+  await expect(got.nth(1)).toContainText("Común");
   await panel.getByRole("button", { name: "Mirar ahora" }).click();
   await expect.poll(() => asked.logros).toEqual([[1145360]]);
 });
@@ -362,7 +398,8 @@ test("en la ficha, sin perfil de Steam lo pide; con el perfil privado, explica c
   await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec] });
   await openApp(page, `/juego/${hades.id}`);
   const panel = page.getByRole("region", { name: "Logros" });
-  await expect(panel).toContainText("Guarda tu perfil de Steam en Ajustes para ver tus logros");
+  await expect(panel).toContainText("Guarda tu perfil de Steam para ver sus logros");
+  await expect(panel.getByRole("link", { name: "Ir a Ajustes" })).toHaveAttribute("href", "/ajustes?apartado=traer");
 
   await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec], settings: { steamId: STEAM_ID } });
   await fakeSteam(page, { privado: true });
@@ -454,6 +491,10 @@ test("Estadísticas tiene un apartado de logros con los totales y lleva a la vis
   await expect(section).toContainText("3");
   await expect(section).toContainText("Juegos al 100 %");
   await expect(section).toContainText("Sin un rasguño");
+  const rare = section.getByRole("list", { name: "Tus logros más raros" }).getByRole("listitem");
+  await expect(rare.first()).toContainText("Sin un rasguño");
+  await expect(rare.first()).toContainText("Rarísimo");
+  await expect(rare.first().getByRole("link", { name: "Hades" })).toBeVisible();
   await section.getByRole("link", { name: "Ver todos" }).click();
   await expect(page).toHaveURL(/\/logros$/, { timeout: 20000 });
 });
@@ -483,5 +524,17 @@ test("«Mirar ahora» en la ficha mira ese juego enseguida, aunque la vuelta de 
   const panel = page.getByRole("region", { name: "Logros" });
   await panel.getByRole("button", { name: "Mirar ahora" }).click();
   await expect.poll(() => asked.logros).toEqual([[504230], [1145360]]);
+  await expect(panel).toContainText("1 de 2 · 50 %");
+});
+
+test("en la ficha, un juego aún sin mirar invita a mirar sus logros", async ({ page }) => {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  await seed(page, { ...emptyLibrary(), games: [hades], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { games: { "1145360": HADES_LOGROS } });
+  await openApp(page, `/juego/${hades.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await expect(panel).toContainText("Todavía no has mirado sus logros");
+  await panel.getByRole("button", { name: "Mirar ahora" }).click();
+  await expect.poll(() => asked.logros).toEqual([[1145360]]);
   await expect(panel).toContainText("1 de 2 · 50 %");
 });

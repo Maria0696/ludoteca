@@ -95,3 +95,16 @@ export function gamesVisible(json: unknown): boolean {
 export async function fetchGamesVisible(key: string, steamId: string): Promise<boolean> {
   return gamesVisible(await getJson(`${API}/IPlayerService/GetOwnedGames/v1/?${new URLSearchParams({ key, steamid: steamId, include_appinfo: "0" })}`));
 }
+
+type Summaries = { response?: { players?: { personaname?: string; avatarfull?: string; avatarmedium?: string }[] } };
+
+/** Tu nombre y tu avatar de Steam (GetPlayerSummaries), para la tarjeta de Ajustes. */
+export function parseSummary(json: unknown): { name: string; avatar: string | null } | null {
+  const player = (json as Summaries | null)?.response?.players?.[0];
+  if (!player?.personaname) return null;
+  return { name: player.personaname, avatar: player.avatarfull ?? player.avatarmedium ?? null };
+}
+
+export async function fetchSummary(key: string, steamId: string): Promise<{ name: string; avatar: string | null } | null> {
+  return parseSummary(await getJson(`${API}/ISteamUser/GetPlayerSummaries/v2/?${new URLSearchParams({ key, steamids: steamId })}`));
+}

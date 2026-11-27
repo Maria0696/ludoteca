@@ -436,7 +436,7 @@
   }
 }
 
-/* Logros: el marcador en tres y la lista de los más raros, con el % a la derecha. */
+/* Logros: el marcador en tres y, debajo, la vitrina de los más raros. */
 .board.board3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -444,20 +444,6 @@
   font-size: var(--size-body);
   font-weight: 400;
   color: var(--gold);
-}
-.rare {
-  display: grid;
-}
-.rare li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 8px 0;
-  border-top: 2px solid var(--line);
-}
-.rare li:first-child {
-  border-top: 0;
 }
 @media (max-width: 899px) {
   .board.board3 {
