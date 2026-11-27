@@ -241,8 +241,15 @@ test("al abrir la app, un deseo de Switch se enlaza solo con el eShop y su ofert
     "70010000060676": { amount: 23.99, regular: 29.99, until: UNTIL },
   });
   await openApp(page, "/");
+  // En Inicio, un cartel: su carátula, el título, el precio de ahora y el de siempre tachado, el descuento y hasta cuándo.
   const notice = page.getByRole("region", { name: "Ofertas en tu lista de deseos" });
-  await expect(notice).toContainText("Hades II: 23,99 € en el eShop (−20 %), hasta el domingo 29");
+  await expect(notice.getByText("¡Oferta!", { exact: true })).toBeVisible();
+  const card = notice.getByRole("listitem").filter({ hasText: "Hades II" });
+  await expect(card.getByRole("heading", { name: "Hades II" })).toBeVisible();
+  await expect(card).toContainText("23,99 €");
+  await expect(card.locator("s")).toHaveText(/^29,99\s€$/);
+  await expect(card).toContainText("−20 %");
+  await expect(card).toContainText("Nintendo eShop · hasta el domingo 29");
   expect(asked.eshop).toEqual(["70010000060676"]);
   await expect.poll(async () => (await storedWishes(page))[0].eshopNsuid).toBe("70010000060676");
   await notice.getByRole("link", { name: "Ver deseos" }).click();
@@ -290,4 +297,20 @@ test("«Mirar ahora» enlaza también los de PC con Steam, mira sus precios y di
   await expect(item).toContainText("−75 %");
   expect(asked.steam).toContain(1145360);
   expect((await storedWishes(page))[0].steamAppId).toBe(1145360);
+});
+
+test("con varias ofertas, Inicio enseña un cartel por cada una, hasta tres, y dice cuántas más hay", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-27T10:00:00"));
+  const offer = (title: string, amount: number, targetPrice: number | null = null) =>
+    wish({ title, platform: "PS5", targetPrice, prices: [{ id: crypto.randomUUID(), amount, regular: 40, until: null, store: STEAM, date: "2026-11-27" }] });
+  await withWishes(page, [offer("Celeste", 10, 12), offer("Tunic", 20), offer("Hades", 30), offer("Okami HD", 15)]);
+  await fakeStores(page, [], {});
+  await openApp(page, "/");
+  const notice = page.getByRole("region", { name: "Ofertas en tu lista de deseos" });
+  await expect(notice.getByText("¡Ofertas!", { exact: true })).toBeVisible();
+  await expect(notice.getByRole("listitem")).toHaveCount(3);
+  await expect(notice).toContainText("Y 1 más");
+  // Con objetivo, lo dice: así se ve por qué sale.
+  await expect(notice.getByRole("listitem").filter({ hasText: "Celeste" })).toContainText(/objetivo 12,00\s€/);
+  await expect(notice.getByRole("link", { name: "Ver deseos" })).toBeVisible();
 });

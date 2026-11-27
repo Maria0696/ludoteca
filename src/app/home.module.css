@@ -1,15 +1,6 @@
 .localNotice {
   margin: 0 var(--gutter) 8px;
 }
-/* Ofertas de la lista de deseos: una por línea y, debajo, el enlace. */
-.offers ul {
-  display: grid;
-  gap: 2px;
-}
-.offers a {
-  display: inline-block;
-  margin-top: 4px;
-}
 .noticeClose {
   display: grid;
   place-items: center;
@@ -118,5 +109,175 @@
     justify-content: center;
     white-space: normal;
     text-align: center;
+  }
+}
+
+/*
+ * Ofertas de la lista de deseos: un cartel de tienda con el estilo del menú. A la izquierda, la franja «¡Oferta!»
+ * inclinada; en medio, una tarjeta por oferta (carátula, título grueso, precio de ahora en amarillo, el de siempre
+ * tachado y la pegatina del descuento); a la derecha, «Ver deseos» como los botones del menú.
+ */
+.offerBanner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px 24px;
+  margin: 0 var(--gutter) 8px;
+  padding: 12px 20px 12px 0;
+  background: linear-gradient(90deg, #ffdd3330, #0a091099 38%);
+  box-shadow: inset 0 0 0 2px #ffdd3366;
+}
+.offerFlag {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  margin: -12px 0;
+}
+.offerFlag span {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 22px 0 20px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--heavy);
+  font-size: 28px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+.offerCards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  min-width: 0;
+}
+.offerCard {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  flex: 1 1 280px;
+  max-width: 440px;
+  min-width: 0;
+}
+.offerCover {
+  width: 52px;
+  box-shadow: 0 0 0 2px #ffffff26;
+}
+.offerCover :global(.cover-fallback strong),
+.offerCover :global(.cover-fallback span) {
+  display: none;
+}
+.offerBody {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.offerTitle {
+  font-family: var(--heavy);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.offerPrice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.offerPrice strong {
+  font-family: var(--heavy);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--yellow);
+}
+.offerPrice s {
+  color: #ffffff99;
+  font-size: 15px;
+}
+/* La pegatina del descuento, algo torcida, como en un escaparate. */
+.offerPct {
+  padding: 3px 8px 2px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--heavy);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  transform: rotate(-4deg);
+}
+.offerMeta {
+  color: #ffffffb3;
+  font-size: 14px;
+}
+.offerFoot {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  color: #ffffffb3;
+  font-size: 14px;
+}
+.offerGo {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 22px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--heavy);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: skewX(-9deg);
+  transition: transform 160ms var(--snap), filter 160ms ease;
+}
+.offerGo:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .offerGo:hover {
+    transform: skewX(-9deg) translateY(-2px);
+    filter: brightness(1.1);
+  }
+}
+.offerGo:active {
+  transform: skewX(-9deg) scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  .offerGo {
+    transition: none;
+  }
+}
+/* En el móvil, de arriba abajo: la franja, las tarjetas y «Ver deseos». */
+@media (max-width: 899px) {
+  .offerBanner {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 16px 14px;
+  }
+  .offerFlag {
+    margin: 0 0 0 -16px;
+  }
+  .offerFlag span {
+    height: 40px;
+    font-size: 24px;
+  }
+  .offerCard {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .offerFoot {
+    grid-auto-flow: column;
+    justify-content: space-between;
+    align-items: center;
   }
 }

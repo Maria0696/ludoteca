@@ -1,17 +1,18 @@
 "use client";
 
-import { BookMarked, HardDrive, Tag, X } from "lucide-react";
+import { BookMarked, HardDrive, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAddGame } from "@/components/game/AddGameProvider";
 import { BackupReminder, useBackupReminderDue } from "@/components/home/BackupReminder";
 import { MainMenu } from "@/components/home/MainMenu";
+import { Cover } from "@/components/ui/Cover";
 import { CHEST_CLOSED_URL } from "@/components/pixel/sprites";
 import { computeYear, hasActivity } from "@/lib/anuario";
 import { buildEntries } from "@/lib/filters";
 import { formatMoney } from "@/lib/format";
 import type { Library } from "@/lib/model";
-import { offerAlerts, storeIn, untilLabel } from "@/lib/price-watch";
+import { offerAlerts, untilLabel } from "@/lib/price-watch";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
 import styles from "./home.module.css";
@@ -64,19 +65,38 @@ function OffersNotice({ library }: { library: Library }) {
   const alerts = offerAlerts(library.wishlist, now);
   if (!alerts.length) return null;
   const shown = alerts.slice(0, 3);
+  // Un cartel de tienda con el estilo del menú: la franja «¡Oferta!» y una tarjeta por oferta (hasta tres).
   return (
-    <section className={`notice ${styles.localNotice} ${styles.offers}`} aria-label="Ofertas en tu lista de deseos">
-      <Tag aria-hidden />
-      <div>
-        <ul>
-          {shown.map(({ wish, offer }) => (
-            <li key={wish.id}>
-              {`${wish.title}: ${formatMoney(offer.amount)} ${storeIn(offer.store)} (−${offer.percent} %)${offer.until ? `, ${untilLabel(offer.until, now)}` : ""}`}
-            </li>
-          ))}
-        </ul>
-        {alerts.length > shown.length && <p>Y {alerts.length - shown.length} más.</p>}
-        <Link href="/deseos">Ver deseos</Link>
+    <section className={styles.offerBanner} aria-label="Ofertas en tu lista de deseos">
+      <p className={styles.offerFlag}>
+        <span>{alerts.length === 1 ? "¡Oferta!" : "¡Ofertas!"}</span>
+      </p>
+      <ul className={styles.offerCards}>
+        {shown.map(({ wish, offer }) => (
+          <li key={wish.id} className={styles.offerCard}>
+            <Cover src={wish.coverUrl} title={wish.title} sizes="56px" className={styles.offerCover} />
+            <div className={styles.offerBody}>
+              <h3 className={styles.offerTitle}>{wish.title}</h3>
+              <p className={styles.offerPrice}>
+                <strong className="num">{formatMoney(offer.amount)}</strong>
+                <span className="sr-only">, antes</span>
+                <s className="num">{formatMoney(offer.regular)}</s>
+                <span className={styles.offerPct}>−{offer.percent} %</span>
+              </p>
+              <p className={styles.offerMeta}>
+                {[offer.store, offer.until ? untilLabel(offer.until, now) : null, wish.targetPrice != null ? `objetivo ${formatMoney(wish.targetPrice)}` : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className={styles.offerFoot}>
+        {alerts.length > shown.length && <p>Y {alerts.length - shown.length} más</p>}
+        <Link href="/deseos" className={styles.offerGo}>
+          Ver deseos
+        </Link>
       </div>
     </section>
   );
