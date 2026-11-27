@@ -2,13 +2,13 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { type WishItem, newId, todayIso } from "./model";
-import { ESHOP, type EshopCandidate, type Quote, STEAM, isEshopPlatform, newPriceRecords, pickEshop } from "./price-watch";
+import { ESHOP, type EshopCandidate, type Quote, STEAM, type SteamCandidate, isEshopPlatform, newPriceRecords, pickEshop, pickSteam } from "./price-watch";
 import { useLibrary } from "./store";
 
 /*
  * La app mira sola los precios de la lista de deseos (eShop de Nintendo España y Steam), como mucho cada 6 horas al
- * abrirse, y también al pulsar «Buscar en las tiendas». Primero enlaza los deseos que aún no lo están (Steam por IGDB;
- * el eShop por título, y si hay dudas, «por elegir») y luego apunta los precios que hayan cambiado. Lo que recuerda
+ * abrirse, y también al pulsar «Mirar ahora». Primero enlaza los deseos que aún no lo están (Steam por IGDB y, si no,
+ * por título; el eShop por título, y si hay dudas, «por elegir») y luego apunta los precios que hayan cambiado. Lo que recuerda
  * (cuándo miró, a quién ya intentó enlazar hoy, quién está por elegir) se queda en este navegador.
  */
 
@@ -99,6 +99,26 @@ async function run(wishlist: WishItem[], updateWish: UpdateWish, force: boolean)
     }
   }
 
+  // Los de PC que IGDB no ha enlazado (escritos a mano, o sin su número de Steam): por título, si solo hay un juego igual.
+  for (const w of own.filter((w) => w.platform === "PC" && links.get(w.id)!.steam == null && due("steamtitulo", w))) {
+    try {
+      const res = await call<{ ok: boolean; candidates?: SteamCandidate[] }>(`/api/precios/steam/buscar?q=${encodeURIComponent(w.title)}`);
+      if (!res.ok) {
+        result.failed = true;
+        continue;
+      }
+      const pick = pickSteam(w.title, res.candidates ?? []);
+      if (pick) {
+        updateWish(w.id, { steamAppId: pick.appId });
+        links.get(w.id)!.steam = pick.appId;
+        result.linkedSteam++;
+      }
+      tried[`steamtitulo:${w.id}`] = today;
+    } catch {
+      result.failed = true;
+    }
+  }
+
   for (const w of own.filter((w) => isEshopPlatform(w.platform) && w.eshopNsuid == null && due("eshop", w))) {
     try {
       const res = await call<{ ok: boolean; candidates?: EshopCandidate[] }>(`/api/precios/eshop?q=${encodeURIComponent(w.title)}&plataforma=${encodeURIComponent(w.platform!)}`);
@@ -153,6 +173,19 @@ export async function eshopOptions(wish: WishItem): Promise<EshopCandidate[]> {
   const res = await call<{ ok: boolean; candidates?: EshopCandidate[] }>(`/api/precios/eshop?q=${encodeURIComponent(wish.title)}&plataforma=${encodeURIComponent(wish.platform ?? "")}`);
   if (!res.ok) throw new Error("El eShop no responde ahora.");
   return res.candidates ?? [];
+}
+
+/** Juegos de la tienda de Steam que podrían ser este deseo, con su precio, para elegir. */
+export async function steamOptions(wish: WishItem): Promise<SteamCandidate[]> {
+  const res = await call<{ ok: boolean; candidates?: SteamCandidate[] }>(`/api/precios/steam/buscar?q=${encodeURIComponent(wish.title)}`);
+  if (!res.ok) throw new Error("Steam no responde ahora.");
+  return res.candidates ?? [];
+}
+
+/** Enlaza un deseo con el juego de Steam elegido y mira su precio enseguida. */
+export async function chooseSteam(wish: WishItem, appId: number, updateWish: UpdateWish): Promise<void> {
+  updateWish(wish.id, { steamAppId: appId });
+  await refreshPrices([wish], new Map([[wish.id, { eshop: wish.eshopNsuid ?? null, steam: appId }]]), updateWish);
 }
 
 /** Enlaza un deseo con el producto del eShop elegido y mira su precio enseguida. */

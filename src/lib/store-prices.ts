@@ -1,4 +1,4 @@
-import { ESHOP_SYSTEMS, type EshopCandidate, type Quote } from "./price-watch";
+import { ESHOP_SYSTEMS, type EshopCandidate, type Quote, type SteamCandidate } from "./price-watch";
 
 /*
  * Consultas a las tiendas, desde el servidor (el navegador no puede preguntarles directamente). Todo en euros y en
@@ -10,6 +10,7 @@ import { ESHOP_SYSTEMS, type EshopCandidate, type Quote } from "./price-watch";
 const ESHOP_SEARCH = "https://searching.nintendo-europe.com/es/select";
 const ESHOP_PRICE = "https://api.ec.nintendo.com/v1/price";
 const STEAM_PRICE = "https://store.steampowered.com/api/appdetails";
+const STEAM_SEARCH = "https://store.steampowered.com/api/storesearch/";
 /** El eShop da hasta 50 precios por consulta; a Steam se le piden menos para no pasarse de su límite. */
 const ESHOP_BATCH = 50;
 const STEAM_BATCH = 25;
@@ -46,6 +47,17 @@ export function parseSteamPrices(json: unknown): Record<string, Quote> {
     out[id] = { amount: price.final / 100, regular: price.initial / 100, until: null };
   }
   return out;
+}
+
+type SteamSearchItem = { type?: string; name?: string; id?: number; price?: { final?: number } };
+
+/** Del buscador de la tienda de Steam, los juegos (no los paquetes), con su precio en euros; los gratuitos, sin precio. */
+export function parseSteamSearch(json: unknown): SteamCandidate[] {
+  return ((json as { items?: SteamSearchItem[] } | null)?.items ?? []).flatMap((item) =>
+    item.type === "app" && item.name && Number.isInteger(item.id) && item.id! > 0
+      ? [{ appId: item.id!, title: item.name, amount: typeof item.price?.final === "number" ? item.price.final / 100 : null }]
+      : [],
+  );
 }
 
 type EshopDoc = { title?: string; system_names_txt?: string[]; nsuid_txt?: string[] };
@@ -95,4 +107,10 @@ export async function searchEshop(title: string, platform: string): Promise<Esho
   if (!candidates.length) return [];
   const prices = await fetchEshopPrices(candidates.map((c) => c.nsuid)).catch((): Record<string, Quote> => ({}));
   return candidates.map((c) => ({ ...c, amount: prices[c.nsuid]?.amount ?? null }));
+}
+
+/** Juegos de la tienda de Steam (España, en euros) que podrían ser este título, con su precio de ahora. */
+export async function searchSteam(title: string): Promise<SteamCandidate[]> {
+  const params = new URLSearchParams({ term: title, l: "spanish", cc: "ES" });
+  return parseSteamSearch(await getJson(`${STEAM_SEARCH}?${params}`));
 }

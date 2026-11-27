@@ -13,6 +13,8 @@ export const STEAM = "Steam";
 export type Quote = { amount: number; regular: number; until: string | null };
 /** Un producto del catálogo del eShop que podría ser el deseo. `amount`, su precio de ahora, si se sabe. */
 export type EshopCandidate = { nsuid: string; title: string; platform: string; amount: number | null };
+/** Un juego de la tienda de Steam que podría ser el deseo, con su precio de ahora (sin precio, si es gratuito). */
+export type SteamCandidate = { appId: number; title: string; amount: number | null };
 export type Offer = { store: string; amount: number; regular: number; percent: number; until: string | null };
 
 /** Las consolas del eShop en las que vale un deseo de cada plataforma: Switch 2 también juega a lo de Switch. */
@@ -37,9 +39,21 @@ const STEAM_FRESH_DAYS = 2;
  * mayúsculas, tildes ni signos). Con varios iguales (ediciones, paquetes de mejora) o ninguno, `null`: se elige a mano.
  */
 export function pickEshop(title: string, candidates: EshopCandidate[]): { nsuid: string } | null {
+  const nsuid = uniqueSameTitle(title, candidates, (c) => c.nsuid);
+  return nsuid == null ? null : { nsuid };
+}
+
+/** Lo mismo en Steam: el juego con el mismo título, si es uno solo (la banda sonora o la demo no cuentan como iguales). */
+export function pickSteam(title: string, candidates: SteamCandidate[]): { appId: number } | null {
+  const appId = uniqueSameTitle(title, candidates, (c) => c.appId);
+  return appId == null ? null : { appId };
+}
+
+/** La clave del único candidato con el mismo título (sin mayúsculas, tildes ni signos), o `null` si hay ninguno o varios. */
+function uniqueSameTitle<T extends { title: string }, K>(title: string, candidates: T[], key: (c: T) => K): K | null {
   const want = normalizeTitle(title);
-  const same = [...new Set(candidates.filter((c) => normalizeTitle(c.title) === want).map((c) => c.nsuid))];
-  return same.length === 1 ? { nsuid: same[0] } : null;
+  const same = [...new Set(candidates.filter((c) => normalizeTitle(c.title) === want).map(key))];
+  return same.length === 1 ? same[0] : null;
 }
 
 /** El último precio apuntado de una tienda (por fecha; con la misma fecha, el que se apuntó después). */
@@ -99,17 +113,17 @@ export function untilLabel(until: string, now = new Date()): string {
 /** La tienda dicha en una frase: «en el eShop», «en Steam». */
 export const storeIn = (store: string) => (store === ESHOP ? "en el eShop" : `en ${store}`);
 
-/** Cuántas opciones del eShop enseñar para elegir. */
+/** Cuántas opciones enseñar para elegir (en el eShop o en Steam). */
 const ESHOP_CHOICES = 8;
 
 /**
- * Las opciones del eShop para elegir, de más a menos parecidas: primero las del mismo título y luego las que tienen más
- * palabras del deseo (el catálogo devuelve también juegos parecidos que no son). Como mucho, 8.
+ * Las opciones para elegir (del eShop o de Steam), de más a menos parecidas: primero las del mismo título y luego las
+ * que tienen más palabras del deseo (las tiendas devuelven también juegos parecidos que no son). Como mucho, 8.
  */
-export function rankEshop(title: string, candidates: EshopCandidate[]): EshopCandidate[] {
+export function rankEshop<T extends { title: string }>(title: string, candidates: T[]): T[] {
   const want = normalizeTitle(title);
   const words = want.split(" ").filter(Boolean);
-  const score = (c: EshopCandidate) => {
+  const score = (c: T) => {
     const t = normalizeTitle(c.title);
     if (t === want) return 0;
     const has = new Set(t.split(" "));

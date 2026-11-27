@@ -11,7 +11,7 @@ import { type SyncResult, syncPrices, useLastPriceCheck, usePendingEshop } from 
 import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
 import { groupWishes } from "@/lib/wish-groups";
-import { EshopChooser } from "./EshopChooser";
+import { EshopChooser, SteamChooser } from "./StoreChooser";
 import { OfferAlertsBell } from "./OfferAlertsBell";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
@@ -49,7 +49,7 @@ export function WishlistView() {
   const [platform, setPlatform] = useState("");
   const [sort, setSort] = useState<Sort>("titulo");
   const [sheet, setSheet] = useState(false);
-  const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert" | "eshop"; wish: WishItem } | null>(null);
+  const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert" | "eshop" | "steam"; wish: WishItem } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const pendingEshop = usePendingEshop();
   const lastCheck = useLastPriceCheck();
@@ -142,6 +142,13 @@ export function WishlistView() {
         <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "eshop", wish: w })}>
           <ListChecks aria-hidden />
           Elegir en el eShop
+        </button>
+      )}
+      {/* Un deseo de PC que no se ha enlazado solo con Steam (escrito a mano, o con un título que no está una sola vez). */}
+      {w.platform === "PC" && w.steamAppId == null && !w.demo && (
+        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "steam", wish: w })}>
+          <ListChecks aria-hidden />
+          Elegir en Steam
         </button>
       )}
       <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
@@ -340,6 +347,7 @@ export function WishlistView() {
       {dialog?.kind === "edit" && <WishEditor wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "price" && <PriceDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "eshop" && <EshopChooser wish={dialog.wish} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "steam" && <SteamChooser wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "convert" && <ConvertDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
 
       <Dialog
