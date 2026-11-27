@@ -1,12 +1,11 @@
 /* Logros de Steam en la ficha: el progreso con su barra, la vitrina de los que faltan y de los conseguidos. */
 .note,
-.footer {
+.checked {
   font-family: var(--font-term);
   font-size: var(--size-label);
   color: var(--muted);
 }
-.note a,
-.footer a {
+.note a {
   color: var(--paper);
 }
 .alert {
@@ -19,6 +18,37 @@
 .progress {
   display: grid;
   gap: 8px;
+}
+/* El progreso y, a la derecha, cuándo se miraron con el botón de recargar (como en Deseos). */
+.progressHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+.checked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--size-note);
+}
+.lookNow svg {
+  width: 18px;
+  height: 18px;
+}
+.lookNow:disabled svg {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lookNow:disabled svg {
+    animation: none;
+  }
 }
 .count {
   font-family: var(--font-term);
@@ -51,10 +81,9 @@
   font-size: var(--size-note);
   color: var(--muted);
 }
-.more {
-  justify-self: start;
-  font-family: var(--font-term);
-  font-size: var(--size-label);
+.show .num {
+  margin-left: 6px;
+  opacity: 0.75;
 }
 /* Sin logros que enseñar: un hueco con el trofeo, qué pasa y el botón. */
 .empty {

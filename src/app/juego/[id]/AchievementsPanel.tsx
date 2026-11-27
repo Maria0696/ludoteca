@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy } from "lucide-react";
+import { RefreshCw, Trophy } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { AchievementCard, achievementGrid } from "@/components/ui/AchievementCard";
@@ -14,8 +14,8 @@ import { useLibrary } from "@/lib/store";
 import adventure from "./adventure.module.css";
 import styles from "./achievements.module.css";
 
-/** Cuántos de cada lista se ven de entrada (cuatro filas de tres): con cientos de logros, el resto queda a un toque. */
-const FIRST = 12;
+/** Qué logros se ven: todos (los que faltan y luego los conseguidos), solo los que faltan o solo los conseguidos. */
+type Show = "todos" | "faltan" | "conseguidos";
 
 export const PRIVATE_HINT = "Steam no deja ver tus logros. En tu perfil de Steam → Editar perfil → Privacidad, pon «Detalles de juego» en Público.";
 
@@ -49,8 +49,7 @@ export function AchievementsPanel({ game }: { game: Game }) {
   const privado = useSteamProfilePrivate();
   const pending = usePendingSteamGames().has(game.id);
   const [revealed, setRevealed] = useState<Set<string>>(() => new Set());
-  const [allMissing, setAllMissing] = useState(false);
-  const [allGot, setAllGot] = useState(false);
+  const [show, setShow] = useState<Show>("todos");
   const [busy, setBusy] = useState(false);
   const [choosing, setChoosing] = useState(false);
 
@@ -130,8 +129,11 @@ export function AchievementsPanel({ game }: { game: Game }) {
 
   const missing = missingSorted(rec.items);
   const got = unlockedSorted(rec.items);
-  const shownMissing = allMissing ? missing : missing.slice(0, FIRST);
-  const shownGot = allGot ? got : got.slice(0, FIRST);
+  const options: [Show, string, number][] = [
+    ["todos", "Todos", rec.items.length],
+    ["faltan", "Te faltan", missing.length],
+    ["conseguidos", "Conseguidos", got.length],
+  ];
 
   return (
     <>
@@ -139,63 +141,56 @@ export function AchievementsPanel({ game }: { game: Game }) {
       {alert}
       {rec.total > 0 && (
         <div className={styles.progress}>
-          <p className={`${styles.count} num`}>
-            {rec.unlocked} de {rec.total} · {completion(rec)} %
-          </p>
+          <div className={styles.progressHead}>
+            <p className={`${styles.count} num`}>
+              {rec.unlocked} de {rec.total} · {completion(rec)} %
+            </p>
+            <p className={styles.checked} aria-live="polite">
+              {busy ? "Mirando en Steam…" : `Mirados ${checkedLabel(rec.checkedAt)}`}
+              <button type="button" className={`btn btn-sm btn-quiet btn-icon ${styles.lookNow}`} aria-label="Mirar ahora" title="Mirar ahora" onClick={look} disabled={busy}>
+                <RefreshCw aria-hidden />
+              </button>
+            </p>
+          </div>
           <div className={styles.bar} role="progressbar" aria-label="Logros conseguidos" aria-valuemin={0} aria-valuemax={rec.total} aria-valuenow={rec.unlocked}>
             <span style={{ width: `${(rec.unlocked / rec.total) * 100}%` }} />
           </div>
         </div>
       )}
-      {missing.length > 0 && (
+      {missing.length > 0 && got.length > 0 && (
+        <div className={`segmented ${styles.show}`} role="radiogroup" aria-label="Qué logros ver">
+          {options.map(([value, label, n]) => (
+            <button key={value} type="button" role="radio" aria-checked={show === value} onClick={() => setShow(value)}>
+              {label} <span className="num">{n}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {missing.length > 0 && show !== "conseguidos" && (
         <section className={styles.group} aria-labelledby="logros-faltan">
           <h3 id="logros-faltan" className={styles.groupHead}>
             Te faltan {missing.length}
             {missing.some((a) => a.percent != null) && <small> · del más raro al más común</small>}
           </h3>
           <ul className={achievementGrid} aria-label="Te faltan">
-            {shownMissing.map((a) => (
+            {missing.map((a) => (
               <AchievementCard key={a.api} item={a} locked hidden={a.hidden && !revealed.has(a.api)} onReveal={() => setRevealed((s) => new Set(s).add(a.api))} />
             ))}
           </ul>
-          {missing.length > FIRST && !allMissing && (
-            <button type="button" className={`link-btn ${styles.more}`} onClick={() => setAllMissing(true)}>
-              Ver los {missing.length - FIRST} restantes
-            </button>
-          )}
         </section>
       )}
-      {got.length > 0 && (
+      {got.length > 0 && show !== "faltan" && (
         <section className={styles.group} aria-labelledby="logros-conseguidos">
           <h3 id="logros-conseguidos" className={styles.groupHead}>
             Conseguidos {got.length}
           </h3>
           <ul className={achievementGrid} aria-label="Conseguidos">
-            {shownGot.map((a) => (
+            {got.map((a) => (
               <AchievementCard key={a.api} item={a} meta={<span className="num">{formatDate(a.unlockedAt)}</span>} />
             ))}
           </ul>
-          {got.length > FIRST && !allGot && (
-            <button type="button" className={`link-btn ${styles.more}`} onClick={() => setAllGot(true)}>
-              Ver los {got.length - FIRST} restantes
-            </button>
-          )}
         </section>
       )}
-      <p className={styles.footer} aria-live="polite">
-        {busy ? (
-          "Mirando tus logros en Steam…"
-        ) : (
-          <>
-            Mirados {checkedLabel(rec.checkedAt)} ·{" "}
-            <button type="button" className="link-btn" onClick={look}>
-              Mirar ahora
-            </button>
-            {" · "}
-            <Link href="/logros">Todos tus logros</Link>
-          </>
-        )}
-      </p>
     </>
   );
 }

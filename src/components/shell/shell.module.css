@@ -317,8 +317,8 @@
   font-size: var(--size-note) !important;
 }
 
-/* Con «Sagas» el menú tiene seis destinos: el buscador se estrecha antes. */
-@media (max-width: 1400px) {
+/* Con «Sagas» y «Logros» el menú tiene siete destinos: el buscador se estrecha antes. */
+@media (max-width: 1480px) {
   .qs {
     width: 200px;
   }
@@ -331,7 +331,7 @@
     display: inline-flex !important;
   }
 }
-@media (max-width: 1400px) {
+@media (max-width: 1480px) {
   .chipText {
     display: none;
   }
@@ -349,7 +349,7 @@
   }
 }
 /* Ordenador estrecho o tableta apaisada: menú algo más prieto y «Añadir juego» como en el móvil. */
-@media (min-width: 900px) and (max-width: 1260px) {
+@media (min-width: 900px) and (max-width: 1320px) {
   .top {
     padding: 0 24px;
   }
@@ -379,6 +379,20 @@
   .addBtn svg {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* Con «Logros» son siete destinos: en el ordenador más estrecho, el menú un punto más pequeño. */
+@media (min-width: 900px) and (max-width: 1060px) {
+  .brand {
+    margin-right: 8px;
+  }
+  .nav {
+    gap: 0;
+  }
+  .nav a {
+    padding: 2px 5px 3px;
+    font-size: var(--size-note);
   }
 }
 
