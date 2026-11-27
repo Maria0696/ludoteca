@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { useAutoBackupDays } from "@/lib/auto-backup";
 import { downloadBackup } from "@/lib/backup-download";
-import { SNOOZE_DAYS, shouldRemind, snoozeBackupReminder, useBackupStatus } from "@/lib/backup-reminder";
+import { SNOOZE_DAYS, reminderText, shouldRemind, snoozeBackupReminder, useBackupStatus } from "@/lib/backup-reminder";
 import type { Library } from "@/lib/model";
 import { useLibrary } from "@/lib/store";
 import styles from "./backup-reminder.module.css";
@@ -23,22 +23,26 @@ export function useBackupReminderDue(library: Library): boolean {
   const autoDays = useAutoBackupDays(mode);
   if (mode === "supabase" && autoDays === undefined) return false;
   const own = library.games.filter((g) => !g.demo).length + library.wishlist.filter((w) => !w.demo).length;
-  return status !== null && shouldRemind(status, own, status.remindEvery, autoDays ?? null);
+  return status !== null && shouldRemind(status, own, status.remindEvery, mode === "supabase" ? { autoDays: autoDays ?? null } : undefined);
 }
 
-/** En modo local, el aviso dice además dónde se guarda todo: así no hace falta otro aviso que lo repita. */
+/**
+ * En modo local, el aviso dice además dónde se guarda todo: así no hace falta otro aviso que lo repita. En la nube, solo
+ * sale si las copias automáticas se han parado, y lo dice.
+ */
 export function BackupReminder({ library, local = false }: { library: Library; local?: boolean }) {
   const status = useBackupStatus();
   const due = useBackupReminderDue(library);
+  const { mode } = useLibrary();
+  const autoDays = useAutoBackupDays(mode);
   if (!status || !due) return null;
 
-  const days = status.daysSinceBackup;
+  const text = reminderText(mode === "supabase" ? { autoDays: autoDays ?? null } : undefined, status.daysSinceBackup, local);
   return (
     <section className={`notice ${styles.reminder}`} aria-label="Recordatorio de copia de seguridad">
       <Download aria-hidden />
       <p className={styles.text}>
-        <strong>{days === null ? "Aún no has guardado ninguna copia de tu biblioteca." : `Tu última copia es de hace ${days} días.`}</strong>{" "}
-        {local ? "Se guarda solo en este navegador: si algo se borrara, es la forma de recuperarlo." : "Si algo se borrara por error, es la forma de recuperarlo."}
+        <strong>{text.headline}</strong> {text.detail}
       </p>
       <div className={styles.actions}>
         <button

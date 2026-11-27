@@ -169,15 +169,18 @@ export function SettingsView() {
                   Incluir los datos de demostración en la copia
                 </label>
               )}
-              <div className={styles.options}>
-                <OptionRow
-                  label="Recordarme guardar"
-                  hint="Un aviso en el inicio"
-                  options={REMIND_CHOICES.map((c) => ({ value: c, label: REMIND_LABEL[c] }))}
-                  value={remind}
-                  onChange={setRemind}
-                />
-              </div>
+              {/* En la nube las copias son automáticas: el aviso de Inicio solo sale si se paran, sin «cada cuánto». */}
+              {mode !== "supabase" && (
+                <div className={styles.options}>
+                  <OptionRow
+                    label="Recordarme guardar"
+                    hint="Un aviso en el inicio"
+                    options={REMIND_CHOICES.map((c) => ({ value: c, label: REMIND_LABEL[c] }))}
+                    value={remind}
+                    onChange={setRemind}
+                  />
+                </div>
+              )}
               <p className={styles.note}>
                 ¿Recuperar una copia? Está en <Link href="/importar?origen=copia">Traer juegos</Link>, junto a Steam.
               </p>
