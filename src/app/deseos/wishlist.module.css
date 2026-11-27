@@ -237,6 +237,16 @@
   margin-bottom: 12px;
   color: var(--muted);
 }
+/* Buscar con otras palabras, encima de las opciones. */
+.chooserSearch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.chooserSearch :global(.btn) {
+  height: auto;
+}
 .chooser {
   display: grid;
   gap: 8px;

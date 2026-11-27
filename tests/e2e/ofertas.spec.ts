@@ -1,9 +1,9 @@
 import { type Page, expect, test } from "@playwright/test";
 import { createBackup, parseBackup } from "../../src/lib/backup";
 import { type WishItem, createGame, emptyLibrary } from "../../src/lib/model";
-import { ESHOP, STEAM, checkedLabel, currentOffer, newPriceRecords, offerAlerts, pickEshop, rankEshop } from "../../src/lib/price-watch";
+import { ESHOP, STEAM, checkedLabel, currentOffer, newPriceRecords, offerAlerts, pickEshop, pickSteam, rankEshop } from "../../src/lib/price-watch";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
-import { parseEshopPrices, parseEshopSearch, parseSteamPrices } from "../../src/lib/store-prices";
+import { parseEshopPrices, parseEshopSearch, parseSteamPrices, parseSteamSearch } from "../../src/lib/store-prices";
 import { openApp } from "./helpers";
 
 /* Precios de la lista de deseos: el eShop de Nintendo España y la tienda de Steam, mirados por la app. */
@@ -161,6 +161,32 @@ test("del catálogo del eShop sale un candidato por producto y código, de la co
   ]);
 });
 
+test("del buscador de Steam salen solo los juegos, con su precio en euros (sin precio, los gratuitos)", () => {
+  const json = {
+    total: 4,
+    items: [
+      { type: "app", name: "Hades II", id: 1145350, price: { currency: "EUR", initial: 2899, final: 2029 } },
+      { type: "app", name: "Hades II Original Soundtrack", id: 2950840, price: { currency: "EUR", initial: 975, final: 682 } },
+      { type: "sub", name: "Hades Bundle", id: 99 },
+      { type: "app", name: "Hades Free Demo", id: 7 },
+    ],
+  };
+  expect(parseSteamSearch(json)).toEqual([
+    { appId: 1145350, title: "Hades II", amount: 20.29 },
+    { appId: 2950840, title: "Hades II Original Soundtrack", amount: 6.82 },
+    { appId: 7, title: "Hades Free Demo", amount: null },
+  ]);
+  expect(parseSteamSearch(null)).toEqual([]);
+});
+
+test("en Steam se enlaza solo si hay un único juego con el mismo título; si no, se elige", () => {
+  const c = (appId: number, title: string) => ({ appId, title, amount: null });
+  expect(pickSteam("Hades II", [c(1145350, "HADES II"), c(2950840, "Hades II Original Soundtrack")])).toEqual({ appId: 1145350 });
+  expect(pickSteam("Hades", [c(1, "Hades"), c(2, "Hades")])).toBeNull();
+  expect(pickSteam("Hades", [c(2950840, "Hades II Original Soundtrack")])).toBeNull();
+  expect(pickSteam("Hades", [])).toBeNull();
+});
+
 test("cuándo se miraron los precios, dicho como en una conversación", () => {
   const now = new Date("2026-11-27T12:00:00");
   expect(checkedLabel(null, now)).toBe("aún sin mirar");
@@ -179,6 +205,8 @@ test("las rutas de precios comprueban lo que se les pide y, sin nada que mirar, 
   expect((await request.get("/api/precios/eshop?q=zelda&plataforma=PS5")).status()).toBe(400);
   // Sin claves de IGDB (como en las pruebas), no se puede saber el número de Steam.
   expect(await (await request.post("/api/precios/steam", { data: { igdbIds: [1] } })).json()).toMatchObject({ ok: false, reason: "no-configurado" });
+  expect((await request.get("/api/precios/steam/buscar?q=a")).status()).toBe(400);
+  expect((await request.get(`/api/precios/steam/buscar?q=${"x".repeat(201)}`)).status()).toBe(400);
 });
 
 /**
@@ -219,8 +247,17 @@ const storedWishes = (page: Page) =>
   );
 
 /** Las rutas de precios, simuladas: qué ofrece el catálogo del eShop y qué cuesta cada código. */
-async function fakeStores(page: Page, candidates: unknown[], eshop: Record<string, unknown>, extra: { steamLinks?: Record<string, number>; steam?: Record<string, unknown> } = {}) {
-  const asked = { eshop: [] as string[], steam: [] as number[] };
+async function fakeStores(
+  page: Page,
+  candidates: unknown[],
+  eshop: Record<string, unknown>,
+  extra: { steamLinks?: Record<string, number>; steam?: Record<string, unknown>; steamSearch?: unknown[] } = {},
+) {
+  const asked = { eshop: [] as string[], steam: [] as number[], steamSearch: [] as string[] };
+  await page.route("**/api/precios/steam/buscar?*", (route) => {
+    asked.steamSearch.push(new URL(route.request().url()).searchParams.get("q") ?? "");
+    return route.fulfill({ json: { ok: true, candidates: extra.steamSearch ?? [] } });
+  });
   await page.route("**/api/precios/eshop?*", (route) => route.fulfill({ json: { ok: true, candidates } }));
   await page.route("**/api/precios/steam", (route) => route.fulfill({ json: { ok: true, steam: extra.steamLinks ?? {} } }));
   await page.route("**/api/precios", (route) => {
@@ -313,4 +350,53 @@ test("con varias ofertas, Inicio enseña un cartel por cada una, hasta tres, y d
   // Con objetivo, lo dice: así se ve por qué sale.
   await expect(notice.getByRole("listitem").filter({ hasText: "Celeste" })).toContainText(/objetivo 12,00\s€/);
   await expect(notice.getByRole("link", { name: "Ver deseos" })).toBeVisible();
+});
+
+test("un deseo de PC escrito a mano se enlaza solo con Steam por su título, y sale su precio", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-27T10:00:00"));
+  await withWishes(page, [wish({ title: "Hades II", platform: "PC" })]);
+  const asked = await fakeStores(page, [], {}, {
+    steamSearch: [
+      { appId: 1145350, title: "Hades II", amount: 20.29 },
+      { appId: 2950840, title: "Hades II Original Soundtrack", amount: 6.82 },
+    ],
+    steam: { "1145350": { amount: 20.29, regular: 28.99, until: null } },
+  });
+  await openApp(page, "/deseos");
+  const item = page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: "Hades II" });
+  await expect(item).toContainText("20,29 €");
+  await expect(item).toContainText("−30 %");
+  expect(asked.steamSearch).toEqual(["Hades II"]);
+  expect(asked.steam).toContain(1145350);
+  await expect.poll(async () => (await storedWishes(page))[0].steamAppId).toBe(1145350);
+  await expect(item.getByRole("button", { name: "Elegir en Steam" })).toHaveCount(0);
+});
+
+test("si Steam no tiene un único juego con ese título, se elige viendo el precio de cada uno", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-27T10:00:00"));
+  await withWishes(page, [wish({ title: "Hades Ultimate", platform: "PC" })]);
+  const asked = await fakeStores(page, [], {}, {
+    steamSearch: [
+      { appId: 1145360, title: "Hades", amount: 6.12 },
+      { appId: 1145350, title: "Hades II", amount: 20.29 },
+      { appId: 7, title: "Hades Free Demo", amount: null },
+    ],
+    steam: { "1145360": { amount: 6.12, regular: 24.5, until: null } },
+  });
+  await openApp(page, "/deseos");
+  const item = page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: "Hades Ultimate" });
+  await item.getByRole("button", { name: "Elegir en Steam" }).click();
+  const dialog = page.getByRole("dialog", { name: /Steam/ });
+  await expect(dialog.getByRole("list").getByRole("button")).toContainText([/Hades\s*6,12\s€/, /Hades II\s*20,29\s€/, /Hades Free Demo\s*sin precio/]);
+  // Si el título del deseo no es el de Steam, se puede buscar con otras palabras.
+  await expect(dialog.getByRole("searchbox", { name: "Buscar en Steam" })).toHaveValue("Hades Ultimate");
+  await dialog.getByRole("searchbox", { name: "Buscar en Steam" }).fill("Hades");
+  await dialog.getByRole("button", { name: "Buscar", exact: true }).click();
+  await expect.poll(() => asked.steamSearch.at(-1)).toBe("Hades");
+  await dialog.getByRole("button", { name: /^Hades\s*6,12/ }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(item).toContainText("6,12 €");
+  await expect.poll(async () => (await storedWishes(page))[0].steamAppId).toBe(1145360);
+  await expect(item.getByRole("button", { name: "Elegir en Steam" })).toHaveCount(0);
+  expect(asked.steam).toContain(1145360);
 });
