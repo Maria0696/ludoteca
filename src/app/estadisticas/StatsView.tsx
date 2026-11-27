@@ -6,6 +6,7 @@ import { AnuarioBanner } from "@/app/anuario/AnuarioBanner";
 import { familyColor } from "@/app/biblioteca/arcade";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { type GameStatus, GAME_STATUSES, STATUS_LABEL } from "@/lib/model";
+import { AchievementCard, achievementGrid } from "@/components/ui/AchievementCard";
 import { achievementTotals } from "@/lib/achievements";
 import { computeStats } from "@/lib/stats";
 import { useLibrary } from "@/lib/store";
@@ -362,19 +363,11 @@ export function StatsView() {
           {logros.rarest.length > 0 && (
             <>
               <h3 className={styles.subhead}>Tus logros más raros</h3>
-              <ol className={styles.rare}>
+              <ul className={achievementGrid} aria-label="Tus logros más raros">
                 {logros.rarest.map((r) => (
-                  <li key={`${r.gameId}:${r.item.api}`}>
-                    <span className={styles.gemTitle}>
-                      {r.item.name}
-                      <small>
-                        <Link href={`/juego/${r.gameId}`}>{titles.get(r.gameId)}</Link>
-                      </small>
-                    </span>
-                    <span className="num">{formatNumber(r.item.percent ?? 0)} %</span>
-                  </li>
+                  <AchievementCard key={`${r.gameId}:${r.item.api}`} item={r.item} meta={<Link href={`/juego/${r.gameId}`}>{titles.get(r.gameId)}</Link>} />
                 ))}
-              </ol>
+              </ul>
             </>
           )}
           <p className={styles.note}>

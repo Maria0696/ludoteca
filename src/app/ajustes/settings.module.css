@@ -284,7 +284,7 @@
   }
 }
 
-/* El perfil de Steam para los logros: el campo y «Guardar» en una fila; guardado, el número y «Quitar». */
+/* El perfil de Steam para los logros: el campo y «Guardar» en una fila; guardado, una tarjeta con tu nombre. */
 .steamProfile {
   display: grid;
   gap: 8px;
@@ -297,15 +297,74 @@
 }
 .steamField {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
-  max-width: 560px;
+  max-width: 680px;
 }
-.steamSaved {
-  display: flex;
+.steamCard {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 14px;
   align-items: center;
+  padding: 14px;
+  background: var(--raised);
+  box-shadow: var(--pixel-frame-soft);
+}
+.steamAvatar {
+  width: 64px;
+  height: 64px;
+  box-shadow: 0 0 0 2px var(--line);
+}
+.steamAvatarBlank {
+  display: grid;
+  place-items: center;
+  background: var(--field);
+  color: var(--muted);
+}
+.steamWho {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.steamWho b {
+  color: var(--white);
+  font-size: var(--size-body);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.steamWho span {
+  color: var(--muted);
+  font-size: var(--size-note);
+}
+.steamWho .steamOk {
+  color: var(--ok);
+}
+.steamWho .steamWarn {
+  color: var(--danger);
+}
+.steamActions {
+  display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+@media (max-width: 639px) {
+  .steamCard {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+  .steamAvatar {
+    width: 56px;
+    height: 56px;
+  }
+  .steamActions {
+    grid-column: 1 / -1;
+  }
+  .steamField {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .steamField .btn-quiet {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }
 .steamProblem {
   color: var(--danger);

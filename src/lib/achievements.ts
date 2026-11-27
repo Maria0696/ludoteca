@@ -117,3 +117,15 @@ export function achievementTotals(list: GameAchievements[]): {
     .slice(0, 5);
   return { unlocked, complete, average, rarest };
 }
+
+export type RarityTier = "rarisimo" | "raro" | "comun";
+
+/** Lo raro que es un logro por el % de jugadores que lo tienen: rarísimo por debajo del 5 %, raro del 20 %. */
+export function rarityTier(percent: number | null): RarityTier | null {
+  if (percent == null) return null;
+  if (percent < 5) return "rarisimo";
+  if (percent < 20) return "raro";
+  return "comun";
+}
+
+export const RARITY_LABEL: Record<RarityTier, string> = { rarisimo: "Rarísimo", raro: "Raro", comun: "Común" };
