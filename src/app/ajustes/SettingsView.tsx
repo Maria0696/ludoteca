@@ -17,6 +17,7 @@ import { PISTAS_MODES, PISTAS_MODE_KEY, type PistasMode } from "@/lib/pistas";
 import { useLibrary } from "@/lib/store";
 import { TITLE_MODES, TITLE_MODE_KEY, type TitleMode } from "@/lib/title-screen";
 import { CompleteTypes } from "./CompleteTypes";
+import { SteamProfile } from "./SteamProfile";
 import { DeleteAllGames } from "./DeleteAllGames";
 import { SETTINGS_ICON_URL, type SettingsIcon } from "./icons";
 import styles from "./settings.module.css";
@@ -203,6 +204,7 @@ export function SettingsView() {
                   </Link>
                 </li>
               </ul>
+              <SteamProfile />
               <CompleteTypes />
             </>
           )}

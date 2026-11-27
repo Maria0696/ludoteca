@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
+import { AchievementWatch } from "@/lib/achievement-sync";
 import { PriceWatch } from "@/lib/price-sync";
 import { LibraryProvider } from "@/lib/store";
 import { AddGameProvider } from "../game/AddGameProvider";
@@ -45,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AddGameProvider>
         <Shortcuts />
         <PriceWatch />
+        <AchievementWatch />
         <a href="#contenido" className={styles.skip}>
           Saltar al contenido
         </a>

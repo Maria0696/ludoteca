@@ -10,10 +10,10 @@ import {
   nearlyDone,
 } from "../../src/lib/achievements";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
-import { type Achievement, type GameAchievements, type Library, createGame, emptyLibrary } from "../../src/lib/model";
+import { type Achievement, type GameAchievements, type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
 import { parsePercents, parsePlayer, parseSchema } from "../../src/lib/steam-achievements";
-import { openApp } from "./helpers";
+import { openAjustes, openApp } from "./helpers";
 
 /* Logros de Steam: la ficha, la vista de todos, el Anuario y Estadísticas. */
 
@@ -221,4 +221,88 @@ test("la ruta de los logros comprueba lo que se le pide y, sin clave de Steam, l
   expect(await (await request.post("/api/logros", { data: ok })).json()).toMatchObject({ ok: false, reason: "no-configurado" });
   expect((await request.get("/api/logros/recientes?steamId=123")).status()).toBe(400);
   expect(await (await request.get(`/api/logros/recientes?steamId=${STEAM_ID}`)).json()).toMatchObject({ ok: false, reason: "no-configurado" });
+});
+
+/** Steam, simulado: qué encuentra la tienda por título, qué juegos son recientes y los logros de cada juego. */
+async function fakeSteam(page: Page, opts: { search?: unknown[]; recent?: number[]; games?: Record<string, unknown>; privado?: boolean } = {}) {
+  const asked = { search: [] as string[], logros: [] as number[][] };
+  await page.route("**/api/precios/steam/buscar?*", (route) => {
+    asked.search.push(new URL(route.request().url()).searchParams.get("q") ?? "");
+    return route.fulfill({ json: { ok: true, candidates: opts.search ?? [] } });
+  });
+  await page.route("**/api/logros/recientes?*", (route) => route.fulfill({ json: { ok: true, appIds: opts.recent ?? [] } }));
+  await page.route("**/api/logros", (route) => {
+    const body = route.request().postDataJSON() as { appIds: number[] };
+    asked.logros.push(body.appIds);
+    if (opts.privado) return route.fulfill({ json: { ok: false, reason: "privado", message: "Steam no deja ver tus logros." } });
+    const games = Object.fromEntries(Object.entries(opts.games ?? {}).filter(([id]) => body.appIds.includes(Number(id))));
+    return route.fulfill({ json: { ok: true, games, sinLogros: [], failed: [] } });
+  });
+  return asked;
+}
+
+/** La biblioteca sembrada con logros «aún sin mirar hoy» (borra la marca que traen las pruebas). */
+async function seedFresh(page: Page, lib: Library) {
+  await seed(page, lib);
+  await page.evaluate(() => localStorage.removeItem("ludoteca:logros-mirados"));
+}
+
+const HADES_LOGROS = {
+  total: 2,
+  unlocked: 1,
+  items: [item("a", 40, "2026-03-01T10:00:00.000Z"), item("b", 0.8)],
+};
+
+test("al abrir la app, un juego de PC escrito a mano se enlaza con Steam por su título y se guardan sus logros", async ({ page }) => {
+  const hades = createGame({ title: "Hades" });
+  await seedFresh(page, { ...emptyLibrary(), games: [hades], copies: [createCopy(hades.id, { platform: "PC", format: "digital" })], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { search: [{ appId: 1145360, title: "Hades", amount: 6.12 }], games: { "1145360": HADES_LOGROS } });
+  await openApp(page, "/");
+  await expect.poll(async () => (await stored(page)).achievements.map((a) => [a.gameId, a.unlocked, a.total])).toEqual([[hades.id, 1, 2]]);
+  expect((await stored(page)).games[0].steamAppId).toBe(1145360);
+  expect(asked.search).toEqual(["Hades"]);
+  expect(asked.logros).toEqual([[1145360]]);
+});
+
+test("sin perfil de Steam guardado, no se pregunta nada a Steam", async ({ page }) => {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  await seedFresh(page, { ...emptyLibrary(), games: [hades] });
+  const asked = await fakeSteam(page, { games: { "1145360": HADES_LOGROS } });
+  await openApp(page, "/");
+  await page.waitForTimeout(1500);
+  expect(asked.logros).toEqual([]);
+  expect(asked.search).toEqual([]);
+});
+
+test("cada día solo se miran los nuevos, los jugados hace poco y los que llevan un mes sin mirarse", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-27T10:00:00Z"));
+  const [nuevo, reciente, viejo, quieto] = ["Nuevo", "Reciente", "Viejo", "Quieto"].map((title, i) => createGame({ title, steamAppId: 100 + i }));
+  const old = record(viejo.id, [item("a", 5)], { steamAppId: 102, checkedAt: "2026-10-01T10:00:00.000Z" });
+  const recent = record(reciente.id, [item("a", 5)], { steamAppId: 101, checkedAt: "2026-11-26T10:00:00.000Z" });
+  const still = record(quieto.id, [item("a", 5)], { steamAppId: 103, checkedAt: "2026-11-26T10:00:00.000Z" });
+  await seedFresh(page, { ...emptyLibrary(), games: [nuevo, reciente, viejo, quieto], achievements: [old, recent, still], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { recent: [101] });
+  await openApp(page, "/");
+  await expect.poll(() => asked.logros.flat().sort()).toEqual([100, 101, 102]);
+});
+
+test("el perfil de Steam se guarda y se quita en Ajustes, y al importar de Steam también se guarda", async ({ page }) => {
+  await seed(page, { ...emptyLibrary(), games: [createGame({ title: "Tunic" })] });
+  await page.route("**/api/steam", (route) => route.fulfill({ json: { ok: true, games: [], steamId: STEAM_ID } }));
+  await openAjustes(page, "traer");
+  const form = page.getByRole("form", { name: "Tu perfil de Steam" });
+  await form.getByRole("textbox", { name: "Perfil de Steam" }).fill("https://steamcommunity.com/id/alguien");
+  await form.getByRole("button", { name: "Guardar" }).click();
+  await expect(form).toContainText(STEAM_ID);
+  await expect.poll(async () => (await stored(page)).settings?.steamId).toBe(STEAM_ID);
+  await form.getByRole("button", { name: "Quitar" }).click();
+  await expect.poll(async () => (await stored(page)).settings?.steamId).toBeNull();
+  await expect(form).toContainText("«Detalles de juego»");
+
+  // Al buscar tus juegos para importarlos, el perfil queda guardado también.
+  await page.route("**/api/steam", (route) => route.fulfill({ json: { ok: true, games: [{ appId: 1, name: "Celeste", minutes: 60, icon: null }], steamId: STEAM_ID } }));
+  await openApp(page, "/importar?origen=steam");
+  await page.getByLabel("Tu perfil de Steam").fill("alguien");
+  await page.getByRole("button", { name: "Buscar", exact: true }).click();
+  await expect.poll(async () => (await stored(page)).settings?.steamId).toBe(STEAM_ID);
 });

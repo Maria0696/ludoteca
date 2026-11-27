@@ -35,6 +35,8 @@ const tituloVisto = {
         // Los precios de los deseos, recién mirados: así ninguna prueba pregunta sola al eShop ni a Steam. Las de
         // ofertas.spec lo borran.
         { name: "ludoteca:precios-mirados", value: JSON.stringify(new Date().toISOString()) },
+        // Los logros de Steam, recién mirados: ninguna prueba pregunta sola a Steam. Las de logros.spec lo borran.
+        { name: "ludoteca:logros-mirados", value: JSON.stringify(new Date().toISOString()) },
       ],
     },
   ],

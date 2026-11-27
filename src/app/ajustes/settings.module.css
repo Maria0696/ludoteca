@@ -283,3 +283,31 @@
     gap: 4px;
   }
 }
+
+/* El perfil de Steam para los logros: el campo y «Guardar» en una fila; guardado, el número y «Quitar». */
+.steamProfile {
+  display: grid;
+  gap: 8px;
+  padding-top: 20px;
+}
+.steamProfile h3 {
+  font-size: var(--size-body);
+  font-weight: 400;
+  color: var(--white);
+}
+.steamField {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  max-width: 560px;
+}
+.steamSaved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.steamProblem {
+  color: var(--danger);
+  font-size: var(--size-note);
+}

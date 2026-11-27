@@ -121,6 +121,8 @@ export function SteamImport() {
         setPhase("inicio");
         return;
       }
+      // El perfil, para los logros: así no hay que volver a escribirlo en Ajustes.
+      if (data.steamId && data.steamId !== library.settings.steamId) actions.setSteamId(data.steamId);
       try {
         localStorage.setItem(PROFILE_KEY, profile);
       } catch {
