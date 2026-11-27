@@ -83,14 +83,13 @@ export class SupabaseRepository implements Repository {
     for (const r of [games, copies, wishlist]) if (r.error) throw new Error(r.error.message);
     if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
     if (wraps.error && !missingTable(wraps.error)) throw new Error(wraps.error.message);
-    return {
-      // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
-      games: (games.data ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null })),
-      copies: (copies.data ?? []).map((r) => fromRow<Copy>(r, copyCols)),
-      wishlist: (wishlist.data ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
-      extras: extras.error ? [] : (extras.data ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),
-      wraps: wraps.error ? [] : (wraps.data ?? []).map((r) => fromRow<YearWrap>(r, wrapCols)),
-    };
+    return libraryFromRows({
+      games: games.data ?? [],
+      copies: copies.data ?? [],
+      wishlist: wishlist.data ?? [],
+      saga_extras: extras.error ? [] : (extras.data ?? []),
+      year_wraps: wraps.error ? [] : (wraps.data ?? []),
+    });
   }
 
   async save(changes: Changes): Promise<void> {
@@ -144,4 +143,30 @@ export class SupabaseRepository implements Repository {
     const extras = await this.db.from("saga_extras").delete().eq("demo", true);
     if (extras.error && !missingTable(extras.error)) throw new Error(extras.error.message);
   }
+}
+
+/** Las filas de cada tabla, como las devuelve Supabase (también la función de las copias automáticas). */
+export type LibraryRows = { games?: Row[]; copies?: Row[]; wishlist?: Row[]; saga_extras?: Row[]; year_wraps?: Row[] };
+
+/** De filas de Supabase a la biblioteca de la app. Lo usan la carga normal y la copia automática. */
+export function libraryFromRows(rows: LibraryRows): Library {
+  return {
+    // Juegos sin vueltas guardadas: sin vueltas anteriores. (Guardar necesita la columna past_runs: migración 0010.)
+    games: (rows.games ?? []).map((r) => fromRow<Game>(r, gameCols)).map((g) => ({ ...g, pastRuns: g.pastRuns ?? [], saga: g.saga ?? null, sagaOrder: g.sagaOrder ?? null })),
+    copies: (rows.copies ?? []).map((r) => fromRow<Copy>(r, copyCols)),
+    wishlist: (rows.wishlist ?? []).map((r) => fromRow<WishItem>(r, wishCols)),
+    extras: (rows.saga_extras ?? []).map((r) => fromRow<SagaExtra>(r, extraCols)),
+    wraps: (rows.year_wraps ?? []).map((r) => fromRow<YearWrap>(r, wrapCols)),
+  };
+}
+
+/** De la biblioteca a filas de Supabase (lo contrario de `libraryFromRows`; para las pruebas). */
+export function libraryToRows(library: Library): Required<LibraryRows> {
+  return {
+    games: library.games.map((g) => toRow(g, gameCols)),
+    copies: library.copies.map((c) => toRow(c, copyCols)),
+    wishlist: library.wishlist.map((w) => toRow(w, wishCols)),
+    saga_extras: library.extras.map((x) => toRow(x, extraCols)),
+    year_wraps: library.wraps.map((w) => toRow(w, wrapCols)),
+  };
 }

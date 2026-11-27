@@ -145,6 +145,13 @@
   color: var(--muted);
   font-size: var(--size-meta);
 }
+/* Las copias automáticas: dónde y cuánto se guardan, a la derecha de su fila. */
+.autoNote {
+  max-width: 22ch;
+  color: var(--muted);
+  font-size: var(--size-note);
+  text-align: right;
+}
 .text {
   padding: 14px 0;
   font-size: var(--size-body);

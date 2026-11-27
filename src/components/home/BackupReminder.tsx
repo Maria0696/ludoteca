@@ -2,20 +2,28 @@
 
 import { Download } from "lucide-react";
 import { toast } from "sonner";
+import { useAutoBackupDays } from "@/lib/auto-backup";
 import { downloadBackup } from "@/lib/backup-download";
 import { SNOOZE_DAYS, shouldRemind, snoozeBackupReminder, useBackupStatus } from "@/lib/backup-reminder";
 import type { Library } from "@/lib/model";
+import { useLibrary } from "@/lib/store";
 import styles from "./backup-reminder.module.css";
 
 /**
  * Aviso discreto en el inicio cuando hace más de lo elegido en Ajustes (un mes, si no se cambia) que no se exporta
  * una copia (o nunca se ha hecho) y hay juegos o deseos propios que perder.
  */
-/** Si toca recordar la copia: el inicio lo usa para no repetir, al lado, el aviso de modo local. */
+/**
+ * Si toca recordar la copia: el inicio lo usa para no repetir, al lado, el aviso de modo local. En la nube, mientras se
+ * pregunta por la última copia automática no se avisa, para no enseñar un aviso que enseguida desaparece.
+ */
 export function useBackupReminderDue(library: Library): boolean {
   const status = useBackupStatus();
+  const { mode } = useLibrary();
+  const autoDays = useAutoBackupDays(mode);
+  if (mode === "supabase" && autoDays === undefined) return false;
   const own = library.games.filter((g) => !g.demo).length + library.wishlist.filter((w) => !w.demo).length;
-  return status !== null && shouldRemind(status, own, status.remindEvery);
+  return status !== null && shouldRemind(status, own, status.remindEvery, autoDays ?? null);
 }
 
 /** En modo local, el aviso dice además dónde se guarda todo: así no hace falta otro aviso que lo repita. */
