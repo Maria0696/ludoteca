@@ -177,6 +177,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
    * lleva `data-guardando`: recargar o cerrar en ese momento perdería el cambio (las pruebas esperan a que se quite).
    */
   const pending = useRef(0);
+  // Cerrar o recargar con algo a medio guardar pide confirmación (ordenador y Android; el iPhone no lo ofrece).
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (pending.current === 0) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
   const persist = useCallback(
     (work: (repo: Repository) => Promise<void>) => {
       const repo = repoRef.current;

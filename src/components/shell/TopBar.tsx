@@ -8,6 +8,7 @@ import { useLibrary } from "@/lib/store";
 import { useAddGame } from "../game/AddGameProvider";
 import { NAV, isActive } from "./nav";
 import { QuickSearch } from "./QuickSearch";
+import { SavingStatus } from "./SavingStatus";
 import styles from "./shell.module.css";
 
 export function TopBar() {
@@ -42,6 +43,8 @@ export function TopBar() {
       </nav>
 
       <div className={styles.spacer} />
+
+      <SavingStatus />
 
       {(mode === "local" || hasDemo) && (
         <Link href="/ajustes" className={styles.modeChip} title="Ver detalles en Ajustes" aria-label={modeLabel}>
