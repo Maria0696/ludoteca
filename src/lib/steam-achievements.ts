@@ -82,3 +82,16 @@ export async function fetchRecentAppIds(key: string, steamId: string): Promise<n
   const json = (await getJson(`${API}/IPlayerService/GetRecentlyPlayedGames/v1/?${new URLSearchParams({ key, steamid: steamId })}`)) as Recent | null;
   return (json?.response?.games ?? []).flatMap((g) => (Number.isInteger(g.appid) && g.appid! > 0 ? [g.appid!] : []));
 }
+
+/** Si Steam deja ver la lista de juegos del perfil: con los detalles de juego ocultos, responde sin ningún dato. */
+export function gamesVisible(json: unknown): boolean {
+  return (json as { response?: { game_count?: number } } | null)?.response?.game_count !== undefined;
+}
+
+/**
+ * Si los detalles de juego del perfil son públicos. Hace falta porque, a un juego que no tienes en Steam (comprado en
+ * otra tienda y enlazado por el título), GetPlayerAchievements le contesta lo mismo que a un perfil privado.
+ */
+export async function fetchGamesVisible(key: string, steamId: string): Promise<boolean> {
+  return gamesVisible(await getJson(`${API}/IPlayerService/GetOwnedGames/v1/?${new URLSearchParams({ key, steamid: steamId, include_appinfo: "0" })}`));
+}

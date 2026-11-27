@@ -13,7 +13,7 @@ import { computeYear } from "../../src/lib/anuario";
 import { createBackup, parseBackup, planImport, resolveImport } from "../../src/lib/backup";
 import { type Achievement, type GameAchievements, type Library, createCopy, createGame, emptyLibrary } from "../../src/lib/model";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
-import { parsePercents, parsePlayer, parseSchema } from "../../src/lib/steam-achievements";
+import { gamesVisible, parsePercents, parsePlayer, parseSchema } from "../../src/lib/steam-achievements";
 import { openAjustes, openApp } from "./helpers";
 
 /* Logros de Steam: la ficha, la vista de todos, el Anuario y Estadísticas. */
@@ -213,6 +213,12 @@ test("se leen bien las respuestas de Steam: los tuyos, el esquema, la rareza, el
     B: 3.25,
   });
   expect(parsePercents({})).toEqual({});
+
+  // Si Steam da tu lista de juegos (aunque esté vacía), los detalles de juego son públicos; si no, no.
+  expect(gamesVisible({ response: { game_count: 3, games: [] } })).toBe(true);
+  expect(gamesVisible({ response: { game_count: 0 } })).toBe(true);
+  expect(gamesVisible({ response: {} })).toBe(false);
+  expect(gamesVisible(null)).toBe(false);
 });
 
 test("la ruta de los logros comprueba lo que se le pide y, sin clave de Steam, lo dice", async ({ request }) => {
@@ -225,7 +231,10 @@ test("la ruta de los logros comprueba lo que se le pide y, sin clave de Steam, l
 });
 
 /** Steam, simulado: qué encuentra la tienda por título, qué juegos son recientes y los logros de cada juego. */
-async function fakeSteam(page: Page, opts: { search?: unknown[]; recent?: number[]; games?: Record<string, unknown>; privado?: boolean } = {}) {
+async function fakeSteam(
+  page: Page,
+  opts: { search?: unknown[]; recent?: number[]; games?: Record<string, unknown>; privado?: boolean; noTuyos?: number[]; hang?: number[] } = {},
+) {
   const asked = { search: [] as string[], logros: [] as number[][] };
   await page.route("**/api/precios/steam/buscar?*", (route) => {
     asked.search.push(new URL(route.request().url()).searchParams.get("q") ?? "");
@@ -236,8 +245,11 @@ async function fakeSteam(page: Page, opts: { search?: unknown[]; recent?: number
     const body = route.request().postDataJSON() as { appIds: number[] };
     asked.logros.push(body.appIds);
     if (opts.privado) return route.fulfill({ json: { ok: false, reason: "privado", message: "Steam no deja ver tus logros." } });
+    // Una tanda que Steam tarda en contestar: no se responde nunca.
+    if (body.appIds.some((id) => opts.hang?.includes(id))) return;
     const games = Object.fromEntries(Object.entries(opts.games ?? {}).filter(([id]) => body.appIds.includes(Number(id))));
-    return route.fulfill({ json: { ok: true, games, sinLogros: [], failed: [] } });
+    const noTuyos = (opts.noTuyos ?? []).filter((id) => body.appIds.includes(id));
+    return route.fulfill({ json: { ok: true, games, sinLogros: [], noTuyos, failed: [] } });
   });
   return asked;
 }
@@ -444,4 +456,32 @@ test("Estadísticas tiene un apartado de logros con los totales y lleva a la vis
   await expect(section).toContainText("Sin un rasguño");
   await section.getByRole("link", { name: "Ver todos" }).click();
   await expect(page).toHaveURL(/\/logros$/, { timeout: 20000 });
+});
+
+test("un juego enlazado que no tienes en Steam no cuenta como perfil privado: se apunta sin logros y se sigue con los demás", async ({ page }) => {
+  const kh = createGame({ title: "Kingdom Hearts HD 1.5 + 2.5 Remix", steamAppId: 2552430 });
+  const juegos = Array.from({ length: 10 }, (_, i) => createGame({ title: `Juego ${i}`, steamAppId: 500 + i }));
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  await seedFresh(page, { ...emptyLibrary(), games: [kh, ...juegos, hades], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { games: { "1145360": HADES_LOGROS }, noTuyos: [2552430] });
+  await openApp(page, "/");
+  await expect.poll(async () => (await stored(page)).achievements.find((a) => a.gameId === hades.id)?.unlocked).toBe(1);
+  expect(asked.logros.length).toBe(2);
+  const khRec = (await stored(page)).achievements.find((a) => a.gameId === kh.id);
+  expect(khRec).toMatchObject({ steamAppId: 2552430, total: 0, unlocked: 0 });
+  expect(await page.evaluate(() => localStorage.getItem("ludoteca:logros-privado"))).toBeNull();
+});
+
+test("«Mirar ahora» en la ficha mira ese juego enseguida, aunque la vuelta de toda la biblioteca siga en marcha", async ({ page }) => {
+  const { hades, rec } = hadesWithAchievements();
+  const celeste = createGame({ title: "Celeste", steamAppId: 504230 });
+  await seedFresh(page, { ...emptyLibrary(), games: [hades, celeste], achievements: [rec], settings: { steamId: STEAM_ID } });
+  // La vuelta diaria pide Celeste (nunca mirado) y Steam no contesta.
+  const asked = await fakeSteam(page, { games: { "1145360": HADES_LOGROS }, hang: [504230] });
+  await openApp(page, `/juego/${hades.id}`);
+  await expect.poll(() => asked.logros).toEqual([[504230]]);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await panel.getByRole("button", { name: "Mirar ahora" }).click();
+  await expect.poll(() => asked.logros).toEqual([[504230], [1145360]]);
+  await expect(panel).toContainText("1 de 2 · 50 %");
 });
