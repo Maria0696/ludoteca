@@ -30,7 +30,8 @@ const copyCols: [keyof Copy, string][] = [
 const wishCols: [keyof WishItem, string][] = [
   ["id", "id"], ["title", "title"], ["coverUrl", "cover_url"], ["igdbId", "igdb_id"], ["platform", "platform"],
   ["priority", "priority"], ["targetPrice", "target_price"], ["notes", "notes"], ["genres", "genres"],
-  ["prices", "prices"], ["demo", "demo"], ["createdAt", "created_at"], ["updatedAt", "updated_at"],
+  ["prices", "prices"], ["eshopNsuid", "eshop_nsuid"], ["steamAppId", "steam_app_id"], ["demo", "demo"],
+  ["createdAt", "created_at"], ["updatedAt", "updated_at"],
 ];
 
 const extraCols: [keyof SagaExtra, string][] = [
