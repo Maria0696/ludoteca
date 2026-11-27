@@ -45,8 +45,11 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 8_000 },
   fullyParallel: true,
-  // En GitHub la máquina tiene 2 núcleos y Playwright usaría solo uno: con dos, cada parte tarda ~1 min menos.
-  workers: process.env.CI ? 2 : undefined,
+  // Dos navegadores a la vez, también en local. En GitHub, Playwright usaría solo uno (con dos, cada parte tarda ~1 min
+  // menos). En un portátil de 4 núcleos usaría cuatro, y cuatro Chrome sin tarjeta gráfica dibujando las animaciones
+  // de Inicio (las ascuas sobre el fondo con filtros) se comen la CPU: el servidor de pruebas tarda más de 10 s en
+  // responder y fallan las navegaciones. Con dos, las mismas pruebas pasan, y en la mitad de tiempo.
+  workers: 2,
   reporter: [["list"], ["html", { open: "never", outputFolder: "test-results/informe" }]],
   use: {
     channel: "chrome",
