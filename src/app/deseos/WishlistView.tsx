@@ -1,6 +1,6 @@
 "use client";
 
-import { ListChecks, PackageCheck, Pencil, Plus, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
+import { ListChecks, PackageCheck, Pencil, Plus, RefreshCw, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Cover } from "@/components/ui/Cover";
@@ -12,7 +12,7 @@ import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
 import { groupWishes } from "@/lib/wish-groups";
 import { EshopChooser } from "./EshopChooser";
-import { OfferAlertsLine } from "./OfferAlertsLine";
+import { OfferAlertsBell } from "./OfferAlertsBell";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
 
@@ -218,10 +218,13 @@ export function WishlistView() {
         <p className={`${styles.count} num`}>
           {gameCount} {gameCount === 1 ? "juego" : "juegos"}
         </p>
-        <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
-          <Plus aria-hidden />
-          Añadir deseo
-        </button>
+        <div className={styles.headActions}>
+          {library.wishlist.length > 0 && <OfferAlertsBell />}
+          <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
+            <Plus aria-hidden />
+            Añadir deseo
+          </button>
+        </div>
         {/* Cuándo se miraron los precios (la app lo hace sola cada 6 h) y, al lado, mirarlos ya. */}
         {library.wishlist.length > 0 && (
           <p className={styles.priceStatus} aria-live="polite">
@@ -231,16 +234,15 @@ export function WishlistView() {
               <>
                 Precios del eShop y Steam:{" "}
                 <span className={styles.nowrap}>
-                  {checkedLabel(lastCheck, now)} ·{" "}
-                  <button type="button" className="link-btn" onClick={searchStores}>
-                    Mirar ahora
+                  {checkedLabel(lastCheck, now)}
+                  <button type="button" className={`btn btn-sm btn-quiet btn-icon ${styles.lookNow}`} aria-label="Mirar ahora" title="Mirar ahora" onClick={searchStores}>
+                    <RefreshCw aria-hidden />
                   </button>
                 </span>
               </>
             )}
           </p>
         )}
-        {library.wishlist.length > 0 && <OfferAlertsLine />}
       </header>
 
       {library.wishlist.length === 0 ? (

@@ -15,8 +15,12 @@
   font-family: var(--font-term);
   font-size: var(--size-lead);
 }
-.head :global(.btn) {
+/* A la derecha: la campana de los avisos (en la nube) y «Añadir deseo». */
+.headActions {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .toolbar {
   display: flex;
@@ -170,9 +174,20 @@
   font-family: var(--font-term);
   font-size: var(--size-note);
 }
-/* Los avisos de ofertas en este móvil, pegados a la línea de los precios. */
-.alertsStatus {
-  margin-top: -14px;
+/* Mirar los precios ya: un botón callado con su icono, del alto de la línea. */
+.priceStatus .lookNow {
+  width: 28px;
+  height: 28px;
+  margin: -6px 0 -6px 4px;
+  vertical-align: middle;
+  color: var(--muted);
+}
+.priceStatus .lookNow:hover {
+  color: var(--white);
+}
+.priceStatus .lookNow svg {
+  width: 15px;
+  height: 15px;
 }
 /* «hace 2 h · Mirar ahora» no se separa: en el móvil baja entero a la línea siguiente. */
 .nowrap {
@@ -389,5 +404,11 @@
   }
   .cols {
     grid-template-columns: 1fr;
+  }
+  /* Con el pulgar: más zona de toque sin que la línea crezca. */
+  .priceStatus .lookNow {
+    width: 40px;
+    height: 40px;
+    margin: -12px -6px -12px 0;
   }
 }
