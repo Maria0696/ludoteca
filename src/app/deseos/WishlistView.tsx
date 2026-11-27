@@ -1,14 +1,14 @@
 "use client";
 
-import { ListChecks, PackageCheck, Pencil, Plus, RefreshCw, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
+import { ListChecks, PackageCheck, Pencil, Plus, Search, SlidersHorizontal, Tag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatDate, formatMoney } from "@/lib/format";
 import { type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, normalizeTitle } from "@/lib/model";
-import { type SyncResult, syncPrices, usePendingEshop } from "@/lib/price-sync";
-import { currentOffer, untilLabel } from "@/lib/price-watch";
+import { type SyncResult, syncPrices, useLastPriceCheck, usePendingEshop } from "@/lib/price-sync";
+import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
 import { EshopChooser } from "./EshopChooser";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
@@ -50,6 +50,7 @@ export function WishlistView() {
   const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "edit" | "price" | "convert" | "eshop"; wish: WishItem } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const pendingEshop = usePendingEshop();
+  const lastCheck = useLastPriceCheck();
   const now = new Date();
   const searchStores = () => {
     setSyncing(true);
@@ -137,16 +138,28 @@ export function WishlistView() {
         <p className={`${styles.count} num`}>
           {library.wishlist.length} {library.wishlist.length === 1 ? "juego" : "juegos"}
         </p>
-        {library.wishlist.length > 0 && (
-          <button type="button" className="btn" onClick={searchStores} disabled={syncing} aria-busy={syncing || undefined} title="Mira los precios en el eShop de Nintendo y en Steam">
-            <RefreshCw aria-hidden className={syncing ? styles.spinning : undefined} />
-            Buscar en las tiendas
-          </button>
-        )}
         <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
           <Plus aria-hidden />
           Añadir deseo
         </button>
+        {/* Cuándo se miraron los precios (la app lo hace sola cada 6 h) y, al lado, mirarlos ya. */}
+        {library.wishlist.length > 0 && (
+          <p className={styles.priceStatus} aria-live="polite">
+            {syncing ? (
+              "Mirando los precios en el eShop y en Steam…"
+            ) : (
+              <>
+                Precios del eShop y Steam:{" "}
+                <span className={styles.nowrap}>
+                  {checkedLabel(lastCheck, now)} ·{" "}
+                  <button type="button" className="link-btn" onClick={searchStores}>
+                    Mirar ahora
+                  </button>
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </header>
 
       {library.wishlist.length === 0 ? (

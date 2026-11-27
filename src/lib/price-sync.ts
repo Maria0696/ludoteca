@@ -191,6 +191,26 @@ export function usePendingEshop(): Set<string> {
   return new Set(JSON.parse(raw) as string[]);
 }
 
+/** Cuándo se miraron los precios por última vez en este navegador (fecha ISO), o `null` si nunca. */
+export function useLastPriceCheck(): string | null {
+  const raw = useSyncExternalStore(
+    subscribe,
+    () => {
+      try {
+        return window.localStorage.getItem(LAST_KEY);
+      } catch {
+        return null;
+      }
+    },
+    () => null,
+  );
+  try {
+    return raw ? (JSON.parse(raw) as string) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Al abrir la app (con la biblioteca cargada), mira los precios si hace más de 6 horas de la última vez. */
 export function usePriceWatch() {
   const { state, library, actions } = useLibrary();

@@ -1,7 +1,7 @@
 import { type Page, expect, test } from "@playwright/test";
 import { createBackup, parseBackup } from "../../src/lib/backup";
 import { type WishItem, createGame, emptyLibrary } from "../../src/lib/model";
-import { ESHOP, STEAM, currentOffer, newPriceRecords, offerAlerts, pickEshop, rankEshop } from "../../src/lib/price-watch";
+import { ESHOP, STEAM, checkedLabel, currentOffer, newPriceRecords, offerAlerts, pickEshop, rankEshop } from "../../src/lib/price-watch";
 import { libraryFromRows, libraryToRows } from "../../src/lib/repo/supabase";
 import { parseEshopPrices, parseEshopSearch, parseSteamPrices } from "../../src/lib/store-prices";
 import { openApp } from "./helpers";
@@ -161,6 +161,16 @@ test("del catálogo del eShop sale un candidato por producto y código, de la co
   ]);
 });
 
+test("cuándo se miraron los precios, dicho como en una conversación", () => {
+  const now = new Date("2026-11-27T12:00:00");
+  expect(checkedLabel(null, now)).toBe("aún sin mirar");
+  expect(checkedLabel("2026-11-27T11:59:30", now)).toBe("hace un momento");
+  expect(checkedLabel("2026-11-27T11:40:00", now)).toBe("hace 20 min");
+  expect(checkedLabel("2026-11-27T09:00:00", now)).toBe("hace 3 h");
+  expect(checkedLabel("2026-11-26T09:00:00", now)).toBe("ayer");
+  expect(checkedLabel("2026-11-23T09:00:00", now)).toBe("hace 4 días");
+});
+
 test("las rutas de precios comprueban lo que se les pide y, sin nada que mirar, no salen a las tiendas", async ({ request }) => {
   expect((await request.post("/api/precios", { data: { eshop: ["no-es-un-codigo"] } })).status()).toBe(400);
   const empty = await request.post("/api/precios", { data: { eshop: [], steam: [] } });
@@ -265,12 +275,16 @@ test("si el eShop tiene varias opciones, el deseo queda por elegir y se elige vi
   expect(asked.eshop).toContain("70010000096822");
 });
 
-test("«Buscar en las tiendas» enlaza también los de PC con Steam y mira sus precios", async ({ page }) => {
+test("«Mirar ahora» enlaza también los de PC con Steam, mira sus precios y dice cuándo se miraron", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-27T10:00:00"));
   await withWishes(page, [wish({ title: "Hades", platform: "PC", igdbId: 113112 })]);
   const asked = await fakeStores(page, [], {}, { steamLinks: { "113112": 1145360 }, steam: { "1145360": { amount: 6.12, regular: 24.5, until: null } } });
   await openApp(page, "/deseos");
-  await page.getByRole("button", { name: "Buscar en las tiendas" }).click();
+  // Al abrir ya los mira (no estaban mirados): luego, a mano.
+  const status = page.getByText(/^Precios del eShop y Steam:/);
+  await expect(status).toContainText("hace un momento");
+  await expect(page.getByRole("button", { name: "Buscar en las tiendas" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Mirar ahora" }).click();
   const item = page.getByRole("region", { name: "Deseos" }).getByRole("listitem").filter({ hasText: "Hades" });
   await expect(item).toContainText("6,12 €");
   await expect(item).toContainText("−75 %");
