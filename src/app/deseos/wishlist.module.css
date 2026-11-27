@@ -170,6 +170,10 @@
   font-family: var(--font-term);
   font-size: var(--size-note);
 }
+/* Los avisos de ofertas en este móvil, pegados a la línea de los precios. */
+.alertsStatus {
+  margin-top: -14px;
+}
 /* «hace 2 h · Mirar ahora» no se separa: en el móvil baja entero a la línea siguiente. */
 .nowrap {
   white-space: nowrap;

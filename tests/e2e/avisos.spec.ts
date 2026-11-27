@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import type { PriceRecord, WishItem } from "../../src/lib/model";
 import { isGoneStatus, notificationFor, planAlerts } from "../../src/lib/offer-push";
 import { ESHOP, STEAM } from "../../src/lib/price-watch";
+import { pushStatusFrom } from "../../src/lib/push-client";
+import { openApp, seedDemo } from "./helpers";
 
 /* Notificaciones de ofertas: la tarea de GitHub mira los precios dos veces al día y avisa al móvil. */
 
@@ -135,4 +137,22 @@ test("en modo local no hay avisos que mandar", async ({ request }) => {
     expect(res.status(), url).toBe(404);
     expect(await res.json()).toMatchObject({ ok: false });
   }
+});
+
+test("en el iPhone, fuera de la app instalada, se pide abrirla desde su icono", () => {
+  const env = { supported: true, ios: false, standalone: false, permission: "default" as NotificationPermission, subscribed: false };
+  expect(pushStatusFrom({ ...env, supported: false, ios: true })).toBe("ios-browser");
+  expect(pushStatusFrom({ ...env, ios: true, standalone: true })).toBe("off");
+  expect(pushStatusFrom({ ...env, ios: true, standalone: true, permission: "granted", subscribed: true })).toBe("on");
+  // Bloqueados en los ajustes: aunque quede una suscripción vieja, no llegarán.
+  expect(pushStatusFrom({ ...env, permission: "denied", subscribed: true })).toBe("denied");
+  expect(pushStatusFrom({ ...env, supported: false })).toBe("unsupported");
+  expect(pushStatusFrom(env)).toBe("off");
+});
+
+test("en modo local, Deseos no ofrece avisos", async ({ page }) => {
+  await seedDemo(page);
+  await openApp(page, "/deseos");
+  await expect(page.getByText("Precios del eShop y Steam")).toBeVisible();
+  await expect(page.getByText("Avisos de ofertas")).toHaveCount(0);
 });
