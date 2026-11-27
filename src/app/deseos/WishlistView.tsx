@@ -10,6 +10,7 @@ import { type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, normalizeTitl
 import { type SyncResult, syncPrices, useLastPriceCheck, usePendingEshop } from "@/lib/price-sync";
 import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
+import { groupWishes } from "@/lib/wish-groups";
 import { EshopChooser } from "./EshopChooser";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
@@ -81,6 +82,10 @@ export function WishlistView() {
     });
   }, [library.wishlist, q, priorities, platform, sort]);
 
+  // Un juego deseado en varias plataformas, en una sola tarjeta: la cabecera cuenta juegos, no entradas.
+  const groups = useMemo(() => groupWishes(visible), [visible]);
+  const gameCount = useMemo(() => groupWishes(library.wishlist).length, [library.wishlist]);
+
   const filtered = q || priorities.length || platform;
   const activeFilters = priorities.length + (platform ? 1 : 0);
   const reset = () => {
@@ -88,6 +93,80 @@ export function WishlistView() {
     setPriorities([]);
     setPlatform("");
   };
+
+  /**
+   * El precio de un deseo, como una etiqueta: el último visto, su oferta y de dónde. Sin precio, el objetivo (o, en una
+   * fila de plataforma, «sin precio visto»).
+   */
+  const priceLine = (w: WishItem, always: boolean) => {
+    const p = latestPrice(w);
+    const diff = p && w.targetPrice != null ? p.amount - w.targetPrice : null;
+    const offer = currentOffer(w, now);
+    if (p) {
+      return (
+        <div className={styles.priceRow}>
+          <p className={diff != null && diff <= 0 ? `${styles.tag} ${styles.tagGood}` : styles.tag}>
+            <span className="sr-only">Último precio: </span>
+            <span className={`${styles.amount} num`}>{formatMoney(p.amount)}</span>
+            {diff != null && <span className={styles.verdict}>{diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}</span>}
+          </p>
+          {offer && (
+            <span className={styles.offer}>
+              −{offer.percent} %{offer.until ? ` ${untilLabel(offer.until, now)}` : ""}
+            </span>
+          )}
+          <span className={styles.priceMeta}>
+            {[p.store, formatDate(p.date), w.targetPrice != null ? `objetivo ${formatMoney(w.targetPrice)}` : null].filter(Boolean).join(" · ")}
+          </span>
+        </div>
+      );
+    }
+    if (w.targetPrice == null && !always) return null;
+    return (
+      <div className={styles.priceRow}>
+        {w.targetPrice != null && (
+          <p className={`${styles.tag} ${styles.tagTarget}`}>
+            <span className={`${styles.verdict} num`}>Objetivo {formatMoney(w.targetPrice)}</span>
+          </p>
+        )}
+        <span className={styles.priceMeta}>sin precio visto</span>
+      </div>
+    );
+  };
+
+  /** Las acciones calladas de un deseo; `name` lo nombra en las etiquetas (con su plataforma, si comparte tarjeta). */
+  const buttons = (w: WishItem, name: string) => (
+    <div className={styles.secondary}>
+      {pendingEshop.has(w.id) && !w.eshopNsuid && (
+        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "eshop", wish: w })}>
+          <ListChecks aria-hidden />
+          Elegir en el eShop
+        </button>
+      )}
+      <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
+        <Tag aria-hidden />
+        Precio
+      </button>
+      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${name}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
+        <Pencil aria-hidden />
+        Editar
+      </button>
+      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${name} de la lista`} onClick={() => actions.deleteWish(w.id)}>
+        <Trash2 aria-hidden />
+        Quitar
+      </button>
+    </div>
+  );
+
+  /** La acción principal, enmarcada y sola a la derecha. */
+  const haveButton = (w: WishItem) => (
+    <div className={styles.actions}>
+      <button type="button" className="btn btn-sm" onClick={() => setDialog({ kind: "convert", wish: w })}>
+        <PackageCheck aria-hidden />
+        Ya lo tengo
+      </button>
+    </div>
+  );
 
   // Prioridad, plataforma y orden: en la barra en el ordenador; en el móvil, en la hoja «Filtrar y ordenar», como en la biblioteca.
   const filterControls = (
@@ -136,7 +215,7 @@ export function WishlistView() {
       <header className={styles.head}>
         <h1 className="screen-title">Lista de deseos</h1>
         <p className={`${styles.count} num`}>
-          {library.wishlist.length} {library.wishlist.length === 1 ? "juego" : "juegos"}
+          {gameCount} {gameCount === 1 ? "juego" : "juegos"}
         </p>
         <button type="button" className="btn btn-ink" onClick={() => setDialog({ kind: "new" })}>
           <Plus aria-hidden />
@@ -198,75 +277,51 @@ export function WishlistView() {
           ) : (
             <section className="window" aria-label="Deseos">
             <ul className={styles.list}>
-              {visible.map((w) => {
-                const p = latestPrice(w);
-                const diff = p && w.targetPrice != null ? p.amount - w.targetPrice : null;
-                const offer = currentOffer(w, now);
+              {groups.map((group) => {
+                if (group.length === 1) {
+                  const w = group[0];
+                  return (
+                    <li key={w.id} className={styles.item}>
+                      <Cover src={w.coverUrl} title={w.title} caption={w.platform ?? undefined} className={styles.cover} />
+                      <div className={styles.info}>
+                        <strong>{w.title}</strong>
+                        <span className="muted">
+                          {w.platform ?? "Cualquier plataforma"} · prioridad {PRIORITY_LABEL[w.priority].toLowerCase()}
+                          {w.demo ? " · demostración" : ""}
+                        </span>
+                        {priceLine(w, false)}
+                        {w.notes && <p className={styles.notes}>{w.notes}</p>}
+                      </div>
+                      {buttons(w, w.title)}
+                      {haveButton(w)}
+                    </li>
+                  );
+                }
+                // Varias plataformas: el título una vez y, debajo, una fila por plataforma con su precio y sus botones.
+                const title = [...group].sort((a, b) => a.title.length - b.title.length)[0].title;
+                const rows = [...group].sort((a, b) => (a.platform ?? "").localeCompare(b.platform ?? "", "es"));
                 return (
-                  <li key={w.id} className={styles.item}>
-                    <Cover src={w.coverUrl} title={w.title} caption={w.platform ?? undefined} className={styles.cover} />
-                    <div className={styles.info}>
-                      <strong>{w.title}</strong>
-                      <span className="muted">
-                        {w.platform ?? "Cualquier plataforma"} · prioridad {PRIORITY_LABEL[w.priority].toLowerCase()}
-                        {w.demo ? " · demostración" : ""}
-                      </span>
-                      {/* El precio, como una etiqueta bajo el título; sin precio ni objetivo, nada. */}
-                      {p ? (
-                        <div className={styles.priceRow}>
-                          <p className={diff != null && diff <= 0 ? `${styles.tag} ${styles.tagGood}` : styles.tag}>
-                            <span className="sr-only">Último precio: </span>
-                            <span className={`${styles.amount} num`}>{formatMoney(p.amount)}</span>
-                            {diff != null && <span className={styles.verdict}>{diff <= 0 ? "En tu objetivo" : `${formatMoney(diff)} por encima`}</span>}
-                          </p>
-                          {offer && (
-                            <span className={styles.offer}>
-                              −{offer.percent} %{offer.until ? ` ${untilLabel(offer.until, now)}` : ""}
-                            </span>
-                          )}
-                          <span className={styles.priceMeta}>
-                            {[p.store, formatDate(p.date), w.targetPrice != null ? `objetivo ${formatMoney(w.targetPrice)}` : null].filter(Boolean).join(" · ")}
-                          </span>
-                        </div>
-                      ) : (
-                        w.targetPrice != null && (
-                          <div className={styles.priceRow}>
-                            <p className={`${styles.tag} ${styles.tagTarget}`}>
-                              <span className={`${styles.verdict} num`}>Objetivo {formatMoney(w.targetPrice)}</span>
-                            </p>
-                            <span className={styles.priceMeta}>sin precio visto</span>
-                          </div>
-                        )
-                      )}
-                      {w.notes && <p className={styles.notes}>{w.notes}</p>}
-                    </div>
-                    {/* Las calladas, bajo el título (en el móvil, a lo ancho, tras «Ya lo tengo»). */}
-                    <div className={styles.secondary}>
-                      {pendingEshop.has(w.id) && !w.eshopNsuid && (
-                        <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "eshop", wish: w })}>
-                          <ListChecks aria-hidden />
-                          Elegir en el eShop
-                        </button>
-                      )}
-                      <button type="button" className="btn btn-sm btn-quiet" onClick={() => setDialog({ kind: "price", wish: w })}>
-                        <Tag aria-hidden />
-                        Precio
-                      </button>
-                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Editar ${w.title}`} onClick={() => setDialog({ kind: "edit", wish: w })}>
-                        <Pencil aria-hidden />
-                        Editar
-                      </button>
-                      <button type="button" className="btn btn-sm btn-quiet" aria-label={`Quitar ${w.title} de la lista`} onClick={() => actions.deleteWish(w.id)}>
-                        <Trash2 aria-hidden />
-                        Quitar
-                      </button>
-                    </div>
-                    {/* La acción principal, enmarcada y sola a la derecha. */}
-                    <div className={styles.actions}>
-                      <button type="button" className="btn btn-sm" onClick={() => setDialog({ kind: "convert", wish: w })}>
-                        <PackageCheck aria-hidden />
-                        Ya lo tengo
-                      </button>
+                  <li key={group[0].id} className={`${styles.item} ${styles.group}`}>
+                    <Cover src={group.find((w) => w.coverUrl)?.coverUrl ?? null} title={title} className={styles.cover} />
+                    <div className={styles.groupBody}>
+                      <strong className={styles.groupTitle}>{title}</strong>
+                      <ul className={styles.platforms} aria-label={`Plataformas de ${title}`}>
+                        {rows.map((w) => (
+                          <li key={w.id} className={styles.platformRow}>
+                            <div className={styles.info}>
+                              <span className="muted">
+                                <span className={styles.platformName}>{w.platform ?? "Cualquier plataforma"}</span> · prioridad{" "}
+                                {PRIORITY_LABEL[w.priority].toLowerCase()}
+                                {w.demo ? " · demostración" : ""}
+                              </span>
+                              {priceLine(w, true)}
+                              {w.notes && <p className={styles.notes}>{w.notes}</p>}
+                            </div>
+                            {buttons(w, `${title} (${w.platform ?? "cualquier plataforma"})`)}
+                            {haveButton(w)}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </li>
                 );
