@@ -175,9 +175,9 @@ export async function eshopOptions(wish: WishItem): Promise<EshopCandidate[]> {
   return res.candidates ?? [];
 }
 
-/** Juegos de la tienda de Steam que podrían ser este deseo, con su precio, para elegir. */
-export async function steamOptions(wish: WishItem): Promise<SteamCandidate[]> {
-  const res = await call<{ ok: boolean; candidates?: SteamCandidate[] }>(`/api/precios/steam/buscar?q=${encodeURIComponent(wish.title)}`);
+/** Juegos de la tienda de Steam que podrían ser este título, con su precio, para elegir. */
+export async function steamOptions(title: string): Promise<SteamCandidate[]> {
+  const res = await call<{ ok: boolean; candidates?: SteamCandidate[] }>(`/api/precios/steam/buscar?q=${encodeURIComponent(title)}`);
   if (!res.ok) throw new Error("Steam no responde ahora.");
   return res.candidates ?? [];
 }

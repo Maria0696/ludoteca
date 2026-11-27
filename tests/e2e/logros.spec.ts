@@ -306,3 +306,95 @@ test("el perfil de Steam se guarda y se quita en Ajustes, y al importar de Steam
   await page.getByRole("button", { name: "Buscar", exact: true }).click();
   await expect.poll(async () => (await stored(page)).settings?.steamId).toBe(STEAM_ID);
 });
+
+/** Hades con 4 logros: 2 conseguidos y 2 que faltan (uno, oculto). */
+function hadesWithAchievements() {
+  const hades = createGame({ title: "Hades", steamAppId: 1145360 });
+  const items = [
+    item("huida", 78.1, "2026-03-01T10:00:00.000Z"),
+    item("armas", 12.4),
+    { ...item("final", 3.2), name: "El verdadero final", description: "Llega al final de la historia", hidden: true },
+    item("rasguno", 40, "2026-05-02T10:00:00.000Z"),
+  ];
+  return { hades, rec: record(hades.id, items) };
+}
+
+test("la ficha enseña los logros: el progreso, los que faltan del más raro al más común y los conseguidos con su fecha", async ({ page }) => {
+  const { hades, rec } = hadesWithAchievements();
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { games: { "1145360": HADES_LOGROS } });
+  await openApp(page, `/juego/${hades.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await expect(panel).toContainText("2 de 4 · 50 %");
+  const missing = panel.getByRole("list", { name: "Te faltan" }).getByRole("listitem");
+  await expect(missing).toHaveCount(2);
+  // El oculto va primero (3,2 %), tapado; «Ver» lo destapa.
+  await expect(missing.nth(0)).toContainText("Logro oculto");
+  await expect(missing.nth(0)).toContainText(/3,2\s%/);
+  await expect(missing.nth(0)).not.toContainText("El verdadero final");
+  await missing.nth(0).getByRole("button", { name: "Ver el logro oculto" }).click();
+  await expect(missing.nth(0)).toContainText("El verdadero final");
+  await expect(missing.nth(1)).toContainText("Logro armas");
+  const got = panel.getByRole("list", { name: "Conseguidos" }).getByRole("listitem");
+  // Del más reciente al más antiguo, con su fecha.
+  await expect(got.nth(0)).toContainText("Logro rasguno");
+  await expect(got.nth(0)).toContainText("2 may 2026");
+  await expect(got.nth(1)).toContainText("1 mar 2026");
+  await panel.getByRole("button", { name: "Mirar ahora" }).click();
+  await expect.poll(() => asked.logros).toEqual([[1145360]]);
+});
+
+test("en la ficha, sin perfil de Steam lo pide; con el perfil privado, explica cómo arreglarlo", async ({ page }) => {
+  const { hades, rec } = hadesWithAchievements();
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec] });
+  await openApp(page, `/juego/${hades.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await expect(panel).toContainText("Guarda tu perfil de Steam en Ajustes para ver tus logros");
+
+  await seed(page, { ...emptyLibrary(), games: [hades], achievements: [rec], settings: { steamId: STEAM_ID } });
+  await fakeSteam(page, { privado: true });
+  await openApp(page, `/juego/${hades.id}`);
+  await page.getByRole("region", { name: "Logros" }).getByRole("button", { name: "Mirar ahora" }).click();
+  await expect(page.getByRole("region", { name: "Logros" })).toContainText("«Detalles de juego» en Público");
+});
+
+test("un juego de PC sin enlazar se elige en Steam desde su ficha, y se miran sus logros", async ({ page }) => {
+  const inside = createGame({ title: "Inside Ultimate" });
+  await seed(page, { ...emptyLibrary(), games: [inside], copies: [createCopy(inside.id, { platform: "PC", format: "digital" })], settings: { steamId: STEAM_ID } });
+  const asked = await fakeSteam(page, { search: [{ appId: 304430, title: "INSIDE", amount: 19.99 }], games: { "304430": HADES_LOGROS } });
+  await openApp(page, `/juego/${inside.id}`);
+  const panel = page.getByRole("region", { name: "Logros" });
+  await panel.getByRole("button", { name: "Elegir en Steam" }).click();
+  const dialog = page.getByRole("dialog", { name: /Steam/ });
+  await dialog.getByRole("button", { name: /^INSIDE/ }).click();
+  await expect(panel).toContainText("1 de 2 · 50 %");
+  expect((await stored(page)).games[0].steamAppId).toBe(304430);
+  expect(asked.logros).toContainEqual([304430]);
+});
+
+test("la vista de todos ordena por lo cerca que está cada juego del 100 % y lleva a su ficha", async ({ page }) => {
+  const done = "2026-01-01T00:00:00.000Z";
+  const [casi, mitad, completo, cero] = ["Celeste", "Hollow Knight", "Inside", "Tunic"].map((title, i) => createGame({ title, steamAppId: 200 + i }));
+  await seed(page, {
+    ...emptyLibrary(),
+    games: [casi, mitad, completo, cero],
+    achievements: [
+      record(mitad.id, [item("a", 5, done), item("b", 5)], { steamAppId: 201 }),
+      record(cero.id, [item("a", 5)], { steamAppId: 203 }),
+      record(completo.id, [item("a", 5, done)], { steamAppId: 202 }),
+      record(casi.id, [item("a", 5, done), item("b", 5, done), item("c", 5, done), item("d", 5)], { steamAppId: 200 }),
+    ],
+    settings: { steamId: STEAM_ID },
+  });
+  await openApp(page, "/logros");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Logros");
+  const rows = page.getByRole("list", { name: "Tus juegos con logros" }).getByRole("listitem");
+  await expect(rows).toHaveCount(4);
+  await expect(rows.nth(0)).toContainText("Celeste");
+  await expect(rows.nth(0)).toContainText("75 % · te falta 1");
+  await expect(rows.nth(1)).toContainText("50 % · te falta 1");
+  await expect(rows.nth(2)).toContainText("Tunic");
+  await expect(rows.nth(3)).toContainText("100 %");
+  await rows.nth(0).getByRole("link").click();
+  await expect(page).toHaveURL(new RegExp(`/juego/${casi.id}$`), { timeout: 20000 });
+});

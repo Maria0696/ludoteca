@@ -7,11 +7,11 @@ import { Cover } from "@/components/ui/Cover";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatDate, formatMoney } from "@/lib/format";
 import { type Priority, type WishItem, PRIORITIES, PRIORITY_LABEL, normalizeTitle } from "@/lib/model";
-import { type SyncResult, syncPrices, useLastPriceCheck, usePendingEshop } from "@/lib/price-sync";
+import { type SyncResult, chooseSteam, syncPrices, useLastPriceCheck, usePendingEshop } from "@/lib/price-sync";
 import { checkedLabel, currentOffer, untilLabel } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
 import { groupWishes } from "@/lib/wish-groups";
-import { EshopChooser, SteamChooser } from "./StoreChooser";
+import { EshopChooser, SteamChooser } from "@/components/ui/StoreChooser";
 import { OfferAlertsBell } from "./OfferAlertsBell";
 import { ConvertDialog, PriceDialog, WishEditor } from "./WishDialogs";
 import styles from "./wishlist.module.css";
@@ -347,7 +347,14 @@ export function WishlistView() {
       {dialog?.kind === "edit" && <WishEditor wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "price" && <PriceDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
       {dialog?.kind === "eshop" && <EshopChooser wish={dialog.wish} onClose={() => setDialog(null)} />}
-      {dialog?.kind === "steam" && <SteamChooser wish={dialog.wish} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "steam" && (
+        <SteamChooser
+          title={dialog.wish.title}
+          done={`«${dialog.wish.title}» se vigila en Steam`}
+          choose={(appId) => chooseSteam(dialog.wish, appId, actions.updateWish)}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog?.kind === "convert" && <ConvertDialog wish={dialog.wish} onClose={() => setDialog(null)} />}
 
       <Dialog

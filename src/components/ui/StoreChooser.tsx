@@ -5,10 +5,10 @@ import { toast } from "sonner";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatMoney } from "@/lib/format";
 import type { WishItem } from "@/lib/model";
-import { chooseEshop, chooseSteam, eshopOptions, steamOptions } from "@/lib/price-sync";
+import { chooseEshop, eshopOptions, steamOptions } from "@/lib/price-sync";
 import { rankEshop } from "@/lib/price-watch";
 import { useLibrary } from "@/lib/store";
-import styles from "./wishlist.module.css";
+import styles from "./store-chooser.module.css";
 
 /** Una opción para elegir: su nombre y, debajo, lo que la distingue (consola, precio). */
 type Option = { key: string; title: string; meta: string; choose: () => Promise<void> };
@@ -16,25 +16,28 @@ type Option = { key: string; title: string; meta: string; choose: () => Promise<
 const price = (amount: number | null) => (amount != null ? formatMoney(amount) : "sin precio");
 
 /**
- * Elegir con qué producto de una tienda se vigila un deseo, cuando no hay uno solo con su título (ediciones, paquetes,
- * bandas sonoras…): cada opción con su precio de ahora, para distinguirlas.
+ * Elegir con qué producto de una tienda se enlaza algo (un deseo, un juego), cuando no hay uno solo con su título
+ * (ediciones, paquetes, bandas sonoras…): cada opción con su precio de ahora, para distinguirlas.
  */
 function StoreChooser({
-  wish,
+  title,
   store,
   note,
   empty,
+  done,
   load,
   onClose,
 }: {
-  wish: WishItem;
+  title: string;
   store: string;
   note: string;
   empty: string;
+  /** El aviso al elegir. */
+  done: string;
   load: (query: string) => Promise<Option[]>;
   onClose: () => void;
 }) {
-  const [query, setQuery] = useState(wish.title);
+  const [query, setQuery] = useState(title);
   const [options, setOptions] = useState<Option[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,13 +69,13 @@ function StoreChooser({
   const choose = (option: Option) => {
     onClose();
     void option.choose().then(
-      () => toast(`«${wish.title}» se vigila en ${store}`),
-      () => toast.error(`Enlazado, pero ${store} no ha dado el precio: se mirará la próxima vez.`),
+      () => toast(done),
+      () => toast.error(`Enlazado, pero ${store} no ha respondido: se mirará la próxima vez.`),
     );
   };
 
   return (
-    <Dialog open onClose={onClose} title={`Elegir «${wish.title}» en ${store}`}>
+    <Dialog open onClose={onClose} title={`Elegir «${title}» en ${store}`}>
       <p className={styles.chooserNote}>{note}</p>
       <form className={styles.chooserSearch} onSubmit={submit} role="search">
         <input
@@ -121,8 +124,9 @@ export function EshopChooser({ wish, onClose }: { wish: WishItem; onClose: () =>
     }));
   return (
     <StoreChooser
-      wish={wish}
+      title={wish.title}
       store="el eShop"
+      done={`«${wish.title}» se vigila en el eShop`}
       note="Hay varias opciones con ese nombre. Elige la que quieres (o busca con otras palabras): se vigilará su precio."
       empty="El eShop no encuentra este juego. Prueba con otras palabras, o comprueba la consola del deseo."
       load={load}
@@ -131,22 +135,25 @@ export function EshopChooser({ wish, onClose }: { wish: WishItem; onClose: () =>
   );
 }
 
-/** En Steam, para un deseo de PC que no se ha podido enlazar solo: los juegos que encuentra con ese título y su precio. */
-export function SteamChooser({ wish, onClose }: { wish: WishItem; onClose: () => void }) {
-  const { actions } = useLibrary();
+/**
+ * En Steam, para un deseo o un juego de PC que no se ha podido enlazar solo: los juegos que encuentra con ese título,
+ * con su precio. `choose` enlaza el elegido (y mira su precio o sus logros).
+ */
+export function SteamChooser({ title, done, choose, onClose }: { title: string; done: string; choose: (appId: number) => Promise<void>; onClose: () => void }) {
   const load = async (query: string) =>
-    rankEshop(query, await steamOptions({ ...wish, title: query })).map((o) => ({
+    rankEshop(query, await steamOptions(query)).map((o) => ({
       key: String(o.appId),
       title: o.title,
       meta: price(o.amount),
-      choose: () => chooseSteam(wish, o.appId, actions.updateWish),
+      choose: () => choose(o.appId),
     }));
   return (
     <StoreChooser
-      wish={wish}
+      title={title}
       store="Steam"
-      note="No hay un único juego con ese título en Steam. Elige el que quieres (o busca con otras palabras): se vigilará su precio."
+      note="No hay un único juego con ese título en Steam. Elige el que quieres (o busca con otras palabras)."
       empty="Steam no encuentra este título. Prueba con otras palabras."
+      done={done}
       load={load}
       onClose={onClose}
     />

@@ -232,54 +232,6 @@
 .platformName {
   color: var(--paper);
 }
-/* Elegir en el eShop: una opción por fila, a lo ancho. */
-.chooserNote {
-  margin-bottom: 12px;
-  color: var(--muted);
-}
-/* Buscar con otras palabras, encima de las opciones. */
-.chooserSearch {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.chooserSearch :global(.btn) {
-  height: auto;
-}
-.chooser {
-  display: grid;
-  gap: 8px;
-}
-.option {
-  display: grid;
-  gap: 2px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  background: var(--raised);
-  box-shadow: inset 0 0 0 2px var(--line);
-  color: var(--paper);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-@media (hover: hover) and (pointer: fine) {
-  .option:hover {
-    background: var(--hover);
-  }
-}
-.option:focus-visible {
-  outline: 3px solid var(--white);
-  outline-offset: 2px;
-}
-.optionTitle {
-  font-size: var(--size-body);
-}
-.optionMeta {
-  color: var(--muted);
-  font-size: var(--size-meta);
-}
 .priceMeta {
   color: var(--muted);
   font-size: var(--size-note);
